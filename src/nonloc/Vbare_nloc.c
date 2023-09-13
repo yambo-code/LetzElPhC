@@ -1,0 +1,417 @@
+/*
+This routine computes the non local part to 
+bare electron-phonon mat elements.
+*/
+#include "internal_functions.h"
+
+/*
+**** Yambo stores <K|X^a_{lm}>sqrt(E_l) with out spherical harmonics i.e P^a_l(K) = Sqrt(|E_l|)*F^a_l(K)
+
+**** dV(K,K')/dR_a = \sum_{a,l,m}  -1j*[sigh(E_l)* P^a_l(K) * P^a_l(K')]* [exp(-1j*(K-K')*R_a) * (K-K') ]* Y^l_m(K) * (Y^l_m(K'))^\dagger
+
+*/
+
+#define BLAS_BLOCKING_LEN_DEFAULT 512
+
+
+/*********** Function bodies ************/
+
+void elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, int ikq, int ik, \
+                int kqsym, int ksym, const bool trivial_phase, ND_array(Nd_cmplxS) * eigVec, \
+                ELPH_cmplx * elph_kq_mn, MPI_Comm commK, MPI_Comm commQ)
+{
+    /*
+    Compute <psi_K| dV_nl/dtau |psi_K'> 
+    where K' = k and K = k+q
+
+    In this function variables with Kp/K represent K'/K i.e k/k+q respectively
+
+    (Wavefunctions) wfc_K, wfc_Kp = (ispin, nbnd, nspinor,npw)
+
+    fCoeffs ()  # (natom_types,l*j) of Nd arrays with dim (2l+1, 2l+1, nspinor, nspinor)
+
+    Fkq --> Kb projectors (nl,natom_types,ngx)
+    
+    SymK, Symkp, symmetry operators on K and K'
+    
+    atom_pos --> atomic positions in cart coordinates
+    
+    Gvecs --> ngx Gvectors in cart coordinates
+
+    eigVec : eigen vectors , (nu,atom,3)
+    
+    elph_kq_mn --> Output <k+q| dV_nl/dt|k>. !! Warning . this must be initialized else Undefined behaviour !
+    *** The non local part is added to existing value of elph_kq_mn
+
+    Note : Pass only un-rotated wave functions, this functions uses symmetries internally.
+    
+    General comments: 
+        This functions will never explicitly construct full V(K,K') but loops and computes the 
+        matrix elements on fly.
+    */
+    int mpi_error;
+    int krank;
+    mpi_error = MPI_Comm_rank(commK, &krank);
+    /*
+    First we get the wfcs.
+    */
+    struct WFC wfc_kq, wfc_k; // Note these are allocated by 
+    // get_wfc_from_pool and must be freed in this function
+
+    /* create buffers which must be destroyed in the end */
+    ND_array(Nd_cmplxS) wfc_tempkq, wfc_tempk;
+    ND_array(Nd_floatS) gvec_tempkq, gvec_tempk;
+    ND_array(Nd_floatS) Fk_tempkq, Fk_tempk;
+    wfc_kq.wfc = &wfc_tempkq;
+    wfc_k.wfc = &wfc_tempk;
+
+    wfc_kq.gvec = &gvec_tempkq;
+    wfc_k.gvec = &gvec_tempk;
+
+    wfc_kq.Fk = &Fk_tempkq;
+    wfc_k.Fk = &Fk_tempk;
+
+    /* Now get the wfcs for k+q and k */
+    get_wfc_from_pool(wfcs, ikq, lattice->kpt_iredBZ->dims[0], commK, commQ, &wfc_kq);
+    
+    get_wfc_from_pool(wfcs, ik, lattice->kpt_iredBZ->dims[0], commK, commQ, &wfc_k);
+    
+    /*initialization and setup */
+    ND_array(Nd_cmplxS) * wfc_K  = wfc_kq.wfc ; 
+    ND_array(Nd_cmplxS) * wfc_Kp = wfc_k.wfc ; 
+    
+    //printf("Debug-%d \n",1);
+    ELPH_float * Kvec  = ND_function(ele,Nd_floatS)(lattice->kpt_iredBZ, nd_idx{ikq,0});
+    ELPH_float * Kpvec = ND_function(ele,Nd_floatS)(lattice->kpt_iredBZ, nd_idx{ik,0}); 
+    
+    ND_array(Nd_floatS) * PP_table = pseudo->PP_table;
+    
+    const int lmax = pseudo->lmax;
+    
+    ND_array(Nd_cmplxS) * fCoeff = pseudo->fCoeff;
+    ND_array(Nd_floatS)* Fsign = pseudo->Fsign;
+    
+    const ELPH_float * tauK  = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{kqsym,0});
+    const ELPH_float * tauKp = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{ksym,0});
+    
+    ND_array(Nd_floatS)* FK  = wfc_kq.Fk;
+    ND_array(Nd_floatS)* FKp = wfc_k.Fk;
+    
+    ND_array(Nd_floatS)* GvecK  = wfc_kq.gvec;
+    ND_array(Nd_floatS)* GvecKp = wfc_k.gvec;
+    
+    ELPH_float * SymK  = ND_function(ele,Nd_floatS)(lattice->sym_mat, nd_idx{kqsym,0,0}) ;
+    ELPH_float * SymKp = ND_function(ele,Nd_floatS)(lattice->sym_mat, nd_idx{ksym,0,0}) ;
+
+    const bool timerevK  = lattice->time_rev_array[kqsym];
+    const bool timerevKp = lattice->time_rev_array[ksym];
+
+    ND_array(Nd_floatS)* atom_pos     = lattice->atomic_pos;
+    const int * atom_type             = lattice->atom_type;
+
+    ND_int nspinor = lattice->nspinor ;
+    ND_int natom_types = pseudo->ntype; // number of atomic types
+    ND_int natom = atom_pos->dims[0];
+    ND_int npwK, npwKp;
+    npwK  =  GvecK->dims[0];
+    npwKp = GvecKp->dims[0];
+
+    ND_int nl_max = (lmax + 1)*(lmax + 1); // we compute for all (lmax+1)^2 projectors
+    
+
+    // From here, real stuff starts 
+    /* first rotate G vectors. The data is over written on existing gvecs */
+    ELPH_OMP_PAR_FOR_SIMD
+    for (ND_int ipw= 0 ; ipw <npwK ; ++ipw)
+    {   
+        ELPH_float * GPtr    = GvecK->data + 3*ipw;
+        ELPH_float tempG[3];
+        tempG[0] = Kvec[0]+ GPtr[0] ;
+        tempG[1] = Kvec[1]+ GPtr[1] ;
+        tempG[2] = Kvec[2]+ GPtr[2] ;
+        MatVec3f(SymK, tempG, invsymK, GPtr);
+    }
+    // for K'  // Pragma omp for 
+    ELPH_OMP_PAR_FOR_SIMD
+    for (ND_int ipw= 0 ; ipw <npwKp ; ++ipw)
+    {   
+        ELPH_float * GPtr    = GvecKp->data + 3*ipw;  
+        ELPH_float tempG[3];
+        tempG[0] = Kpvec[0]+ GPtr[0] ;
+        tempG[1] = Kpvec[1]+ GPtr[1] ;
+        tempG[2] = Kpvec[2]+ GPtr[2] ;
+        MatVec3f(SymKp, tempG, invsymKp, GPtr);
+    }
+
+    /* ----------- */
+    /* Now pre compute Ylm(K) for 0-lmax */
+    /*
+    The idea behind computing Ylm before is that, the calls for Ylm are reduced
+    One could store these for every wavefunction and apply wigner D matrices for rotation. 
+    But we always compute on fly as for large k points, these would add to more memory footprint 
+    per core with less performance gain
+    */
+    ELPH_float * YlmK  = malloc( npwK*nl_max*sizeof(ELPH_float)); // (nl_max,npwK)
+    ELPH_float * YlmKp = malloc(npwKp*nl_max*sizeof(ELPH_float)); // These are real spherical harmonics
+
+    for (int il =0 ; il<=lmax; ++il)
+    {   
+        for (int im=0; im<= 2*il; ++im)
+        {   //
+            int m = im-il ;
+
+            ND_int ilim_idx = (il*il) + im ;
+            
+            ELPH_float * restrict YlmKtemp  = YlmK  + ilim_idx*npwK;
+            ELPH_float * restrict YlmKptemp = YlmKp + ilim_idx*npwKp;
+
+            ELPH_OMP_PAR_FOR_SIMD
+            for (ND_int ipw = 0 ; ipw < npwK; ++ipw )
+            {   
+                ELPH_float * GrotPtr = GvecK->data + 3*ipw ; 
+                YlmKtemp[ipw] = Ylm(il, m, GrotPtr);
+            }
+            
+            ELPH_OMP_PAR_FOR_SIMD
+            for (ND_int ipw = 0 ; ipw < npwKp; ++ipw )
+            {   
+                ELPH_float * GrotPtr = GvecKp + 3*ipw ; 
+                YlmKptemp[ipw] = Ylm(il, m, GrotPtr);
+            }
+        }
+    }
+    
+    /* ----- */
+    /* (ispin, nbnd, nspinor,npw) */
+    ND_int nspin, nbndK ;
+    nspin  = wfc_K->dims[0] ;
+    nbndK  = wfc_K->dims[1] ;
+    
+    ELPH_cmplx su2K[4]  = {1,0,0,1};
+    ELPH_cmplx su2Kp[4] = {1,0,0,1};
+
+    /* Get SU(2) matrices for spinors*/
+    SU2mat(SymK,  nspinor,  false,  timerevK,  su2K);
+    SU2mat(SymKp, nspinor,  false,  timerevKp, su2Kp);
+    
+    /* Apply spinors to wfcs */
+    su2rotate(nspinor, npwK,  nspin*nbndK, su2K,  wfc_K->data);
+    su2rotate(nspinor, npwKp, nspin*nbndK, su2Kp, wfc_Kp->data);
+
+    /* Buffer arrays */
+    ND_int nltimesj = PP_table->dims[0];
+
+    /*temporary beta_ia buffers */
+    // ((2*lmax+1)*nproj_max,4,nspin*nspinor*nbndK)
+    const ND_int bandbuffer_stride = nspin*nbndK*nspinor*4;
+    ELPH_cmplx * bandbufferK  = malloc( nltimesj*(2*lmax+1)*bandbuffer_stride*sizeof(ELPH_cmplx));
+    ELPH_cmplx * bandbufferKp = malloc( nltimesj*(2*lmax+1)*bandbuffer_stride*sizeof(ELPH_cmplx));
+    
+
+    ND_int temp_len = nltimesj*(2*lmax+1);
+    ELPH_cmplx * betaK  = malloc(4*temp_len*npwK*sizeof(ELPH_cmplx));// buffer for beta and K*beta (pw,4)
+    ELPH_cmplx * betaKp = malloc(4*temp_len*npwKp*sizeof(ELPH_cmplx));// buffer for beta' and K'*beta'
+    
+    // (natom, 3, nspin, mk, nk+q)
+    /* buffer to store elph mat elements in cart coordinates */
+    ND_int elph_buffer_len = natom * 3 * nbndK * nbndK * nspin ;
+    ELPH_cmplx * elph_buffer;
+    if (krank == 0) elph_buffer  = malloc(elph_buffer_len * sizeof(ELPH_cmplx)); 
+    ND_int elph_buffer_stride = 3*nbndK * nbndK * nspin;
+    // FIXED TILL HERE
+    // zero the buffers
+    if (krank == 0)
+    {
+        for (ND_int i = 0 ; i<elph_buffer_len ; ++i) elph_buffer[i] = 0.0 ;
+    }
+    for (ND_int i = 0 ; i<nltimesj*(2*lmax+1)*bandbuffer_stride ; ++i) bandbufferK[i] = 0.0 ; 
+    for (ND_int i = 0 ; i<nltimesj*(2*lmax+1)*bandbuffer_stride ; ++i) bandbufferKp[i] = 0.0 ; 
+    for (ND_int i = 0 ; i<4*temp_len*npwK ; ++i)  betaK[i] = 0.0 ; 
+    for (ND_int i = 0 ; i<4*temp_len*npwKp ; ++i) betaKp[i] = 0.0 ; 
+
+    /* Now compute betas */
+    for (ND_int ia = 0; ia < natom ; ++ia)
+    {   
+        ND_int itype  = atom_type[ia];
+        
+        ELPH_float * tau = ND_function(ele,Nd_floatS)(atom_pos,nd_idx{ia,0}); // atomic position in cart
+        /* First compute betas for each atom */
+        
+        ND_int idxK =0 ;  // counter for nltimesj*(2*lmax+1) i.e l+m for K
+        ND_int idxKp =0 ; // counter for nltimesj*(2*lmax+1) i.e l+m for K'
+        //  idxK and idxKp should be same
+        for (ND_int lidx = 0 ; lidx < nltimesj ; ++lidx)
+        {   
+            int l = rint( *ND_function(ele,Nd_floatS)(PP_table, nd_idx{lidx,itype,0})  - 1);
+            if (l < 0) continue; // skip fake entries
+                
+            ELPH_float   Kbsign  = *ND_function(ele,Nd_floatS)(Fsign,nd_idx{lidx,itype});
+            ELPH_float * FKtemp  = ND_function(ele,Nd_floatS)(FK,  nd_idx{lidx,itype,0});
+            ELPH_float * FKptemp = ND_function(ele,Nd_floatS)(FKp, nd_idx{lidx,itype,0});
+            // nltimesj*(2*lmax+1)*4*npw_split; 
+
+            for (ND_int im1 =0 ; im1 <= 2*l ; ++im1)
+            {   
+                ELPH_float * YlmKtemp  = YlmK  + (l*l+im1)*npwK;
+                ELPH_cmplx * restrict betaK_temp = betaK + idxK*4*npwK;
+
+                ELPH_cmplx * restrict betaK0 = betaK_temp;
+                ELPH_cmplx * restrict betaK1 = betaK_temp + npwK;
+                ELPH_cmplx * restrict betaK2 = betaK_temp + 2*npwK;
+                ELPH_cmplx * restrict betaK3 = betaK_temp + 3*npwK;
+                /*** WARNING !! DO NOT PARALLELIZE LOOPS except this !! */
+                //ELPH_OMP_PAR_FOR_SIMD
+                for (ND_int ipw = 0 ; ipw < npwK; ++ipw )
+                {   
+                    ELPH_float * GrotPtr = GvecK->data + 3*ipw ; 
+                    // tau.G
+                    ELPH_float tau_dotG = GrotPtr[0]*tau[0] + GrotPtr[1]*tau[1] + GrotPtr[2]*tau[2] ;
+                    betaK0[ipw] = FKtemp[ipw]*cexp(-I*2*ELPH_PI*tau_dotG)*YlmKtemp[ipw];
+                    betaK1[ipw] = betaK0[ipw]*GrotPtr[0]*Kbsign;
+                    betaK2[ipw] = betaK0[ipw]*GrotPtr[1]*Kbsign;
+                    betaK3[ipw] = betaK0[ipw]*GrotPtr[2]*Kbsign; // Kbsign is the sign coming from F.T of projectors 
+                }
+                ++idxK;
+            }
+            
+            for (ND_int im2 =0 ; im2 <= 2*l ; ++im2)
+            {   
+                ELPH_float * YlmKptemp = YlmKp + (l*l+im2)*npwKp ;
+                ELPH_cmplx * restrict betaKp_temp = betaKp + idxKp*4*npwKp;
+
+                ELPH_cmplx * restrict betaKp0 = betaKp_temp;
+                ELPH_cmplx * restrict betaKp1 = betaKp_temp + npwKp;
+                ELPH_cmplx * restrict betaKp2 = betaKp_temp + 2*npwKp;
+                ELPH_cmplx * restrict betaKp3 = betaKp_temp + 3*npwKp;
+                //
+                /*** WARNING !! DO NOT PARALLELIZE LOOPS except this !! */
+                //ELPH_OMP_PAR_FOR_SIMD
+                for (ND_int ipw = 0 ; ipw < npwKp; ++ipw )
+                {   // K' has -ve sign
+                    ELPH_float * GrotPtr = GvecKp->data + 3*ipw; 
+                    // tau.G
+                    ELPH_float tau_dotG = GrotPtr[0]*tau[0] + GrotPtr[1]*tau[1] + GrotPtr[2]*tau[2] ;
+                    betaKp0[ipw] =  FKptemp[ipw]*cexp(I*2*ELPH_PI*tau_dotG)*conj(YlmKptemp[ipw]) ;
+                    betaKp1[ipw] = -betaKp0[ipw]*GrotPtr[0]*Kbsign;
+                    betaKp2[ipw] = -betaKp0[ipw]*GrotPtr[1]*Kbsign;
+                    betaKp3[ipw] = -betaKp0[ipw]*GrotPtr[2]*Kbsign;
+                }
+                ++idxKp;
+            }
+        }
+        
+        char blasK = 'C'; char blasKp = 'T';
+        // conjugate if symmetry operation is time rev 
+        if (timerevK)  blasK  = 'T';
+        if (timerevKp) blasKp = 'C';
+
+        /* matmul with wfcs to get betas*/
+        // (4, nspin*nbndK*nspinor);  (lj,4,pw)@(nspin,nbnd,spinor,npw)->(lj,4,nspin,nbnd,spinor)
+        ND_function(matmulX, Nd_cmplxS) ('N', blasK, betaK, wfc_K->data , bandbufferK, \
+                    1.0, 0.0, npwK, npwK, nspin*nspinor*nbndK, 4*idxK, nspin*nspinor*nbndK, npwK);
+
+        ND_function(matmulX, Nd_cmplxS) ('N', blasKp, betaKp, wfc_Kp->data , bandbufferKp, \
+                    1.0, 0.0, npwKp, npwKp, nspin*nspinor*nbndK, 4*idxKp, nspin*nspinor*nbndK, npwKp);
+        
+        if(idxKp != idxK) error_msg("something wrong with number of projectors for K and K' ");
+
+        ND_int reduce_count  = 4*idxK*nspin*nspinor*nbndK; 
+        
+        
+        ND_int max_int_val = ((ND_int)INT_MAX) -10 ;
+        // this generally doesn't overflow. but better to check
+        if (reduce_count > max_int_val) error_msg("int overflow in MPI_reduce function");
+        
+        
+        if (krank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+        else mpi_error = MPI_Reduce(bandbufferKp, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+
+        if (krank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+        else mpi_error = MPI_Reduce(bandbufferK, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+
+        // now reduce bandbufferK and bandbufferKp i.e perform the sum
+        //commK
+
+        /* The below section will be run only by master core of each Kpool */
+        if (krank == 0)
+        {
+            /* Now compute non local contribution to elph matrix  elements*/
+            ELPH_cmplx * elph_buffer_temp = elph_buffer + ia*elph_buffer_stride;
+
+            ND_int il_counter = 0 ;
+            for (ND_int lidx = 0 ; lidx < nltimesj ; ++lidx)
+            {
+                int l = rint( *ND_function(ele,Nd_floatS)(PP_table, nd_idx{lidx,itype,0})  - 1);
+                //int j = rint( *ND_function(ele,Nd_floatS)(PP_table, nd_idx{lidx,itype,1})); // Careful, this is 2j
+        
+                if (l < 0) continue; // skip fake entries
+
+                ND_array(Nd_cmplxS) * ifCoeff  = fCoeff + natom_types*lidx + itype ;
+
+                for (ND_int im1 =0 ; im1 <= 2*l ; ++im1)
+                {   
+                    ELPH_cmplx * restrict betaPsi_K = bandbufferK + (il_counter+im1)*bandbuffer_stride;
+
+                    for (ND_int im2 =0 ; im2 <= 2*l ; ++im2)
+                    {   
+                        ELPH_cmplx * restrict betaPsi_Kp = bandbufferKp + (il_counter+im2)*bandbuffer_stride;
+
+                        if (nspinor == 1 && im1 != im2) continue;
+
+                        ELPH_cmplx temp_flmm = 1.0 ;
+                        ELPH_cmplx * flmm = &temp_flmm ;
+
+                        if (nspinor != 1)
+                        {   
+                            ND_int * t_strds = ifCoeff->strides;
+                            flmm =  ifCoeff->data + t_strds[0]*im1 + t_strds[1]*im2; 
+                        }
+                        /*** WARNING !! DO NOT PARALLELIZE LOOPS !! */
+                        // perform the summation over K,K'
+                        // sum_K_K' V_NL = \sum_{sigma,sigma'} npwK^\sigma[0]*npwKp^\sigma'[1:4]*f + f*npwKp^\sigma'[0]*npwK^\sigma[1:4] ;
+                        sum_VNL_KKp(betaPsi_K, betaPsi_Kp, flmm, nspin, nbndK , nspinor, elph_buffer_temp); // this is not thread safe
+                    }
+                }
+                // update counter
+                il_counter = il_counter + 2*l+1;
+            }
+        }
+        mpi_error = MPI_Barrier(commK);
+    }
+    if (krank == 0) 
+    {
+        /* Convert to mode basis */
+        ND_int nmodes = eigVec->dims[0];
+        ND_int elph_stride = nspin*nbndK*nbndK;
+
+        ELPH_cmplx pre_facNL = -2*ELPH_PI*I*ELPH_e2; // this is a prefactor from VKL, but we multiply it here
+        /* 2*pi from Gvecs, -I from derivate with ion pos, and e^2 for Ha->Ry. 
+        Note that the factor (4*pi)^2/V is included in output of yambo*/
+
+        // !! WARNING : elph_kq_mn and elph_buffer are defined only on master process.
+        //(nu,atom,3) , (natom, 3, nspin, mk, nk+q)
+        ND_function(matmulX, Nd_cmplxS) ('N', 'N', eigVec->data, elph_buffer, elph_kq_mn, \
+                pre_facNL, 1.0, natom*3, elph_stride, elph_stride, nmodes, elph_stride, natom*3);
+        free(elph_buffer);
+    }
+
+    mpi_error = MPI_Barrier(commK);
+
+    free(bandbufferK);
+    free(bandbufferKp);
+    free(betaK);
+    free(betaKp);
+    free(YlmK);
+    free(YlmKp);
+
+    /*free wfc buffers */
+    ND_function(destroy,Nd_cmplxS)(&wfc_tempkq);
+    ND_function(destroy,Nd_cmplxS)(&wfc_tempk);
+    ND_function(destroy,Nd_floatS)(&gvec_tempkq);
+    ND_function(destroy,Nd_floatS)(&gvec_tempk);
+    ND_function(destroy,Nd_floatS)(&Fk_tempkq);
+    ND_function(destroy,Nd_floatS)(&Fk_tempk);
+
+} // end of function
+
+
