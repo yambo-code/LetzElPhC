@@ -14,5 +14,10 @@ ELPH_float Vloc_Gspace(ELPH_float * work_arr, const char cutoff, const ELPH_floa
         const ND_array(Nd_floatS)* rab_grid, const ELPH_float Zval,const ELPH_float eta, \
         const ELPH_float cutoff_fac);
 
-void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \
-            ,ND_array(Nd_cmplxS) * VlocG);
+void dvpsi(const ND_int nmag, const ND_int nspinor, const ND_int nFFT, 
+            const ELPH_cmplx * restrict dV_r, const ELPH_cmplx * restrict psi_r, \
+            ELPH_cmplx * restrict dVpsi_out);
+
+void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc); 
+
+

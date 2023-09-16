@@ -27,8 +27,8 @@ struct Lattice
     int start_band ;                        // starting band used in elph calculation
     int end_band ;                          // end band used in elph calculation
     int nbnds ;                             // bands used in elph calculation
-    int nk_loc ;                            // number of kpoints present in this cpus
     char dimension ;                        // '1', '2', '3' for 1D, 2D, 3D. This is used to apply coloumb cutoff
+    ND_int npw_max;                         // max number of total pw in spherical grid for all wfcs
     ND_int fft_dims[3];                     // fft dimensions
     ND_int nffts_loc;                       // number of FFT vecs in this cpu
     ND_int nfft_shift_loc;                  // global index of first fft vector
@@ -72,8 +72,6 @@ struct Pseudo
 
     int lmax;          // Max value of l in the PP table
 
-    ND_int np_max;     // max number of total pw in spherical grid for all wfcs
-
 };
 
 
@@ -107,6 +105,9 @@ struct wfcBox
     */
     ND_array(Nd_cmplxS) Buffer ; 
     // input buffer for FFT transform
+
+    ND_array(Nd_cmplxS) Buffer_temp ; 
+    // This is a temp buffer with size same as Buffer. used in local part calculation
 
     // this is a buffer to locally perform the FFT
     ND_array(Nd_cmplxS) FFTBuf ; // (nsets,Nx,Ny,Nz)

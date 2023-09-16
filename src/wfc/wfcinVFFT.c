@@ -27,10 +27,10 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
 
     5) Transpose back the data
 
-    | A_pw1 A_pw2 A_pw3 ... |             | A_pw1 B_pw1 C_pw1 ... | 
-    | B_pw1 B_pw2 B_pw3 ... |   ----->    | A_pw2 B_pw2 C_pw2 ... | 
-    | C_pw1 C_pw2 C_pw3 ... |  AlltoAllv  | A_pw3 B_pw3 C_pw3 ... | 
-    | ..... ..... ..... ... |             | ..... ..... ..... ... | 
+    | A_fft1 A_fft2 A_fft3 ... |                 | A_fft1 B_fft1 C_fft1 ... | 
+    | B_fft1 B_fft2 B_fft3 ... |    ----->       | A_fft2 B_fft2 C_fft2 ... |
+    | C_fft1 C_fft2 C_fft3 ... |   AlltoAllv     | A_fft3 B_fft3 C_fft3 ... |
+    | .....   .....  ..... ... |                 | .....   .....  ..... ... |
     */
     
     /* First get the gvectors */
@@ -109,6 +109,8 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
     /*
     First sent nset_per_cpu batches
     */
+    for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
+    for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
     for (ND_int i = 0 ; i<Comm_size; ++i) counts_recv[i]        = 0; 
     for (ND_int i = 0 ; i<Comm_size; ++i) displacements_recv[i] = 0; 
 
@@ -139,11 +141,30 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
         int input_shift = nset_per_cpu*Comm_size*loc_pw;
         int out_shift = nset_per_cpu*npw_total;
 
-        if (my_rank >= nset_rem)
+        if (my_rank >= nset_rem) out_shift = 0;
+
+        for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
+        for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
+        for (ND_int i = 0 ; i<Comm_size; ++i) counts_recv[i]        = 0; 
+        for (ND_int i = 0 ; i<Comm_size; ++i) displacements_recv[i] = 0; 
+
+        for (ND_int i = 0 ; i<nset_rem; ++i)
+        {               
+            counts_send[i] = loc_pw;
+            displacements_send[i] = i*loc_pw ;
+        }
+
+        if (my_rank < nset_rem)
         {   
-            out_shift = 0;
-            for (ND_int i = 0 ; i<Comm_size; ++i) counts_recv[i]        = 0; 
-            for (ND_int i = 0 ; i<Comm_size; ++i) displacements_recv[i] = 0; 
+            disp_rectemp = 0;
+            for (ND_int i = 0 ; i<Comm_size; ++i)
+            {
+                counts_recv[i] = pw_per_core;
+                if (i < pw_rem) ++counts_recv[i]; 
+
+                displacements_recv[i] = disp_rectemp;
+                disp_rectemp += counts_recv[i];
+            }
         }
         
         mpi_error = MPI_Alltoallv(wfc_pw_in + input_shift, counts_send, \
@@ -183,6 +204,11 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
     */
     if (nffts_inthis_cpu != wfcRspace->Buffer.dims[3]) error_msg("wrong FFTs in cpus");
 
+    for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
+    for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
+    for (ND_int i = 0 ; i<Comm_size; ++i) counts_recv[i]        = 0; 
+    for (ND_int i = 0 ; i<Comm_size; ++i) displacements_recv[i] = 0; 
+
     int disp_sendtemp = 0;
     for (ND_int i = 0 ; i<Comm_size; ++i)
     {
@@ -207,14 +233,32 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
 
     if (nset_rem != 0)
     {   
+
         int input_shift = nset_per_cpu*nFFT;
         int out_shift = nset_per_cpu*nffts_inthis_cpu*Comm_size;
+        if (my_rank >= nset_rem) input_shift = 0;
+        
+        for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
+        for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
+        for (ND_int i = 0 ; i<Comm_size; ++i) counts_recv[i]        = 0; 
+        for (ND_int i = 0 ; i<Comm_size; ++i) displacements_recv[i] = 0; 
 
-        if (my_rank >= nset_rem)
+        for (ND_int i = 0 ; i<nset_rem; ++i)
+        {               
+            counts_recv[i] = nffts_inthis_cpu;
+            displacements_recv[i] = i*nffts_inthis_cpu ;
+        }
+
+        if (my_rank < nset_rem)
         {   
-            input_shift = 0;
-            for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
-            for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
+            disp_sendtemp = 0;
+            for (ND_int i = 0 ; i<Comm_size; ++i)
+            {
+                counts_send[i] = nffts_per_core;
+                if(i<nffts_rem) ++counts_send[i];
+                displacements_send[i] = disp_sendtemp ;
+                disp_sendtemp += counts_send[i];
+            }
         }
         
         mpi_error = MPI_Alltoallv(wfc_fft_loc + input_shift, counts_send, \

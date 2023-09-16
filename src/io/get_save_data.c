@@ -333,29 +333,14 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commK, MPI_Comm commQ, \
     ND_function(destroy, Nd_floatS)(&atomic_map);
     ND_function(destroy, Nd_floatS)(&atom_pos_temp);
 
-    // compute nibz in each pool
-    int nkpools = cpus_qpool/npw_cpus ;
-
-    int nks_per_cpu = nibz/nkpools;
-    int nks_rem = nibz%nkpools;
-    int nks_this_cpu = nks_per_cpu;
-    if ( kcolor < nks_rem) ++nks_this_cpu;
-    lattice->nk_loc = nks_this_cpu;
-
-    int kshift = kcolor*nks_per_cpu;
-    if(nks_rem !=0)
-    {
-        if (kcolor<nks_rem) kshift += kcolor;
-        else kshift += nks_rem;
-    }
-    ELPH_float * nGmax = malloc(sizeof(ELPH_float) * nks_this_cpu ); // max number of gvectors for each wfc in iBZ
-    *wfcs = malloc(sizeof(struct WFC) * nks_this_cpu); // wfcs in iBZ
+    ELPH_float * nGmax = malloc(sizeof(ELPH_float) * nibz ); // max number of gvectors for each wfc in iBZ
+    *wfcs = malloc(sizeof(struct WFC) * nibz); // wfcs in iBZ
     struct WFC * wfc_temp = *wfcs ;
 
     /* allocate arrays of arrays for wfc, gvsc, Fk */
-    ND_array(Nd_cmplxS) * wfc_alloc_arrays  = malloc(nks_this_cpu*sizeof(ND_array(Nd_cmplxS))); // free me 
-    ND_array(Nd_floatS) * gvec_alloc_arrays = malloc(nks_this_cpu*sizeof(ND_array(Nd_floatS))); // free me
-    ND_array(Nd_floatS) * Fk_alloc_arrays   = malloc(nks_this_cpu*sizeof(ND_array(Nd_floatS))); // free me
+    ND_array(Nd_cmplxS) * wfc_alloc_arrays  = malloc(nibz*sizeof(ND_array(Nd_cmplxS))); // free me 
+    ND_array(Nd_floatS) * gvec_alloc_arrays = malloc(nibz*sizeof(ND_array(Nd_floatS))); // free me
+    ND_array(Nd_floatS) * Fk_alloc_arrays   = malloc(nibz*sizeof(ND_array(Nd_floatS))); // free me
 
     if (my_rank == 0) quick_read(dbid, "WFC_NG", nGmax);
     /* Bcast ELPH_float * nGmax */
@@ -375,12 +360,11 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commK, MPI_Comm commQ, \
     Bcast_ND_arrayFloat(&totalGvecs, true, 0, MPI_COMM_WORLD);
     Bcast_ND_arrayFloat(&Gvecidxs, true, 0, MPI_COMM_WORLD);
 
-    /* Disperse k wavefunctions in kpools too*/
     // ! Warning, Only read only mode for opening files
-    for (ND_int ik = 0 ; ik <nks_this_cpu ; ++ik)
+    for (ND_int ik = 0 ; ik <nibz ; ++ik)
     {   
         /*set total pws */
-        (wfc_temp+ik)->npw_total = rint(nGmax[ik+kshift]);
+        (wfc_temp+ik)->npw_total = rint(nGmax[ik]);
 
         ND_int pw_per_core = ((wfc_temp+ik)->npw_total)/npw_cpus;
         ND_int pw_rem      = ((wfc_temp+ik)->npw_total)%npw_cpus;
@@ -410,18 +394,18 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commK, MPI_Comm commQ, \
         // (nspin, bands, nspinor, npw)
         ND_function(malloc,Nd_cmplxS)((wfc_temp+ik)->wfc);
 
-        get_wfc_from_save((wfc_temp+ik)->wfc->strides[0], ik+kshift, nibz, \
-        lattice->nspin, lattice->nspinor, lattice->start_band, \
+        get_wfc_from_save((wfc_temp+ik)->wfc->strides[0], ik, nibz, \
+        lattice->nspin, lattice->nspinor, lattice->start_band, \ 
         lattice->nbnds, pw_this_cpu,G_shift, SAVEdir, temp_str, \
         (wfc_temp+ik)->wfc->data, commK);
 
         /* initiate, allocate and load Fk (Kleinbylander Coefficients)*/
         (wfc_temp+ik)->Fk = Fk_alloc_arrays+ik ;
         ND_function(init,Nd_floatS)((wfc_temp+ik)->Fk, 0, NULL); 
-        sprintf(temp_str, "%s/ns.kb_pp_pwscf_fragment_%d", SAVEdir, (int)(kshift+ik+1) ) ;  // fix it for abinit 
+        sprintf(temp_str, "%s/ns.kb_pp_pwscf_fragment_%d", SAVEdir, (int)(ik+1) ) ;  // fix it for abinit 
         /* Abinit has a aditional spin dimension instead of 2*n projectors */
         if ((retval = nc_open_par(temp_str, NC_NOWRITE, comm, MPI_INFO_NULL, &ppid))) ERR(retval);
-        sprintf(temp_str, "PP_KB_K%d", (int)(kshift+ik+1)) ;  // fix be for abinit
+        sprintf(temp_str, "PP_KB_K%d", (int)(ik+1)) ;  // fix be for abinit
         int varid_temp;
         if ((retval = nc_inq_varid(ppid, temp_str, &varid_temp))) ERR(retval); // get the varible id of the file
         // collective IO
@@ -476,7 +460,6 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commK, MPI_Comm commQ, \
     alloc_and_Compute_f_Coeff(lattice, pseudo); 
 
     /* Read upf data */
-
     /* First get the pseudo pots order */
     ND_int * pseudo_order = malloc(sizeof(ND_int)*pseudo->ntype);
 
@@ -538,7 +521,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commK, MPI_Comm commQ, \
     }
 
     pseudo->ngrid_max = find_maxint(pseudo_order,pseudo->ntype );
-    pseudo->np_max = find_maxfloat(nGmax, nibz) ; // find the max number of pws i.e max(nGmax)
+    lattice->npw_max  = find_maxfloat(nGmax, nibz) ; // find the max number of pws i.e max(nGmax)
 
     // free all buffers
     free(pseudo_order);
@@ -586,6 +569,8 @@ void free_save_data(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo *
     free(lattice->atom_type);
 
 }
+
+
 
 
 

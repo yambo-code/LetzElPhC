@@ -55,30 +55,25 @@ void elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     /*
     First we get the wfcs.
     */
-    struct WFC wfc_kq, wfc_k; // Note these are allocated by 
-    // get_wfc_from_pool and must be freed in this function
 
-    /* create buffers which must be destroyed in the end */
-    ND_array(Nd_cmplxS) wfc_tempkq, wfc_tempk;
-    ND_array(Nd_floatS) gvec_tempkq, gvec_tempk;
-    ND_array(Nd_floatS) Fk_tempkq, Fk_tempk;
-    wfc_kq.wfc = &wfc_tempkq;
-    wfc_k.wfc = &wfc_tempk;
+    ND_array(Nd_cmplxS) wfc_K[1], wfc_Kp[1];
+    ND_array(Nd_floatS)* GvecK[1], GvecKp[1];
 
-    wfc_kq.gvec = &gvec_tempkq;
-    wfc_k.gvec = &gvec_tempk;
 
-    wfc_kq.Fk = &Fk_tempkq;
-    wfc_k.Fk = &Fk_tempk;
-
-    /* Now get the wfcs for k+q and k */
-    get_wfc_from_pool(wfcs, ikq, lattice->kpt_iredBZ->dims[0], commK, commQ, &wfc_kq);
-    
-    get_wfc_from_pool(wfcs, ik, lattice->kpt_iredBZ->dims[0], commK, commQ, &wfc_k);
-    
     /*initialization and setup */
-    ND_array(Nd_cmplxS) * wfc_K  = wfc_kq.wfc ; 
-    ND_array(Nd_cmplxS) * wfc_Kp = wfc_k.wfc ; 
+    ND_function(init,Nd_cmplxS)(wfc_K, (wfcs+ikq)->wfc->rank[0],  (wfcs+ikq)->wfc->dims);
+    ND_function(init,Nd_cmplxS)(wfc_Kp,(wfcs+ik)->wfc->rank[0],(wfcs+ik)->wfc->dims);
+    ND_function(malloc,Nd_cmplxS)(wfc_K);
+    ND_function(malloc,Nd_cmplxS)(wfc_Kp);
+
+    ND_function(init,Nd_floatS)(GvecK,  (wfcs+ikq)->gvec->rank[0], (wfcs+ikq)->gvec->dims);
+    ND_function(init,Nd_floatS)(GvecKp, (wfcs+ik)->gvec->rank[0] ,   (wfcs+ik)->gvec->dims);
+    ND_function(malloc,Nd_floatS)(GvecK);
+    ND_function(malloc,Nd_floatS)(GvecKp);
+
+
+    ND_array(Nd_floatS)* FK  = (wfcs+ikq)->Fk;
+    ND_array(Nd_floatS)* FKp = (wfcs+ik)->Fk;
     
     //printf("Debug-%d \n",1);
     ELPH_float * Kvec  = ND_function(ele,Nd_floatS)(lattice->kpt_iredBZ, nd_idx{ikq,0});
@@ -93,12 +88,6 @@ void elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     
     const ELPH_float * tauK  = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{kqsym,0});
     const ELPH_float * tauKp = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{ksym,0});
-    
-    ND_array(Nd_floatS)* FK  = wfc_kq.Fk;
-    ND_array(Nd_floatS)* FKp = wfc_k.Fk;
-    
-    ND_array(Nd_floatS)* GvecK  = wfc_kq.gvec;
-    ND_array(Nd_floatS)* GvecKp = wfc_k.gvec;
     
     ELPH_float * SymK  = ND_function(ele,Nd_floatS)(lattice->sym_mat, nd_idx{kqsym,0,0}) ;
     ELPH_float * SymKp = ND_function(ele,Nd_floatS)(lattice->sym_mat, nd_idx{ksym,0,0}) ;
@@ -405,12 +394,11 @@ void elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     free(YlmKp);
 
     /*free wfc buffers */
-    ND_function(destroy,Nd_cmplxS)(&wfc_tempkq);
-    ND_function(destroy,Nd_cmplxS)(&wfc_tempk);
-    ND_function(destroy,Nd_floatS)(&gvec_tempkq);
-    ND_function(destroy,Nd_floatS)(&gvec_tempk);
-    ND_function(destroy,Nd_floatS)(&Fk_tempkq);
-    ND_function(destroy,Nd_floatS)(&Fk_tempk);
+    ND_function(destroy,Nd_cmplxS)(wfc_K);
+    ND_function(destroy,Nd_cmplxS)(wfc_Kp);
+    ND_function(destroy,Nd_floatS)(GvecK);
+    ND_function(destroy,Nd_floatS)(GvecKp);
+
 
 } // end of function
 
