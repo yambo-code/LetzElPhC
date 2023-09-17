@@ -4,7 +4,7 @@ Only Local part, grids , valance electron info are read rest are available in ya
 */
 
 #include "ezxml/ezxml.h"
-#include "internal_functions.h"
+#include "io.h"
 
 
 static void parse_floats_from_string(char * str,  ND_int nparse, ELPH_float * out);

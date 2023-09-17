@@ -1,10 +1,6 @@
 /* This function reads all the lattice, pseudo and wfcs data from SAVE DIR */
 
-#include "internal_functions.h"
-#include <netcdf.h>
-#include <netcdf_par.h>
-
-#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);}
+#include "io.h"
 
 
 /*static functions */
@@ -22,7 +18,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ELPH_cmplx * out_wfc, MPI_Comm comm)
 
 /* Function body */
-void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commK, MPI_Comm commQ, \
+void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
                 ND_int start_band, ND_int end_band, struct WFC ** wfcs,char * pseudo_dir, \
                 char ** pseudo_pots, struct Lattice * lattice, struct Pseudo * pseudo, \
                 const ND_int * FFT_dims)

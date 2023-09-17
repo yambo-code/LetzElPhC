@@ -9,6 +9,8 @@
 #include <mpi.h>
 #include "common/omp_pragma_def.h"
 #include <fftw3.h>
+#include <netcdf.h>
+#include <netcdf_par.h>
 
 
 

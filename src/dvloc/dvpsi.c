@@ -57,3 +57,5 @@ void dvpsi(const ND_int nmag, const ND_int nspinor, const ND_int nFFT,
     else error_msg("nmag != 4. only npsin = 1 or 2 and noncolin =.true. supported ");
 
 }
+
+
