@@ -44,9 +44,9 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
     ND_int nsets     = wfcG->dims[0]*wfcG->dims[1]*wfcG->dims[2]; 
     // total number of sets of p.ws i.e nspin*nbnd*nspinor
     
-    const ND_int * FFT_dims = wfcRspace->FFTBuf.dims+1;
+    const ND_int * FFT_dims = wfcRspace->FFT_dimensions;
 
-    ND_int nFFT      = wfcRspace->FFTBuf.strides[0]; 
+    ND_int nFFT      = FFT_dims[0]*FFT_dims[1]*FFT_dims[2]; 
     // product of fft dimensions
 
     ELPH_float G0[3] = {-ulmvec[0],-ulmvec[1],-ulmvec[2]};
@@ -88,10 +88,10 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
     /** cross check if number of sets in this cpu and plane waves are consistant with inputs */
     int nset_inthis_cpu = nset_per_cpu;
     if (my_rank < nset_rem) ++nset_inthis_cpu;
-    if (nset_inthis_cpu != wfcRspace->FFTBuf.dims[0]) error_msg("Inconsistant plane waves per code.");
+
     int temp_pw = pw_per_core;
     if (my_rank < pw_rem) ++temp_pw ;
-    if (temp_pw != loc_pw) error_msg("Inconsistant plane waves per code.");
+
 
     int disp_rectemp = 0;
     for (ND_int i = 0 ; i<Comm_size; ++i)
@@ -199,10 +199,7 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
 
     int nffts_inthis_cpu = nffts_per_core;
     if (my_rank < nffts_rem) ++nffts_inthis_cpu;
-    /*
-    cross check this with the inputs FIX ME 
-    */
-    if (nffts_inthis_cpu != wfcRspace->Buffer.dims[3]) error_msg("wrong FFTs in cpus");
+
 
     for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
     for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 

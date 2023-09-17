@@ -1,9 +1,9 @@
 #include "dvloc.h"
 
 /* Compute the electron phonon matrix elements i.e sandwich for Local part of KS potential */
-static void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * lattice, \
+void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * lattice, \
                 int ikq, int ik, int kqsym, int ksym, ND_array(Nd_cmplxS) * dVlocr, \
-                MPI_Comm commK, MPI_Comm commQ,  struct wfcBox * wfcRspace, ELPH_cmplx * elph_kq)
+                MPI_Comm commK, struct wfcBox * wfcRspace, ELPH_cmplx * elph_kq)
 {
     /* Computes <S2*k2 | dV_{q}local | S1*k1>
     Note that the inputs kvectors must full the following condition S2*k2 = S1*k1 + q + ulmveckq

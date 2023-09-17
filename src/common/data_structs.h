@@ -128,6 +128,8 @@ struct wfcBox
     ELPH_float * Gvecs_loc ; // local Gvecs buffers (npw_total_max/Comm + 1, 3)
     
     int * comm_buffer; // 4*Comm_size
+
+    ND_int FFT_dimensions[3];
     /*
     The use of the above two Gvec buffers and comm_buffer is we avoid repeative malloc calls 
     */

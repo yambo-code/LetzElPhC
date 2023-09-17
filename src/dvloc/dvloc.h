@@ -1,3 +1,4 @@
+#pragma once
 #include "../elphC.h"
 #include "../common/data_structs.h"
 #include "../wfc/wfc.h"
@@ -20,4 +21,10 @@ void dvpsi(const ND_int nmag, const ND_int nspinor, const ND_int nFFT,
 
 void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc); 
 
+
+void VlocinVFFT(ND_array(Nd_cmplxS) * VlocPot, struct Lattice * lattice, MPI_Comm mpi_comm);
+
+
+void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \
+            ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * Vlocr, MPI_Comm commK);
 

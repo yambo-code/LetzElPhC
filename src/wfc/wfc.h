@@ -23,3 +23,7 @@ void sphere2box(const ELPH_cmplx * restrict wfcGsphere , const ND_int nsets, \
 void get_wfc_from_pool(struct WFC * wfcs, ND_int ik, ND_int niBZ_tot, \
             MPI_Comm commK, MPI_Comm commQ, struct WFC * wfc_out);
 
+void alloc_wfcBox(struct wfcBox * buffer, const ND_int * dimensions, \
+                const ND_int npw_max_total, unsigned flag, MPI_Comm mpi_comm);
+
+void free_wfcBox(struct wfcBox * buffer);

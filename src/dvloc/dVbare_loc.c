@@ -4,26 +4,27 @@ static ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension);
 
 
 void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \
-            ,ND_array(Nd_cmplxS) * VlocG)
+            ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * Vlocr, MPI_Comm commK)
 {   
     /* 
     Computes the change in local bare potential on reciprocal fft grid. the output must 
     be fourier transformed
     
     Input 
-    qpt      : q-point in crystal coordinates
-    atom_pos : atomic positions in cart coordinates
-    nDim     : '3','2','1' for 3D, 2D, 1D cutoffs
+    qpt       : q-point in crystal coordinates
+    atom_pos  : atomic positions in cart coordinates
+    nDim      : '3','2','1' for 3D, 2D, 1D cutoffs
     Vloc_atomic :   Local potential of eqch atom in radial grid.
                     Note this is read from pseudo potentials and is 
                     array of ND_arrays (ntype) arrays of (radial grid)
-    rab_grid : drab (read from pseudos). used for integration. (ntype)
-    Zval     : (ntype) array of valance charge
+    rab_grid  : drab (read from pseudos). used for integration. (ntype)
+    Zval      : (ntype) array of valance charge
+    eigVec    : eigen vectors , (nu,atom,3)
     atom_type : atomic type array (natom) for ex: Zval[atom_type[i]] gives
                 atomic number of atom i
     Out-put:
-            VlocG
-            d Vloc(G)/dtau (in cart) (Nx, Ny, Nz, atom, 3), 
+            Vlocr
+            d Vloc/dtau (in cart) (nmode,nffts_this_cpu), 
     */
 
     const ND_array(Nd_floatS)* latvec       = lattice->alat_vec;
@@ -37,7 +38,11 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     const ND_int ngrid_max                  = pseudo->ngrid_max;
     const ELPH_float * Zval                 = pseudo->Zval;
 
-    ND_function(set_all, Nd_cmplxS)(VlocG , 0.0);
+    ND_int size_Vr      = ND_function(size, Nd_cmplxS) (Vlocr);
+    ELPH_cmplx *  VlocG = malloc(sizeof(ELPH_cmplx)*size_Vr);
+
+    ND_function(set_all, Nd_cmplxS)(Vlocr , 0.0);
+    for (ND_int ig = 0; ig < size_Vr; ++ig) VlocG[ig] = 0.0 ;
     
     ND_int natom = atom_pos->dims[0];
     
@@ -82,7 +87,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
         ELPH_float qGnorm = sqrt(qGtempCart[0]*qGtempCart[0] + \
                             qGtempCart[1]*qGtempCart[1] + qGtempCart[2]*qGtempCart[2]);
                             
-        ELPH_cmplx * tmp_ptr =  VlocG->data + 3*natom*ifft; 
+        ELPH_cmplx * tmp_ptr =  VlocG + 3*natom*ifft; 
 
         ELPH_float cutoff_fac = 1;
         /* using analytic cutoff which works only when z periodicity is broken */
@@ -114,6 +119,20 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     ELPH_OMP_PAR_CRITICAL
     free(work_array);
     }
+    //VlocG -> (nffs,atom,3), 
+    // get it in mode basis @ (nu,atom,3) @(nffs,atom,3)^T
+    ND_int ldA_eigVec = eigVec->strides[0]; //
+    ND_int nmodes_ph  = eigVec->dims[0];
+    ND_int nfft_dim   = lattice->nffts_loc ;
+
+    ND_function(matmulX, Nd_cmplxS) ('N', 'T', eigVec->data, VlocG, Vlocr->data, \
+        1.0, 0.0, ldA_eigVec, ldA_eigVec, nfft_dim, nmodes_ph, nfft_dim, ldA_eigVec);
+    
+    // free some buffers
+    free(VlocG);
+    
+    // perform the inv FFT
+    VlocinVFFT(Vlocr, lattice, commK);
 
 }
 

@@ -2,7 +2,7 @@
 This routine computes the non local part to 
 bare electron-phonon mat elements.
 */
-#include "internal_functions.h"
+#include "Vnonloc.h"
 
 /*
 **** Yambo stores <K|X^a_{lm}>sqrt(E_l) with out spherical harmonics i.e P^a_l(K) = Sqrt(|E_l|)*F^a_l(K)
@@ -11,14 +11,12 @@ bare electron-phonon mat elements.
 
 */
 
-#define BLAS_BLOCKING_LEN_DEFAULT 512
-
 
 /*********** Function bodies ************/
 
-void elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, int ikq, int ik, \
-                int kqsym, int ksym, const bool trivial_phase, ND_array(Nd_cmplxS) * eigVec, \
-                ELPH_cmplx * elph_kq_mn, MPI_Comm commK, MPI_Comm commQ)
+void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, \
+                    int ikq, int ik, int kqsym, int ksym,  ND_array(Nd_cmplxS) * eigVec, \
+                    ELPH_cmplx * elph_kq_mn, MPI_Comm commK)
 {
     /*
     Compute <psi_K| dV_nl/dtau |psi_K'> 
