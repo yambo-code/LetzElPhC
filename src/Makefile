@@ -15,14 +15,16 @@ NETCDF_LIB 	 :=  -L/Users/murali/softwares/core/lib -lnetcdf
 HDF5_LIB         :=  -L/opt/homebrew/lib  -lhdf5
 
 
-SUBDIR = nonloc io common dvloc elph wfc
+SUBDIR = nonloc io/ezxml io common dvloc elph wfc symmetries
+ND_ARR_LIB = -L./nd_array/src -lnd_array
+
 
 INCS = $(wildcard *.h $(foreach fd, $(SUBDIR), $(fd)/*.h))
 SRCS = $(wildcard *.c $(foreach fd, $(SUBDIR), $(fd)/*.c))
 OBJS = $(addprefix ./, $(SRCS:c=o)) 
 
 INC_DIRS = $(FFTW_INC) $(BLAS_INC) $(NETCDF_INC)
-LIBS     = $(FFTW3_LIB) $(BLAS_LIB) $(NETCDF_LIB) $(HDF5_LIB) -lm
+LIBS     = $(ND_ARR_LIB) $(FFTW3_LIB) $(BLAS_LIB) $(NETCDF_LIB) $(HDF5_LIB) -lm
 
 
 PHONY := $(TARGET)
