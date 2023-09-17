@@ -1,18 +1,18 @@
-TARGET 		 := elphc
+TARGET 		 :=  elphc
 
-CC           := mpicc
-CFLAGS       := -O3 #-march=native
-OPENMP_FLAGS := #-DELPH_OMP_PARALLEL_BUILD
+CC               :=  mpicc
+CFLAGS           :=  -O3 #-march=native
+OPENMP_FLAGS     :=  #-DELPH_OMP_PARALLEL_BUILD
 
 FFTW_INC 	 :=  -I/opt/homebrew/include 
-FFTW3_LIB    :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
+FFTW3_LIB        :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
 
 BLAS_INC 	 :=  -I/opt/homebrew/Cellar/openblas/0.3.23/include 
 BLAS_LIB 	 :=  -L/opt/homebrew/Cellar/openblas/0.3.23/lib -lopenblas 
 
-NETCDF_INC   :=  -I/Users/murali/softwares/core/include 
+NETCDF_INC       :=  -I/Users/murali/softwares/core/include 
 NETCDF_LIB 	 :=  -L/Users/murali/softwares/core/lib -lnetcdf
-HDF5_LIB     :=   -L/opt/homebrew/lib  -lhdf5
+HDF5_LIB         :=  -L/opt/homebrew/lib  -lhdf5
 
 
 SUBDIR = nonloc io common dvloc elph wfc
