@@ -18,7 +18,7 @@ void get_FFT_dims(char * file_name, ND_int * nq, ND_int * fft_dims)
 
         if ((retval = nc_open(file_name, NC_NOWRITE, &ncid))) ERR(retval); // open file
 
-        /*read fft dims */
+        /* read fft dims */
         if ((retval = nc_inq_varid(ncid, "fft_dims", &varid))) ERR(retval); // get the varible id of the file
         if ((retval = nc_get_var(ncid, varid, Nfft))) ERR(retval); //get data in floats
         /* read number of q qpoints */
@@ -32,7 +32,7 @@ void get_FFT_dims(char * file_name, ND_int * nq, ND_int * fft_dims)
     MPI_Bcast(Nfft,   3, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&nqpts, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    nq          = nqpts;
+    *nq         = nqpts;
     fft_dims[0] = Nfft[0];
     fft_dims[1] = Nfft[1];
     fft_dims[2] = Nfft[2];

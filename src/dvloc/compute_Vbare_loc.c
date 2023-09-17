@@ -164,7 +164,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         }
         /***/
         // get back to G space 
-        wfcFFT(wfcRspace, Imat3, zero_temp, zero3, false, lat_vec, npwkq_total, Gkq, &dVpsiG, commK);
+        wfcFFT(wfcRspace, Imat3, zero_temp, zero3, false, lat_vec, npwkq_total, Gkq, dVpsiG, commK);
         // Compute the sandwich
         char blas_char = 'C';
         if (timerevkq) blas_char = 'T'; // we perform the time reversal conjugation (if any) here now
@@ -173,9 +173,9 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         {   /* msg, nsg -> mn */
             // FIX ME donot forget time reversal here. // wfc_kq->data
             // elph_kq_mn+ (iv*nspin+is)*nbndsk*nbndskq
-            ND_function(matmulX, Nd_cmplxS) ('N', blas_char, dVpsiG.data + is*(dVpsiG.strides[0]), \
-            wfc_kq->data + is*(wfc_kq->strides[0]), elph_kq_mn , 1.0, 0.0, dVpsiG.strides[1], \
-            wfc_kq->strides[1], nbndskq, nbndsk, nbndskq, dVpsiG.strides[1]);
+            ND_function(matmulX, Nd_cmplxS) ('N', blas_char, dVpsiG->data + is*(dVpsiG->strides[0]), \
+            wfc_kq->data + is*(wfc_kq->strides[0]), elph_kq_mn , 1.0, 0.0, dVpsiG->strides[1], \
+            wfc_kq->strides[1], nbndskq, nbndsk, nbndskq, dVpsiG->strides[1]);
             // reduce the electron phonon matrix elements
             ELPH_cmplx * elph_sum_buf ;
             ELPH_cmplx temp_sum = 0 ; // dummy

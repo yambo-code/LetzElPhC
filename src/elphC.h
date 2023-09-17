@@ -5,12 +5,15 @@
 #include <complex.h>
 #include <math.h>
 #include "nd_array/src/nd_array.h"
-#include <omp.h>
 #include <mpi.h>
 #include "common/omp_pragma_def.h"
 #include <fftw3.h>
 #include <netcdf.h>
 #include <netcdf_par.h>
+#include <limits.h>
+#if defined(ELPH_OMP_PARALLEL_BUILD)
+    #include <omp.h>
+#endif
 
 
 

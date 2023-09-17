@@ -71,7 +71,7 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     for (ND_int ii =0 ; ii <k_in_this_color; ++ii )
     {   
         /* compute the global k index */
-        ND_int i  = kcolor*nk_per_color
+        ND_int i  = kcolor*nk_per_color;
         if (kcolor < k_rem) i += kcolor;
         else                i += k_rem;
         i += ii;
@@ -82,7 +82,7 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
         
         ELPH_cmplx * elph_kq_mn = elph_kq + i*elph_kstride ;
         
-        elphLocal(qpt, wfcs, lattices, ikq, ik, kqsym, ksym, dVscfq, commK, wfcRspace, elph_kq_mn);
+        elphLocal(qpt, wfcs, lattice, ikq, ik, kqsym, ksym, dVscfq, commK, wfcRspace, elph_kq_mn);
         /* add the non local part elements */
         add_elphNonLocal(wfcs, lattice, pseudo, ikq, ik, kqsym, ksym, eigVec, elph_kq_mn, commK);
     }

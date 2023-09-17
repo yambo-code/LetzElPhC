@@ -3,7 +3,7 @@
 #include "../common/numerical_func.h"
 #include "../common/data_structs.h"
 #include "../common/parallel.h"
-
+#include "../nonloc/fcoeff.h"
 
 #define ERR(e) {printf("Error: %s\n", nc_strerror(e)); MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);}
 

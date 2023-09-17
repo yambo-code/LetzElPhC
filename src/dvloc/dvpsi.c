@@ -20,8 +20,8 @@ void dvpsi(const ND_int nmag, const ND_int nspinor, const ND_int nFFT,
     {
         for (ND_int is = 0; is<nspinor ; ++is)
         {   
-            ELPH_cmplx * restrict tmp_psi = psi_r     + is*nFFT ;
-            ELPH_cmplx * restrict tmp_out = dVpsi_out + is*nFFT ;
+            const ELPH_cmplx * restrict tmp_psi = psi_r     + is*nFFT ;
+            ELPH_cmplx * restrict       tmp_out = dVpsi_out + is*nFFT ;
             //"xyz,sxyz->sxyz"
             
             ELPH_OMP_PAR_SIMD
@@ -34,8 +34,8 @@ void dvpsi(const ND_int nmag, const ND_int nspinor, const ND_int nFFT,
         
         /* Hard coded for nspinor == 2*/
         //"rsxyz,sxyz->rxyz"
-        ELPH_cmplx * restrict psir0    = psi_r ;
-        ELPH_cmplx * restrict psir1    = psi_r + nFFT  ;
+        const ELPH_cmplx * restrict psir0    = psi_r ;
+        const ELPH_cmplx * restrict psir1    = psi_r + nFFT  ;
 
         ELPH_cmplx * restrict dVpsir0  = dVpsi_out ;
         ELPH_cmplx * restrict dVpsir1  = dVpsi_out + nFFT  ;
@@ -57,5 +57,4 @@ void dvpsi(const ND_int nmag, const ND_int nspinor, const ND_int nFFT,
     else error_msg("nmag != 4. only npsin = 1 or 2 and noncolin =.true. supported ");
 
 }
-
 

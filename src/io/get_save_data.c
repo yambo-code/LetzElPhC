@@ -15,7 +15,7 @@ static void quick_read_sub(const int ncid, char* var_name, const size_t * startp
 static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ND_int nspin, ND_int nspinor, ND_int start_band, ND_int nbnds, \
             ND_int nG, ND_int G_shift, const char * save_dir, char * work_array, \
-            ELPH_cmplx * out_wfc, MPI_Comm comm)
+            ELPH_cmplx * out_wfc, MPI_Comm comm);
 
 /* Function body */
 void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
@@ -77,7 +77,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     if (krank < nffts_rem) lattice->nfft_shift_loc += krank;
     else                   lattice->nfft_shift_loc += nffts_rem;
 
-    int dbid, ppid, tempid; // file ids for ns.db1 , pp_pwscf*
+    int dbid, ppid, tempid, retval; // file ids for ns.db1 , pp_pwscf*
 
     char * temp_str = malloc(sizeof(char) * (strlen(pseudo_dir) + strlen(SAVEdir) + 100));
 
@@ -391,7 +391,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         ND_function(malloc,Nd_cmplxS)((wfc_temp+ik)->wfc);
 
         get_wfc_from_save((wfc_temp+ik)->wfc->strides[0], ik, nibz, \
-        lattice->nspin, lattice->nspinor, lattice->start_band, \ 
+        lattice->nspin, lattice->nspinor, lattice->start_band, \
         lattice->nbnds, pw_this_cpu,G_shift, SAVEdir, temp_str, \
         (wfc_temp+ik)->wfc->data, commK);
 
@@ -400,7 +400,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         ND_function(init,Nd_floatS)((wfc_temp+ik)->Fk, 0, NULL); 
         sprintf(temp_str, "%s/ns.kb_pp_pwscf_fragment_%d", SAVEdir, (int)(ik+1) ) ;  // fix it for abinit 
         /* Abinit has a aditional spin dimension instead of 2*n projectors */
-        if ((retval = nc_open_par(temp_str, NC_NOWRITE, comm, MPI_INFO_NULL, &ppid))) ERR(retval);
+        if ((retval = nc_open_par(temp_str, NC_NOWRITE, commK, MPI_INFO_NULL, &ppid))) ERR(retval);
         sprintf(temp_str, "PP_KB_K%d", (int)(ik+1)) ;  // fix be for abinit
         int varid_temp;
         if ((retval = nc_inq_varid(ppid, temp_str, &varid_temp))) ERR(retval); // get the varible id of the file
@@ -533,8 +533,7 @@ void free_save_data(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo *
     /* free fCoeff*/
     free_f_Coeff(lattice, pseudo); // NOTE this function must be called before freeing PP_table
 
-    ND_int nkiBZ = lattice->nk_loc;
-
+    ND_int nkiBZ = lattice->kpt_iredBZ->dims[0];
     /* Free wavefunctions */
     for (ND_int ik =0 ; ik<nkiBZ; ++ik)
     {
@@ -606,7 +605,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ND_int nG, ND_int G_shift, const char * save_dir, char * work_array, \
             ELPH_cmplx * out_wfc, MPI_Comm comm)
 {   
-    int wfID ;
+    int wfID, retval ;
     // NO OPENMP !! , Not thread safe
     for (ND_int is = 0; is<nspin; ++is)
     {   

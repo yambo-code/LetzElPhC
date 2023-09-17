@@ -31,7 +31,7 @@ void box2sphere(const ELPH_cmplx * restrict wfcGbox, const ND_int nsets, \
         {   
             int Nx, Ny, Nz;
             /* get the plane wave*/
-            ELPH_float * Gvec_temp = Gvec_crys + 3*ipw ;
+            const ELPH_float * Gvec_temp = Gvec_crys + 3*ipw ;
             
             /* convert to FFT index i.e [-N/2,N/2) to [0,N)*/
             Nx = get_fft_idx(Gvec_temp[0], FFT_dims[0]); 

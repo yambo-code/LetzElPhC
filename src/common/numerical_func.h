@@ -31,6 +31,8 @@ void aXpY(const ND_int n, const ELPH_cmplx a, const ELPH_cmplx * restrict X, ELP
 void transpose3x3f(const ELPH_float * restrict inmat, ELPH_float * restrict outmat);
 ND_int find_maxint(ND_int * in_arr, ND_int nelements);
 ELPH_float find_maxfloat(ELPH_float * in_arr, ND_int nelements);
-
+void Gemm3x3f(const ELPH_float * restrict A, const char transA, \
+                const ELPH_float * restrict B,  const char transB, \
+                ELPH_float * restrict C);
 
 

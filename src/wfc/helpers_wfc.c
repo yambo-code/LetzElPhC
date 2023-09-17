@@ -44,16 +44,16 @@ void rotateGvecs(const ELPH_float * Gvecs, const ELPH_float * sym, const ND_int 
     G@S^T@lat_vec = G@(lat_vec^T@S)^T -> G_crys
     */
     
-    for (Nd_int i = 0; i<3*ngvecs; ++i) Gvec_out[i] = 0;
+    for (ND_int i = 0; i<3*ngvecs; ++i) Gvec_out[i] = 0;
 
     ELPH_float sym_temp[9] = {0,0,0,0,0,0,0,0,0};
-    ELPH_float Iden3x3[9] = {1,0,0,0,1,0,0,0,1};
+    const ELPH_float Iden3x3[9] = {1,0,0,0,1,0,0,0,1};
 
     char transsym = 'N';
     if (inverse) transsym = 'T';
 
-    ELPH_float * lat_temp = Iden3x3;
-    if (crystal) lat_temp = lat_vec;
+    const ELPH_float * lat_temp = Iden3x3;
+    if (crystal)       lat_temp = lat_vec;
 
     Gemm3x3f(lat_temp, 'T', sym,  transsym, sym_temp);
 
@@ -62,7 +62,7 @@ void rotateGvecs(const ELPH_float * Gvecs, const ELPH_float * sym, const ND_int 
     if (G0 != NULL)
     {   
         ELPH_OMP_PAR_FOR_SIMD
-        for (Nd_int i = 0; i <ngvecs; ++i)
+        for (ND_int i = 0; i <ngvecs; ++i)
         {
             Gvec_out[3*i]   += G0[0];
             Gvec_out[3*i+1] += G0[1];

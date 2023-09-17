@@ -20,15 +20,9 @@ void alloc_wfcBox(struct wfcBox * buffer, const ND_int * dimensions, \
     mpi_error = MPI_Comm_rank(mpi_comm, &my_rank);
 
     const ND_int * FFT_dims = dimensions+3;
-    memcpy(wfcRspace->FFT_dimensions,FFT_dims,sizeof(ND_int)*3);
+    memcpy(buffer->FFT_dimensions,FFT_dims,sizeof(ND_int)*3);
 
     ND_int nFFT = FFT_dims[0]*FFT_dims[1]*FFT_dims[2];
-
-    int mpi_error;
-    // get the total cpus in comm and rank of each cpu
-    int my_rank, Comm_size;
-    mpi_error = MPI_Comm_size(mpi_comm, &Comm_size);
-    mpi_error = MPI_Comm_rank(mpi_comm, &my_rank);
 
     ND_int nffts_per_core = nFFT/Comm_size;
     ND_int nffts_rem      = nFFT%Comm_size;
@@ -38,6 +32,9 @@ void alloc_wfcBox(struct wfcBox * buffer, const ND_int * dimensions, \
     */
     ND_int nffts_inthis_cpu = nffts_per_core;
     if (my_rank < nffts_rem) ++nffts_inthis_cpu;
+
+    ND_int nsets = dimensions[0]*dimensions[1]*dimensions[2]; 
+    // total number of sets of p.ws i.e nspin*nbnd*nspinor
 
     int nset_per_cpu = nsets/Comm_size; //
     int nset_rem     = nsets%Comm_size; // any remaining
@@ -85,8 +82,8 @@ void alloc_wfcBox(struct wfcBox * buffer, const ND_int * dimensions, \
     }
     else 
     {
-        buffer->fft_plan == NULL ;
-        buffer->inVfft_plan == NULL ;
+        buffer->fft_plan = NULL ;
+        buffer->inVfft_plan = NULL ;
     }
 
     buffer->BufGsphere = malloc(sizeof(ELPH_cmplx)*(nset_inthis_cpu*npw_max_total + 1));
@@ -110,8 +107,8 @@ void free_wfcBox(struct wfcBox * buffer)
     */
     free(buffer->comm_buffer);
     free(buffer->Gvecs);
-    free(buffer->Gvecs_loc)
-    free(buffer->BufGsphere)
+    free(buffer->Gvecs_loc);
+    free(buffer->BufGsphere);
     ND_function(destroy, Nd_cmplxS) (&(buffer->Buffer));
     ND_function(destroy, Nd_cmplxS) (&(buffer->Buffer_temp));
     ND_function(FFT_destroy, Nd_cmplxS) (&(buffer->FFTBuf));

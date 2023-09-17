@@ -5,7 +5,7 @@ given symmetry matrix
 #include "wfc.h"
 
 static void matmul_Cmpl2x2(ELPH_cmplx * restrict mat1, ELPH_cmplx * restrict mat2, \
-                            ELPH_cmplx * restrict out)
+                            ELPH_cmplx * restrict out);
 
 
 /* SU2 mat */

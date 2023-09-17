@@ -55,7 +55,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
     */
 
     ND_array(Nd_cmplxS) wfc_K[1], wfc_Kp[1];
-    ND_array(Nd_floatS)* GvecK[1], GvecKp[1];
+    ND_array(Nd_floatS) GvecK[1], GvecKp[1];
 
 
     /*initialization and setup */
@@ -116,7 +116,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         tempG[0] = Kvec[0]+ GPtr[0] ;
         tempG[1] = Kvec[1]+ GPtr[1] ;
         tempG[2] = Kvec[2]+ GPtr[2] ;
-        MatVec3f(SymK, tempG, invsymK, GPtr);
+        MatVec3f(SymK, tempG, false, GPtr);
     }
     // for K'  // Pragma omp for 
     ELPH_OMP_PAR_FOR_SIMD
@@ -127,7 +127,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         tempG[0] = Kpvec[0]+ GPtr[0] ;
         tempG[1] = Kpvec[1]+ GPtr[1] ;
         tempG[2] = Kpvec[2]+ GPtr[2] ;
-        MatVec3f(SymKp, tempG, invsymKp, GPtr);
+        MatVec3f(SymKp, tempG, false, GPtr);
     }
 
     /* ----------- */
@@ -162,7 +162,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
             ELPH_OMP_PAR_FOR_SIMD
             for (ND_int ipw = 0 ; ipw < npwKp; ++ipw )
             {   
-                ELPH_float * GrotPtr = GvecKp + 3*ipw ; 
+                ELPH_float * GrotPtr = GvecKp->data + 3*ipw ; 
                 YlmKptemp[ipw] = Ylm(il, m, GrotPtr);
             }
         }

@@ -31,7 +31,7 @@ $(TARGET): $(OBJS)
 	$(CC) -o $(OUTDIR)/$@ $(OBJS) $(LIBS)
 
 %.o: %.c $(INCS)
-	$(CC) $(CFLAGS) -c $< $(INC_DIRS) $(OPENMP_FLAGS)
+	$(CC) $(CFLAGS) -c $< $(INC_DIRS) $(OPENMP_FLAGS) -o $@
 
 PHONY += clean
 clean:

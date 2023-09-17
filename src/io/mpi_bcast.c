@@ -4,7 +4,12 @@
 
 // float
 void Bcast_ND_arrayFloat(ND_array(Nd_floatS) * array_in, bool alloc_mem, int root, MPI_Comm comm)
-{
+{   
+    
+    int my_rank, comm_size, mpi_error;
+    MPI_Comm_rank(comm, &my_rank);
+    MPI_Comm_size(comm, &comm_size);
+
     if (alloc_mem)
     {
         ND_int dims[24];
@@ -12,11 +17,6 @@ void Bcast_ND_arrayFloat(ND_array(Nd_floatS) * array_in, bool alloc_mem, int roo
 
         ND_int * dim_ptr;
         ND_int * rank_ptr;
-
-        int my_rank, comm_size, mpi_error;
-
-        MPI_Comm_rank(comm, &my_rank);
-        MPI_Comm_size(comm, &comm_size);
 
         if (my_rank == root)
         {
@@ -70,7 +70,11 @@ void Bcast_ND_arrayFloat(ND_array(Nd_floatS) * array_in, bool alloc_mem, int roo
 
 // complex
 void Bcast_ND_arrayCmplx(ND_array(Nd_cmplxS) * array_in, bool alloc_mem, int root, MPI_Comm comm)
-{
+{   
+    int my_rank, comm_size, mpi_error;
+    MPI_Comm_rank(comm, &my_rank);
+    MPI_Comm_size(comm, &comm_size);
+
     if (alloc_mem)
     {
         ND_int dims[24];
@@ -78,11 +82,6 @@ void Bcast_ND_arrayCmplx(ND_array(Nd_cmplxS) * array_in, bool alloc_mem, int roo
 
         ND_int * dim_ptr;
         ND_int * rank_ptr;
-
-        int my_rank, comm_size, mpi_error;
-
-        MPI_Comm_rank(comm, &my_rank);
-        MPI_Comm_size(comm, &comm_size);
 
         if (my_rank == root)
         {
@@ -144,6 +143,7 @@ void Bcast_wfc(struct WFC * wfc, bool alloc_mem, int root, MPI_Comm comm)
     //Fk
     Bcast_ND_arrayFloat(wfc->Fk, alloc_mem, root, comm);
 
+    int mpi_error;
     // npw_total
     mpi_error = MPI_Bcast(&(wfc->npw_total), 1, ELPH_MPI_ND_INT, root, comm );
     //npw_loc
