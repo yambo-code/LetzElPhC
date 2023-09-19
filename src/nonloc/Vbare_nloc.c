@@ -70,6 +70,14 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
     ND_function(malloc,Nd_floatS)(GvecKp);
 
 
+    // copy wavefunctions
+    ND_function(copy, Nd_cmplxS) ((wfcs+ikq)->wfc, wfc_K);
+    ND_function(copy, Nd_cmplxS) ((wfcs+ik)->wfc, wfc_Kp);
+    // copy gvecs
+    ND_function(copy, Nd_floatS) ((wfcs+ikq)->gvec, GvecK);
+    ND_function(copy, Nd_floatS) ((wfcs+ik)->gvec, GvecKp);
+
+
     ND_array(Nd_floatS)* FK  = (wfcs+ikq)->Fk;
     ND_array(Nd_floatS)* FKp = (wfcs+ik)->Fk;
     
@@ -292,7 +300,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         if (timerevK)  blasK  = 'T';
         if (timerevKp) blasKp = 'C';
 
-        /* matmul with wfcs to get betas*/
+        /* matmul with wfcs to get betas*/ 
         // (4, nspin*nbndK*nspinor);  (lj,4,pw)@(nspin,nbnd,spinor,npw)->(lj,4,nspin,nbnd,spinor)
         ND_function(matmulX, Nd_cmplxS) ('N', blasK, betaK, wfc_K->data , bandbufferK, \
                     1.0, 0.0, npwK, npwK, nspin*nspinor*nbndK, 4*idxK, nspin*nspinor*nbndK, npwK);
@@ -309,13 +317,13 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         // this generally doesn't overflow. but better to check
         if (reduce_count > max_int_val) error_msg("int overflow in MPI_reduce function");
         
-        
         if (krank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
         else mpi_error = MPI_Reduce(bandbufferKp, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
 
         if (krank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
         else mpi_error = MPI_Reduce(bandbufferK, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
 
+        
         // now reduce bandbufferK and bandbufferKp i.e perform the sum
         //commK
 

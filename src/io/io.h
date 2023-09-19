@@ -25,9 +25,11 @@ void parse_upf2(const char * filename, ELPH_float * Zval, ND_array(Nd_floatS)* V
                 ND_array(Nd_floatS)* r_grid, ND_array(Nd_floatS)* rab_grid);
 void get_upf_element(const char * filename, char* atomic_sym);
 
-void get_FFT_dims(char * file_name, ND_int * nq, ND_int * fft_dims);
-void read_dvscfq(char * file_name, ND_array(Nd_cmplxS) * eigVec,  \
-                ND_array(Nd_cmplxS) *dVscf, ND_int iq, MPI_Comm commK);
+void get_FFT_dims(const char * file_name, ND_int * nq, ND_int * fft_dims);
+
+void read_dvscfq(const char * file_name, ND_array(Nd_cmplxS) * eigVec,  \
+                struct Lattice * lattice, ND_array(Nd_cmplxS) *dVscf, \
+                ND_int iq, MPI_Comm commK);
 
 
 

@@ -9,7 +9,6 @@ void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc)
 {   
     /*
     This function adds dVloc is added to dVscf.
-    
     dVscf_{2x2} = d{V}*I + d{Bx}*sigma_x + d{By}*sigma_y + dBz}*sigma_z
                     =   | d{V} + d{Bz}         d{Bx} - I*d{By} |
                         | d{Bx}+ I*d{By}       d{V} - d{Bz}    |

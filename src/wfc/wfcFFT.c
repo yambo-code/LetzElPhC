@@ -103,6 +103,8 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
         counts_recv[i] = pw_per_core;
         if (i < pw_rem) ++counts_recv[i]; 
 
+        counts_recv[i] *= 3;
+
         displacements_recv[i] = disp_rectemp;
         disp_rectemp += counts_recv[i];
     }
@@ -180,11 +182,6 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
     
     /* Now every cpu has nset_per_cpu + 0/1 wfcs. we do a fft */
 
-    ND_int nspinor = wfcG->dims[2];
-    ELPH_cmplx su2mat[4];
-
-    SU2mat(sym, nspinor, false, tim_rev, su2mat);
-
     if (nset_inthis_cpu != 0 )
     {   
         ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->fft_plan);
@@ -196,14 +193,7 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
 
         /* box2sphere */
         box2sphere(wfc_fft_loc, nset_inthis_cpu, \
-                Gvecs_loc, npw_total, FFT_dims, wfc_pw_loc);
-
-        su2rotate(nspinor, npw_total, nset_inthis_cpu, su2mat, wfc_pw_loc);
-
-        if (tim_rev)
-        {
-            for (ND_int i = 0; i<nset_inthis_cpu*npw_total; ++i) wfc_pw_loc[i] = conj(wfc_pw_loc[i]);
-        }
+                Gtemp, npw_total, FFT_dims, wfc_pw_loc);
     }
 
 
@@ -269,6 +259,25 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
         mpi_error = MPI_Alltoallv(wfc_pw_loc + input_shift, counts_send, \
                     displacements_send, ELPH_MPI_cmplx, wfc_pw_in + out_shift, \
                     counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
+    }
+
+
+    /*
+    Now rotate the wfcs in spin space
+    */
+    ND_int nspinor = wfcG->dims[2];
+    ELPH_cmplx su2mat[4];
+
+    SU2mat(sym, nspinor, false, tim_rev, su2mat);
+
+    su2rotate(nspinor, loc_pw, wfcG->dims[0]*wfcG->dims[1], su2mat, wfc_pw_in);
+    /*
+    conjugate in case of time reversal
+    */
+    if (tim_rev)
+    {   
+        ND_int size_wfc_in = ND_function(size, Nd_cmplxS) (wfcG);
+        for (ND_int i = 0; i<size_wfc_in; ++i) wfc_pw_in[i] = conj(wfc_pw_in[i]);
     }
 
 }

@@ -76,6 +76,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
         ND_int temp_rem = fft_glob_idx%fft_strides[0] ;
         ND_int Ny = temp_rem/fft_strides[1] ;
         ND_int Nz = temp_rem%fft_strides[1] ;
+        
 
         ELPH_float qGtemp[3] = {get_miller_idx(Nx,FFTx)+qpt[0], \
         get_miller_idx(Ny,FFTy)+qpt[1], get_miller_idx(Nz,FFTz)+qpt[2]}; // | q + G|
@@ -133,7 +134,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     
     // perform the inv FFT
     VlocinVFFT(Vlocr, lattice, commK);
-
+    
 }
 
 

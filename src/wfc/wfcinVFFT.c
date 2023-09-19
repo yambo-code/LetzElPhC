@@ -100,6 +100,8 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
         counts_recv[i] = pw_per_core;
         if (i < pw_rem) ++counts_recv[i]; 
 
+        counts_recv[i] *= 3;
+
         displacements_recv[i] = disp_rectemp;
         disp_rectemp += counts_recv[i];
     }
@@ -126,7 +128,7 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
         displacements_recv[i] = disp_rectemp;
         disp_rectemp += counts_recv[i];
     }
-
+    
     for (int iset =0 ; iset <nset_per_cpu; ++ iset)
     {   
         mpi_error = MPI_Alltoallv(wfc_pw_in + iset*Comm_size*loc_pw, counts_send, \
@@ -172,20 +174,11 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
                     counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
     }
     
-    ND_int nspinor = wfcG->dims[2];
-    ELPH_cmplx su2mat[4];
-
-    SU2mat(sym, nspinor, false, tim_rev, su2mat);
+    
 
     /* Now every cpu has nset_per_cpu + 0/1 wfcs. we do a fft */
     if (nset_inthis_cpu != 0 )
     {   
-        // rotate the wavefunction
-        su2rotate(nspinor, npw_total, nset_inthis_cpu, su2mat, wfc_pw_loc);
-        if (tim_rev)
-        {
-            for (ND_int i = 0; i<nset_inthis_cpu*npw_total; ++i) wfc_pw_loc[i] = conj(wfc_pw_loc[i]);
-        }
         sphere2box(wfc_pw_loc , nset_inthis_cpu, Gtemp, npw_total, FFT_dims, wfc_fft_loc);
 
         /* perform the FFT */
@@ -262,5 +255,22 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
                     displacements_send, ELPH_MPI_cmplx, wfc_fft_in + out_shift, \
                     counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
     }
+
+    /*
+    Now rotate the wfcs in spin space
+    */
+    ND_int nspinor = wfcG->dims[2];
+    ELPH_cmplx su2mat[4];
+
+    SU2mat(sym, nspinor, false, tim_rev, su2mat);
+
+    // rotate the wavefunction
+    su2rotate(nspinor, nffts_inthis_cpu, wfcG->dims[0]*wfcG->dims[1], su2mat, wfc_fft_in);
+    if (tim_rev)
+    {   
+        ND_int size_wfc_in = ND_function(size, Nd_cmplxS) (&(wfcRspace->Buffer));
+        for (ND_int i = 0; i<size_wfc_in; ++i) wfc_fft_in[i] = conj(wfc_fft_in[i]);
+    }
+
 
 }

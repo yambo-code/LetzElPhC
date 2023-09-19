@@ -80,7 +80,7 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
         int ikq   = *(kmap + KplusQidxs[i]*2)      ;
         int kqsym = *(kmap + KplusQidxs[i]*2 + 1)  ;
         
-        ELPH_cmplx * elph_kq_mn = elph_kq + i*elph_kstride ;
+        ELPH_cmplx * elph_kq_mn = elph_kq + ii*elph_kstride ;
         
         elphLocal(qpt, wfcs, lattice, ikq, ik, kqsym, ksym, dVscfq, commK, wfcRspace, elph_kq_mn);
         /* add the non local part elements */
@@ -91,4 +91,5 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     free(KplusQidxs);
 
 }
+
 

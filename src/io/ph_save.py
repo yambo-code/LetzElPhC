@@ -115,13 +115,11 @@ ncfile = Dataset('nc.dVscf_new',mode='w',format='NETCDF4_CLASSIC')
 # ---
 nq = ncfile.createDimension('nqpts', 1) # // FIX ME, this needs to be changed to nqpts
 nmag = ncfile.createDimension('nmag', dVscf.shape[0])
-Nx = ncfile.createDimension('Nx', dVscf.shape[1])
-Ny = ncfile.createDimension('Ny', dVscf.shape[2])
-Nz = ncfile.createDimension('Nz', dVscf.shape[3])
+nfft = ncfile.createDimension('nfft', np.product(FFT_GRID))
 natom = ncfile.createDimension('natom', dVscf.shape[4])
 xcart = ncfile.createDimension('xcart', dVscf.shape[5])
 re_im = ncfile.createDimension('re_im', 2)
-nmodes= ncfile.createDimension('nmodes', pol_vecs.shape[0])
+nmode= ncfile.createDimension('nmodes', pol_vecs.shape[0])
 const_vals = ncfile.createDimension('single_val', 1)
 
 write_type = np.single
@@ -129,16 +127,16 @@ if (not single_prec):
     write_type = np.double
 
 
-dvscf = ncfile.createVariable('dVscfs', write_type, ('nqpts','nmodes','nmag','Nx','Ny','Nz','re_im'))
+dvscf = ncfile.createVariable('dVscfs', write_type, ('nqpts','nmodes','nmag','nfft','re_im'))
 ph_modes = ncfile.createVariable('ph_pol_vec', write_type, ('nqpts', 'nmodes', 'natom','xcart','re_im' ))
 
 fft_dims = ncfile.createVariable('fft_dims',np.intc, ('xcart'))
 nq_pts   = ncfile.createVariable('qpts',np.intc, ('single_val'))
 
-dVscf = np.einsum('sijkax,vax->vsijk',dVscf,pol_vecs)
+dVscf = np.einsum('sijkax,vax->vsijk',dVscf,pol_vecs).reshape(nmodes,nspin_mag,-1)
 dvscf[0,...,0] = dVscf.real
 dvscf[0,...,1] = dVscf.imag
-fft_dims[:] = dVscf.shape[2:]
+fft_dims[:] = np.array(FFT_GRID)
 nq_pts[0] = 1 ##// FIX ME, this needs to be changed to nqpts
 
 ph_modes[0,...,0] = pol_vecs.real

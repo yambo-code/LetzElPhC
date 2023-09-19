@@ -59,14 +59,14 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
 
     if (my_rank == 0) memcpy(lattice->fft_dims,FFT_dims,sizeof(ND_int)*3);
     // Bcast fft_dims
-    mpi_error = MPI_Bcast(lattice->fft_dims, 3, MPI_INT, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, MPI_COMM_WORLD );
 
     ND_int nffts = lattice->fft_dims[0]*lattice->fft_dims[1]*lattice->fft_dims[2];
-
+    
     ND_int nffts_per_core = nffts/npw_cpus;
     ND_int nffts_rem = nffts%npw_cpus;
+
     if (nffts_per_core <1) error_msg("Some cpus do not contain plane waves ");
-    
     
     ND_int nffts_in_this_cpu = nffts_per_core;
     if (krank < nffts_rem) ++nffts_in_this_cpu;
@@ -406,7 +406,8 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         if ((retval = nc_inq_varid(ppid, temp_str, &varid_temp))) ERR(retval); // get the varible id of the file
         // collective IO
         if ((retval = nc_var_par_access(ppid, varid_temp, NC_COLLECTIVE))) ERR(retval); // NC_COLLECTIVE or NC_INDEPENDENT
-        ND_function(readVar_sub, Nd_floatS)(ppid, temp_str, (wfc_temp+ik)->Fk, ND_ALL,ND_ALL,nd_idx{G_shift,pw_this_cpu,1} );
+
+        ND_function(readVar_sub, Nd_floatS)(ppid, temp_str, (wfc_temp+ik)->Fk, ND_ALL,ND_ALL,nd_idx{G_shift,G_shift+pw_this_cpu,1} );
         
         NC_close_file(ppid);
     }
@@ -505,9 +506,9 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     mpi_error = MPI_Bcast(Zval, pseudo->ntype, ELPH_MPI_float, 0, MPI_COMM_WORLD );
     for (ND_int itype = 0; itype<pseudo->ntype; ++itype)
     {
-        Bcast_ND_arrayFloat(pseudo->Vloc_atomic, true, 0, MPI_COMM_WORLD);
-        Bcast_ND_arrayFloat(pseudo->r_grid, true, 0, MPI_COMM_WORLD);
-        Bcast_ND_arrayFloat(pseudo->rab_grid, true, 0, MPI_COMM_WORLD);
+        Bcast_ND_arrayFloat(pseudo->Vloc_atomic + itype, true, 0, MPI_COMM_WORLD);
+        Bcast_ND_arrayFloat(pseudo->r_grid + itype, true, 0, MPI_COMM_WORLD);
+        Bcast_ND_arrayFloat(pseudo->rab_grid + itype, true, 0, MPI_COMM_WORLD);
     }
 
     // reuse pseudo_order buffer to find the ngrid max

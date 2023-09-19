@@ -151,11 +151,11 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         for (ND_int is = 0 ; is <nspin; ++is)
         {   
             ELPH_cmplx * psi_r_spin = wfc_Sk_real.data  + is*wfc_Sk_real.strides[0];
-            ELPH_cmplx * dV_r = dv_nu +  dVlocr->strides[1]*is ;
+            ELPH_cmplx * dV_r = dv_nu +  dVlocr->strides[1]*is ; // only in nspin = 2 case, nmag represent nspin dimension
 
             ELPH_cmplx * dv_psi = dv_psi_r.data + is*dv_psi_r.strides[0];
             
-            for (ND_int ibnd = 0; ibnd < npwk; ++ibnd)
+            for (ND_int ibnd = 0; ibnd < nbndsk; ++ibnd)
             {   
                 ELPH_cmplx * psi_r = psi_r_spin + ibnd*wfc_Sk_real.strides[1];
                 ELPH_cmplx * dvpsi_tmp = dv_psi + ibnd*dv_psi_r.strides[1];

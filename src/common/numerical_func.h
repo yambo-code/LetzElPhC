@@ -6,7 +6,7 @@
 #define Function_HIDDEN(FUN_NAME, TYPE_SMALL)           ELPH_ ## TYPE_SMALL ## FUN_NAME
 
 /* BZ_expand.c */
-bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  const ELPH_float * vec, ND_int * idx  );;
+bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  const ELPH_float * vec, ND_int * idx  );
 
 void bz_expand(ND_array(Nd_floatS) * ibz_kpts, ND_array(Nd_floatS) * sym_mats, \
             ND_array(Nd_floatS) * lat_vec,ND_array(Nd_floatS) * kpoints, nd_arr_i * kmap);
