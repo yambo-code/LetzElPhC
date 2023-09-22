@@ -52,3 +52,4 @@ void alloc_wfcBox(struct wfcBox * buffer, const ND_int * dimensions, \
                 const ND_int npw_max_total, unsigned flag, MPI_Comm mpi_comm);
 
 void free_wfcBox(struct wfcBox * buffer);
+

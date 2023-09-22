@@ -175,18 +175,8 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
     }
     
     
-
-    /* Now every cpu has nset_per_cpu + 0/1 wfcs. we do a fft */
-    if (nset_inthis_cpu != 0 )
-    {   
-        sphere2box(wfc_pw_loc , nset_inthis_cpu, Gtemp, npw_total, FFT_dims, wfc_fft_loc);
-
-        /* perform the FFT */
-        ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->inVfft_plan);
-        
-    }
-
-    /* Finally scatter back i.e Transpose back the data */
+    /* Now we have the data */ 
+    /* we FFT and scatter back i.e Transpose back the data */
     int nffts_per_core = nFFT/Comm_size;
     int nffts_rem      = nFFT%Comm_size;
 
@@ -209,17 +199,23 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
         counts_recv[i] = nffts_inthis_cpu ;
         displacements_recv[i] = i*nffts_inthis_cpu;
     }
-    /*
-    send the sets
-    */
+
     for (int iset =0 ; iset <nset_per_cpu; ++ iset)
     {   
-        mpi_error = MPI_Alltoallv(wfc_fft_loc + iset*nFFT, counts_send, \
+        ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
+        ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
+        
+        sphere2box(wpwloc , 1, Gtemp, npw_total, FFT_dims, wfftloc);
+        /* perform the FFT */
+        ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].inVfft_plan);
+        /* send them back */
+        mpi_error = MPI_Ialltoallv(wfftloc, counts_send, \
                     displacements_send, ELPH_MPI_cmplx, wfc_fft_in + iset*nffts_inthis_cpu*Comm_size, \
-                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
+                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm, \
+                    &(wfcRspace->ft_plan[iset].request) );
     }
 
-    /* scatter the remainder sets*/
+    MPI_Request req_rem;
 
     if (nset_rem != 0)
     {   
@@ -251,10 +247,30 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
             }
         }
         
-        mpi_error = MPI_Alltoallv(wfc_fft_loc + input_shift, counts_send, \
+
+        /* The last set is anyways blocking */
+        if (my_rank < nset_rem)
+        {   
+            ND_int iset = nset_per_cpu;
+            ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
+            ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
+        
+            sphere2box(wpwloc , 1, Gtemp, npw_total, FFT_dims, wfftloc);
+            /* perform the FFT */
+            ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].inVfft_plan);
+        }
+        mpi_error = MPI_Ialltoallv(wfc_fft_loc + input_shift, counts_send, \
                     displacements_send, ELPH_MPI_cmplx, wfc_fft_in + out_shift, \
-                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
+                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm,&req_rem);
     }
+
+    /* Wait for all alltoallv */
+
+    for (int iset =0 ; iset <nset_per_cpu; ++ iset)
+    {   
+        MPI_Wait(&(wfcRspace->ft_plan[iset].request), MPI_STATUS_IGNORE);
+    }
+    if (nset_rem != 0) MPI_Wait(&req_rem, MPI_STATUS_IGNORE);
 
     /*
     Now rotate the wfcs in spin space

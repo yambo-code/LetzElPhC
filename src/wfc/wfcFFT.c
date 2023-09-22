@@ -133,17 +133,20 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
         
     }
     /*
-    send the sets
+    send the sets. we perform a non-blocking all2all so that, we can perform
+    FFTs on partial data
     */
+    MPI_Request req_rem;
+
     for (int iset =0 ; iset <nset_per_cpu; ++ iset)
     {   
-        mpi_error = MPI_Alltoallv(wfc_fft_in + iset*nffts_inthis_cpu*Comm_size, counts_send, \
+        mpi_error = MPI_Ialltoallv(wfc_fft_in + iset*nffts_inthis_cpu*Comm_size, counts_send, \
                     displacements_send, ELPH_MPI_cmplx, wfc_fft_loc + iset*nFFT, \
-                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
+                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm, \
+                    &(wfcRspace->ft_plan[iset].request));
     }
 
     /* scatter the remainder sets*/
-
     if (nset_rem != 0)
     {   
         int input_shift = nset_per_cpu*nffts_inthis_cpu*Comm_size;
@@ -175,28 +178,61 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
             }
         }
         
-        mpi_error = MPI_Alltoallv(wfc_fft_in + input_shift, counts_send, \
+        mpi_error = MPI_Ialltoallv(wfc_fft_in + input_shift, counts_send, \
                     displacements_send, ELPH_MPI_cmplx, wfc_fft_loc + out_shift, \
-                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm);
+                    counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm, &req_rem);
     }
     
-    /* Now every cpu has nset_per_cpu + 0/1 wfcs. we do a fft */
-
-    if (nset_inthis_cpu != 0 )
+    /* perform the FFTs when received some data */
+    for (int iset =0 ; iset <nset_per_cpu; ++ iset)
     {   
-        ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->fft_plan);
+        MPI_Wait(&(wfcRspace->ft_plan[iset].request), MPI_STATUS_IGNORE);
+
+        ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].fft_plan);
+        
         ELPH_cmplx fft_norm = 1.0/nFFT;
-        ND_int size_in = ND_function(size, Nd_cmplxS) (&(wfcRspace->FFTBuf));
+        
+        ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
+        ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
+
         /* Normalize */
         ELPH_OMP_PAR_FOR_SIMD
-        for (ND_int i = 0 ; i<size_in; ++i) wfc_fft_loc[i] *= fft_norm;
+        for (ND_int i = 0 ; i<nFFT; ++i) wfftloc[i] *= fft_norm;
 
         /* box2sphere */
-        box2sphere(wfc_fft_loc, nset_inthis_cpu, \
-                Gtemp, npw_total, FFT_dims, wfc_pw_loc);
+        box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, wpwloc);
     }
 
+    /*wait for the remainder set*/
+    if (nset_rem != 0)
+    {   
+        /* Wait must be called by every process */
+        MPI_Wait(&req_rem, MPI_STATUS_IGNORE);
+        /*  
+            perform FFT on remainder 
+            note every cpu does FFT 
+        */
+        if (my_rank < nset_rem)
+        {   
+            ND_int iset = nset_per_cpu;
 
+            ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].fft_plan);
+        
+            ELPH_cmplx fft_norm = 1.0/nFFT;
+        
+            ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
+            ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
+
+            /* Normalize */
+            ELPH_OMP_PAR_FOR_SIMD
+            for (ND_int i = 0 ; i<nFFT; ++i) wfftloc[i] *= fft_norm;
+
+            /* box2sphere */
+            box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, wpwloc);
+        }
+    }
+    
+    /* now scatter back the wfcs */
     for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
     for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
     for (ND_int i = 0 ; i<Comm_size; ++i) counts_recv[i]        = 0; 

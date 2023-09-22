@@ -94,6 +94,20 @@ struct WFC
 };
 
 
+/* struct store FFT plans for the forward and back.*/
+struct fft_plans
+{
+    ND_function(FFT_plan, Nd_cmplxS) fft_plan;
+    // fft plan for the above arrays for forward transform
+
+    ND_function(FFT_plan, Nd_cmplxS) inVfft_plan;
+    //fft plan for the above arrays for forward transform
+
+    MPI_Request request; // for non blocking calls. request makes sure 
+    // the data is filled before performing the FFT
+};
+
+
 
 /*struct for fft_buffers */
 struct wfcBox
@@ -115,12 +129,10 @@ struct wfcBox
     // this is a buffer to store local wfc in Gsphere
     ELPH_cmplx * BufGsphere ; // (nsets,npw_total_max)
 
-    ND_function(FFT_plan, Nd_cmplxS) fft_plan;
-    // fft plan for the above arrays for forward transform
+    struct fft_plans * ft_plan ; // contains plans for fft plans  ;
 
-    ND_function(FFT_plan, Nd_cmplxS) inVfft_plan;
-    //fft plan for the above arrays for forward transform
-
+    ND_int nset_loc ;
+    
     ELPH_cmplx norm ; // normalization factor. This is just product of dims
 
     ELPH_float * Gvecs ; // temperary buffer to store Gvectors // (npw_total_max,3)
@@ -134,3 +146,4 @@ struct wfcBox
     The use of the above two Gvec buffers and comm_buffer is we avoid repeative malloc calls 
     */
 };
+
