@@ -155,12 +155,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
 
             ELPH_cmplx * dv_psi = dv_psi_r.data + is*dv_psi_r.strides[0];
             
-            for (ND_int ibnd = 0; ibnd < nbndsk; ++ibnd)
-            {   
-                ELPH_cmplx * psi_r = psi_r_spin + ibnd*wfc_Sk_real.strides[1];
-                ELPH_cmplx * dvpsi_tmp = dv_psi + ibnd*dv_psi_r.strides[1];
-                dvpsi(nmag, nspinor, dVlocr->strides[1], dV_r, psi_r, dvpsi_tmp);
-            }
+            dvpsi(nbndsk, nmag, nspinor, dVlocr->strides[1], dV_r, psi_r_spin, dv_psi);
         }
         /***/
         // get back to G space 
