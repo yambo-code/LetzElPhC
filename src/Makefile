@@ -7,8 +7,8 @@ OPENMP_FLAGS     :=  #-DELPH_OMP_PARALLEL_BUILD
 FFTW_INC 	 :=  -I/opt/homebrew/include 
 FFTW3_LIB        :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
 
-BLAS_INC 	 :=  -I/opt/homebrew/Cellar/openblas/0.3.23/include 
-BLAS_LIB 	 :=  -L/opt/homebrew/Cellar/openblas/0.3.23/lib -lopenblas 
+BLAS_INC 	 :=  -I/opt/homebrew/Cellar/openblas/0.3.24/include 
+BLAS_LIB 	 :=  -L/opt/homebrew/Cellar/openblas/0.3.24/lib -lopenblas 
 
 NETCDF_INC       :=  -I/Users/murali/softwares/core/include 
 NETCDF_LIB 	 :=  -L/Users/murali/softwares/core/lib -lnetcdf

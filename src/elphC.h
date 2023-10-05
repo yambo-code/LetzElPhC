@@ -1,4 +1,9 @@
 #pragma once
+
+#ifdef __STDC_NO_COMPLEX__
+#error Your compiler does not C99 complex numbers, Please use a supported compiler.
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
