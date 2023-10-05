@@ -10,8 +10,6 @@ structure before prefixing "struct" for example
     struct lattice a ;
     struct wfc a ;
     ```
-2) structures should hold either pointers or a 
-    single type. do not put array in structures
 */
 #pragma once
 #include "../elphC.h"
@@ -94,9 +92,12 @@ struct WFC
 };
 
 
-/* struct store FFT plans for the forward and back.*/
+/* struct store FFT plans and data for the forward and back.*/
 struct fft_plans
-{
+{   
+    // these are buffers to locally perform the FFT
+    ND_array(Nd_cmplxS) FFTBuf[1] ; // (Nx,Ny,Nz)
+
     ND_function(FFT_plan, Nd_cmplxS) fft_plan;
     // fft plan for the above arrays for forward transform
 
@@ -122,9 +123,6 @@ struct wfcBox
 
     ND_array(Nd_cmplxS) Buffer_temp ; 
     // This is a temp buffer with size same as Buffer. used in local part calculation
-
-    // this is a buffer to locally perform the FFT
-    ND_array(Nd_cmplxS) FFTBuf ; // (nsets,Nx,Ny,Nz)
 
     // this is a buffer to store local wfc in Gsphere
     ELPH_cmplx * BufGsphere ; // (nsets,npw_total_max)

@@ -7,7 +7,8 @@ potentials.
 
 void box2sphere(const ELPH_cmplx * restrict wfcGbox, const ND_int nsets, \
                 const ELPH_float * restrict Gvec_crys, const ND_int npw, \
-                const ND_int * FFT_dims, ELPH_cmplx * restrict wfcGsphere)
+                const ND_int * FFT_dims, bool normalize, \
+                ELPH_cmplx * restrict wfcGsphere)
 {   
     /*
     Input : 
@@ -23,6 +24,9 @@ void box2sphere(const ELPH_cmplx * restrict wfcGbox, const ND_int nsets, \
 
     ND_int fft_strides[3] = {FFT_dims[1]*FFT_dims[2],FFT_dims[2],1};
     ND_int nFFTs = FFT_dims[0]*fft_strides[0];
+
+    ELPH_float norm_fac = 1.0;
+    if (normalize) norm_fac = 1.0/(nFFTs) ;
 
     for (ND_int iset = 0; iset<nsets; ++iset )
     {   
@@ -43,7 +47,7 @@ void box2sphere(const ELPH_cmplx * restrict wfcGbox, const ND_int nsets, \
             if (Nx>=(int)FFT_dims[0] || Ny>=(int)FFT_dims[1] || Nz>=(int)FFT_dims[2])
                                                 error_msg("Incompatible FFT grid");
             /* set the wfc value */
-            wfcGsphere[iset*npw+ipw] = wfcGbox[iset*nFFTs + Nx*fft_strides[0] + \
+            wfcGsphere[iset*npw+ipw] = (norm_fac) * wfcGbox[iset*nFFTs + Nx*fft_strides[0] + \
                                         Ny*fft_strides[1] + Nz*fft_strides[2]];
         } // ipw
     } // iset
