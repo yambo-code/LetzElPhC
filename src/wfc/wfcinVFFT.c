@@ -55,6 +55,7 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
 
     ELPH_cmplx * wfc_pw_in   = wfcG->data;              // (nspin,nbnd,nspinor,loc_pw)
     ELPH_cmplx * wfc_pw_loc  = wfcRspace->BufGsphere ;  // (nsets_per_cpu,npw)
+    ELPH_cmplx * wfc_fft_loc = wfcRspace->FFTBuf.data;  // (nsets_per_cpu,,Nx,Ny,Ny)
     ELPH_cmplx * wfc_fft_in  = wfcRspace->Buffer.data;  // (nspin,nbnd,nspinor,nffts_percpu)
 
     int mpi_error;
@@ -202,8 +203,7 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
     for (int iset =0 ; iset <nset_per_cpu; ++ iset)
     {   
         ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
-
-        ELPH_cmplx * restrict wfftloc = wfcRspace->ft_plan[iset].FFTBuf->data; 
+        ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
         
         sphere2box(wpwloc , 1, Gtemp, npw_total, FFT_dims, wfftloc);
         /* perform the FFT */
@@ -219,7 +219,10 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
 
     if (nset_rem != 0)
     {   
+
+        int input_shift = nset_per_cpu*nFFT;
         int out_shift = nset_per_cpu*nffts_inthis_cpu*Comm_size;
+        if (my_rank >= nset_rem) input_shift = 0;
         
         for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
         for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
@@ -244,23 +247,19 @@ void wfcinVFFT(ND_array(Nd_cmplxS) * wfcG,  const ELPH_float * sym,
             }
         }
         
-        ELPH_cmplx dummy_var;
-        ELPH_cmplx * wfc_fft_loc  = &dummy_var;
 
         /* The last set is anyways blocking */
         if (my_rank < nset_rem)
         {   
             ND_int iset = nset_per_cpu;
             ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
-            ELPH_cmplx * restrict wfftloc = wfcRspace->ft_plan[iset].FFTBuf->data; 
-            wfc_fft_loc = wfftloc;
+            ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
         
             sphere2box(wpwloc , 1, Gtemp, npw_total, FFT_dims, wfftloc);
             /* perform the FFT */
             ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].inVfft_plan);
         }
-        
-        mpi_error = MPI_Ialltoallv(wfc_fft_loc, counts_send, \
+        mpi_error = MPI_Ialltoallv(wfc_fft_loc + input_shift, counts_send, \
                     displacements_send, ELPH_MPI_cmplx, wfc_fft_in + out_shift, \
                     counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm,&req_rem);
     }

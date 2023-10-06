@@ -22,8 +22,7 @@ void SU2mat(const ELPH_float * sym_in, const ND_int nspinor, \
 /* box2sphere.c */
 void box2sphere(const ELPH_cmplx * restrict wfcGbox, const ND_int nsets, \
                 const ELPH_float * restrict Gvec_crys, const ND_int npw, \
-                const ND_int * FFT_dims, bool normalize, \
-                ELPH_cmplx * restrict wfcGsphere);
+                const ND_int * FFT_dims, ELPH_cmplx * restrict wfcGsphere);
 
 /* sphere2box.c */
 void sphere2box(const ELPH_cmplx * restrict wfcGsphere , const ND_int nsets, \

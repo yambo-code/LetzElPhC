@@ -49,6 +49,7 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
 
     ELPH_cmplx * wfc_pw_in   = wfcG->data;              // (nspin,nbnd,nspinor,loc_pw)
     ELPH_cmplx * wfc_pw_loc  = wfcRspace->BufGsphere ;  // (nsets_per_cpu,npw)
+    ELPH_cmplx * wfc_fft_loc = wfcRspace->FFTBuf.data;  // (nsets_per_cpu,,Nx,Ny,Ny)
     ELPH_cmplx * wfc_fft_in  = wfcRspace->Buffer.data;  // (nspin,nbnd,nspinor,nffts_percpu)
 
 
@@ -140,7 +141,7 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
     for (int iset =0 ; iset <nset_per_cpu; ++ iset)
     {   
         mpi_error = MPI_Ialltoallv(wfc_fft_in + iset*nffts_inthis_cpu*Comm_size, counts_send, \
-                    displacements_send, ELPH_MPI_cmplx, wfcRspace->ft_plan[iset].FFTBuf->data, \
+                    displacements_send, ELPH_MPI_cmplx, wfc_fft_loc + iset*nFFT, \
                     counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm, \
                     &(wfcRspace->ft_plan[iset].request));
     }
@@ -149,7 +150,9 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
     if (nset_rem != 0)
     {   
         int input_shift = nset_per_cpu*nffts_inthis_cpu*Comm_size;
+        int out_shift = nset_per_cpu*nFFT;
 
+        if (my_rank >= nset_rem) out_shift = 0;
 
         for (ND_int i = 0 ; i<Comm_size; ++i) counts_send[i]        = 0; 
         for (ND_int i = 0 ; i<Comm_size; ++i) displacements_send[i] = 0; 
@@ -162,13 +165,8 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
             displacements_send[i] = i*nffts_inthis_cpu;  //displacements_send
         }
 
-        ELPH_cmplx dummy_var;
-        ELPH_cmplx * wfc_fft_loc  = &dummy_var;
-
         if (my_rank < nset_rem)
         {   
-
-            wfc_fft_loc = wfcRspace->ft_plan[nset_per_cpu].FFTBuf->data;
             disp_rectemp = 0;
             for (ND_int i = 0 ; i<Comm_size; ++i)
             {
@@ -181,7 +179,7 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
         }
         
         mpi_error = MPI_Ialltoallv(wfc_fft_in + input_shift, counts_send, \
-                    displacements_send, ELPH_MPI_cmplx, wfc_fft_loc, \
+                    displacements_send, ELPH_MPI_cmplx, wfc_fft_loc + out_shift, \
                     counts_recv, displacements_recv, ELPH_MPI_cmplx, mpi_comm, &req_rem);
     }
     
@@ -192,11 +190,17 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
 
         ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].fft_plan);
         
-        ELPH_cmplx * restrict wfftloc = wfcRspace->ft_plan[iset].FFTBuf->data;
+        ELPH_cmplx fft_norm = 1.0/nFFT;
+        
+        ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
         ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
 
-        /* box2sphere. This funtion will also normalize */
-        box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, true, wpwloc);
+        /* Normalize */
+        ELPH_OMP_PAR_FOR_SIMD
+        for (ND_int i = 0 ; i<nFFT; ++i) wfftloc[i] *= fft_norm;
+
+        /* box2sphere */
+        box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, wpwloc);
     }
 
     /*wait for the remainder set*/
@@ -214,12 +218,17 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
 
             ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].fft_plan);
         
-            ELPH_cmplx * restrict wfftloc = wfcRspace->ft_plan[iset].FFTBuf->data;
+            ELPH_cmplx fft_norm = 1.0/nFFT;
+        
+            ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
             ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
 
-            /* box2sphere. This funtion will also normalize */
-            box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, true, wpwloc);
-            
+            /* Normalize */
+            ELPH_OMP_PAR_FOR_SIMD
+            for (ND_int i = 0 ; i<nFFT; ++i) wfftloc[i] *= fft_norm;
+
+            /* box2sphere */
+            box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, wpwloc);
         }
     }
     
