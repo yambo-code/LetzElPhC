@@ -10,8 +10,6 @@ structure before prefixing "struct" for example
     struct lattice a ;
     struct wfc a ;
     ```
-2) structures should hold either pointers or a 
-    single type. do not put array in structures
 */
 #pragma once
 #include "../elphC.h"

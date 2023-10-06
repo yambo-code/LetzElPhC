@@ -190,17 +190,11 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
 
         ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].fft_plan);
         
-        ELPH_cmplx fft_norm = 1.0/nFFT;
-        
         ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
         ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
 
-        /* Normalize */
-        ELPH_OMP_PAR_FOR_SIMD
-        for (ND_int i = 0 ; i<nFFT; ++i) wfftloc[i] *= fft_norm;
-
-        /* box2sphere */
-        box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, wpwloc);
+        /* box2sphere. This function will also normalize */
+        box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, true, wpwloc);
     }
 
     /*wait for the remainder set*/
@@ -218,17 +212,11 @@ void wfcFFT(struct wfcBox * wfcRspace, const ELPH_float * sym, \
 
             ND_function(fft_execute_plan, Nd_cmplxS) (wfcRspace->ft_plan[iset].fft_plan);
         
-            ELPH_cmplx fft_norm = 1.0/nFFT;
-        
             ELPH_cmplx * restrict wfftloc = wfc_fft_loc + iset*nFFT;
             ELPH_cmplx * restrict wpwloc  = wfc_pw_loc + iset*npw_total;
 
-            /* Normalize */
-            ELPH_OMP_PAR_FOR_SIMD
-            for (ND_int i = 0 ; i<nFFT; ++i) wfftloc[i] *= fft_norm;
-
-            /* box2sphere */
-            box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, wpwloc);
+            /* box2sphere. This function will also normalize */
+            box2sphere(wfftloc, 1, Gtemp, npw_total, FFT_dims, true, wpwloc);
         }
     }
     
