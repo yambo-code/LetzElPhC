@@ -3,6 +3,32 @@ This file contains function which distributes cpus
 */
 #include "parallel.h"
 
+
+/*get block size and starting idx of dimension that is distrbuted amoung cpus*/
+ND_int get_mpi_local_size_idx(const ND_int n, ND_int * start_idx,  MPI_Comm Comm)
+{   
+    int my_rank, total_size;
+
+    MPI_Comm_rank(Comm, &my_rank);
+    MPI_Comm_size(Comm, &total_size);
+
+    ND_int n_q = n/total_size ;
+    ND_int n_r = n%total_size ;
+    
+    ND_int n_this_cpu = n_q;
+    if (my_rank < n_r) ++n_this_cpu;
+
+    if (start_idx != NULL)
+    {
+        *start_idx = n_q*my_rank;
+        if (my_rank < n_r) *start_idx += my_rank;
+        else *start_idx += n_r;
+    }
+    return n_this_cpu;
+}
+
+
+
 /* allocate comms */
 void create_parallel_comms(int nqpools, int nkpools, MPI_Comm * commQ, MPI_Comm * commK)
 {

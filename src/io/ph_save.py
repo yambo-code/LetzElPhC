@@ -115,7 +115,9 @@ ncfile = Dataset('nc.dVscf_new',mode='w',format='NETCDF4_CLASSIC')
 # ---
 nq = ncfile.createDimension('nqpts', 1) # // FIX ME, this needs to be changed to nqpts
 nmag = ncfile.createDimension('nmag', dVscf.shape[0])
-nfft = ncfile.createDimension('nfft', np.product(FFT_GRID))
+Nx = ncfile.createDimension('Nx', FFT_GRID[0])
+Ny = ncfile.createDimension('Ny', FFT_GRID[1])
+Nz = ncfile.createDimension('Nz', FFT_GRID[2])
 natom = ncfile.createDimension('natom', dVscf.shape[4])
 xcart = ncfile.createDimension('xcart', dVscf.shape[5])
 re_im = ncfile.createDimension('re_im', 2)
@@ -127,13 +129,13 @@ if (not single_prec):
     write_type = np.double
 
 
-dvscf = ncfile.createVariable('dVscfs', write_type, ('nqpts','nmodes','nmag','nfft','re_im'))
+dvscf = ncfile.createVariable('dVscfs', write_type, ('nqpts','nmodes','nmag','Nx','Ny','Nz','re_im'))
 ph_modes = ncfile.createVariable('ph_pol_vec', write_type, ('nqpts', 'nmodes', 'natom','xcart','re_im' ))
 
 fft_dims = ncfile.createVariable('fft_dims',np.intc, ('xcart'))
 nq_pts   = ncfile.createVariable('qpts',np.intc, ('single_val'))
 
-dVscf = np.einsum('sijkax,vax->vsijk',dVscf,pol_vecs).reshape(nmodes,nspin_mag,-1)
+dVscf = np.einsum('sijkax,vax->vsijk',dVscf,pol_vecs)#.reshape(nmodes,nspin_mag,-1)
 dvscf[0,...,0] = dVscf.real
 dvscf[0,...,1] = dVscf.imag
 fft_dims[:] = np.array(FFT_GRID)

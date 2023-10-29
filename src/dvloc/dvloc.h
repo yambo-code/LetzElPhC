@@ -8,13 +8,11 @@ ELPH_float Vloc_Gspace(ELPH_float * work_arr, const char cutoff, const ELPH_floa
         const ND_array(Nd_floatS)* rab_grid, const ELPH_float Zval,const ELPH_float eta, \
         const ELPH_float cutoff_fac);
 
-void VlocinVFFT(ND_array(Nd_cmplxS) * VlocPot, struct Lattice * lattice, MPI_Comm mpi_comm);
-
-void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc);
-
 void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * lattice, \
                 int ikq, int ik, int kqsym, int ksym, ND_array(Nd_cmplxS) * dVlocr, \
-                MPI_Comm commK, struct wfcBox * wfcRspace, ELPH_cmplx * elph_kq);
+                MPI_Comm commK, ELPH_cmplx * elph_kq);
+
+void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc);
 
 
 void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \

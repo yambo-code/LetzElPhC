@@ -54,21 +54,23 @@ void read_dvscfq(const char * file_name, ND_array(Nd_cmplxS) * eigVec,  \
     int my_rank;
     MPI_Comm_rank(commK, &my_rank);
     
-    size_t startp[5] = {iq,0,0,lattice->nfft_shift_loc,0} ;
-    size_t countp[5];
-    int dim_ids[5];
+    // 'nqpts', 'nmodes', 'nmag', 'Nx', 'Ny', 'Nz', 're_im'
+
+    size_t startp[7] = {iq,0,0,0,0,lattice->nfftz_loc_shift,0} ;
+    size_t countp[7];
+    int dim_ids[7];
     // ('nqpts','nmodes','nmag','nfft','re_im')
     if ((retval = nc_open_par(file_name, NC_NOWRITE, commK, MPI_INFO_NULL, &dvscfid))) ERR(retval);
     if ((retval = nc_inq_varid(dvscfid, "dVscfs", &var_id))) ERR(retval); // get the id of the req variable
     if ((retval = nc_inq_var(dvscfid, var_id, NULL, NULL, NULL, dim_ids, NULL ))) ERR(retval); // get dims
     //
-    for (ND_int i = 0; i < 5; ++i)
+    for (ND_int i = 0; i < 7; ++i)
     {
         if ((retval = nc_inq_dimlen(dvscfid, dim_ids[i], countp + i))) ERR(retval);
     }
-    countp[0] = 1; countp[3] = lattice->nffts_loc;
+    countp[0] = 1; countp[5] = lattice->nfftz_loc;
 
-    ND_function(init,Nd_cmplxS)(dVscf, 3, nd_idx{countp[1],countp[2],lattice->nffts_loc});
+    ND_function(init,Nd_cmplxS)(dVscf, 5, nd_idx{countp[1],countp[2],countp[3],countp[4],lattice->nfftz_loc});
     ND_function(malloc,Nd_cmplxS)(dVscf);
 
     if ((retval = nc_var_par_access(dvscfid, var_id, NC_COLLECTIVE))) ERR(retval); // NC_COLLECTIVE or NC_INDEPENDENT

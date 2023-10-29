@@ -28,8 +28,8 @@ struct Lattice
     char dimension ;                        // '1', '2', '3' for 1D, 2D, 3D. This is used to apply coloumb cutoff
     ND_int npw_max;                         // max number of total pw in spherical grid for all wfcs
     ND_int fft_dims[3];                     // fft dimensions
-    ND_int nffts_loc;                       // number of FFT vecs in this cpu
-    ND_int nfft_shift_loc;                  // global index of first fft vector
+    ND_int nfftz_loc;                       // number of FFT vecs in this cpu
+    ND_int nfftz_loc_shift;                 // global index of first fft vector
     ND_array(Nd_floatS) * alat_vec ;        // Lattice vectors a[i] = alat[:,i]
     ND_array(Nd_floatS) * atomic_pos;       // position of atoms in cartisian coordinates
     int * atom_type ;                       // type of atoms array
@@ -91,57 +91,4 @@ struct WFC
 
 };
 
-
-/* struct store FFT plans for the forward and back.*/
-struct fft_plans
-{
-    ND_function(FFT_plan, Nd_cmplxS) fft_plan;
-    // fft plan for the above arrays for forward transform
-
-    ND_function(FFT_plan, Nd_cmplxS) inVfft_plan;
-    //fft plan for the above arrays for forward transform
-
-    MPI_Request request; // for non blocking calls. request makes sure 
-    // the data is filled before performing the FFT
-};
-
-
-
-/*struct for fft_buffers */
-struct wfcBox
-{   
-    /*
-    buffer storage for wavefunctions in full cubic FFT grid and fft_plane for the buffers
-    The rational behind this struct is that we create a optimized plan once 
-    and reuse them multiple ttimes
-    */
-    ND_array(Nd_cmplxS) Buffer ; 
-    // input buffer for FFT transform
-
-    ND_array(Nd_cmplxS) Buffer_temp ; 
-    // This is a temp buffer with size same as Buffer. used in local part calculation
-
-    // this is a buffer to locally perform the FFT
-    ND_array(Nd_cmplxS) FFTBuf ; // (nsets,Nx,Ny,Nz)
-
-    // this is a buffer to store local wfc in Gsphere
-    ELPH_cmplx * BufGsphere ; // (nsets,npw_total_max)
-
-    struct fft_plans * ft_plan ; // contains plans for fft plans  ;
-
-    ND_int nset_loc ;
-    
-    ELPH_cmplx norm ; // normalization factor. This is just product of dims
-
-    ELPH_float * Gvecs ; // temperary buffer to store Gvectors // (npw_total_max,3)
-
-    ELPH_float * Gvecs_loc ; // local Gvecs buffers (npw_total_max/Comm + 1, 3)
-    
-    int * comm_buffer; // 4*Comm_size
-
-    ND_int FFT_dimensions[3];
-    /*
-    The use of the above two Gvec buffers and comm_buffer is we avoid repeative malloc calls 
-    */
-};
 

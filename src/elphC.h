@@ -42,6 +42,11 @@
     #define ELPH_MPI_float MPI_DOUBLE
     #define ELPH_MPI_cmplx MPI_C_DOUBLE_COMPLEX
 
+    // fftw function
+    #define fftw_fun(FUN_NAME) fftw3_fun_HIDDEN(FUN_NAME)
+    #define fftw3_fun_HIDDEN(FUN_NAME) fftw_##FUN_NAME
+
+
 #else
     typedef float ELPH_float;
     typedef float complex ELPH_cmplx;
@@ -58,6 +63,10 @@
 
     #define ELPH_MPI_float MPI_FLOAT
     #define ELPH_MPI_cmplx MPI_C_FLOAT_COMPLEX
+
+    // fftw function
+    #define fftw_fun(FUN_NAME) fftw3_fun_HIDDEN(FUN_NAME)
+    #define fftw3_fun_HIDDEN(FUN_NAME) fftwf_##FUN_NAME
 
 #endif
 

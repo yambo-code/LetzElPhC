@@ -63,19 +63,10 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
 
     ND_int nffts = lattice->fft_dims[0]*lattice->fft_dims[1]*lattice->fft_dims[2];
     
-    ND_int nffts_per_core = nffts/npw_cpus;
-    ND_int nffts_rem = nffts%npw_cpus;
-
-    if (nffts_per_core <1) error_msg("Some cpus do not contain plane waves ");
+    lattice->nfftz_loc =  get_mpi_local_size_idx(lattice->fft_dims[2], \
+                                    &(lattice->nfftz_loc_shift), commK);
     
-    ND_int nffts_in_this_cpu = nffts_per_core;
-    if (krank < nffts_rem) ++nffts_in_this_cpu;
-
-    lattice->nffts_loc = nffts_in_this_cpu;
-
-    lattice->nfft_shift_loc = krank*nffts_per_core;
-    if (krank < nffts_rem) lattice->nfft_shift_loc += krank;
-    else                   lattice->nfft_shift_loc += nffts_rem;
+    if (lattice->nfftz_loc <1) error_msg("Some cpus do not contain plane waves. Over parallelization !.");
 
     int dbid, ppid, tempid, retval; // file ids for ns.db1 , pp_pwscf*
 
@@ -362,26 +353,15 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         /*set total pws */
         (wfc_temp+ik)->npw_total = rint(nGmax[ik]);
 
-        ND_int pw_per_core = ((wfc_temp+ik)->npw_total)/npw_cpus;
-        ND_int pw_rem      = ((wfc_temp+ik)->npw_total)%npw_cpus;
-        ND_int pw_this_cpu = pw_per_core;
-        if (krank < pw_rem) ++pw_this_cpu ;
-            
+        ND_int G_shift, pw_this_cpu;
+        pw_this_cpu =  get_mpi_local_size_idx((wfc_temp+ik)->npw_total, &G_shift,  commK);
+        
         /* set the local number of pw's */
         (wfc_temp+ik)->npw_loc = pw_this_cpu;
-
-        ND_int G_shift = pw_per_core*krank;
-            
-        if (pw_rem !=0)
-        {
-            if (krank < pw_rem) G_shift += krank ;
-            else G_shift += pw_rem;
-        }
-
         (wfc_temp+ik)->gvec = gvec_alloc_arrays+ik ;
             
         alloc_and_set_Gvec((wfc_temp+ik)->gvec, ik, &totalGvecs, &Gvecidxs, \
-                                lat_param, pw_this_cpu,G_shift);
+                                lat_param, pw_this_cpu, G_shift);
             
         /* initiate, allocate and load wfcs*/
         (wfc_temp+ik)->wfc = wfc_alloc_arrays+ik;

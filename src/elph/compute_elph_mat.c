@@ -9,7 +9,7 @@ This function computes electron-matrix elements for all q's
 #define FIRST_BAND  1
 #define LAST_BAND 40
 #define PSEUDO_DIR "/Users/murali/phd/one_phonon_raman/wse2"
-#define DVSCF_NC "/Users/murali/phd/one_phonon_raman/wse2/nc.dVscf_new"
+#define DVSCF_NC "/Users/murali/phd/one_phonon_raman/wse2/nc.dVscf"
 
 int main(int argc, char* argv[])
 {
@@ -90,6 +90,9 @@ int main(int argc, char* argv[])
     ND_function(destroy,Nd_cmplxS)(&dVscf);
 
     free_parallel_comms(&commQ, &commK);
+
+    fftw_fun(cleanup)();
+
     MPI_Finalize();
 
     return 0;

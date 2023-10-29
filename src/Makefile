@@ -20,7 +20,7 @@ LD_FLAGS         :=  -g -fsanitize=address -Wl,-no_compact_unwind
 
 #### make start here
 
-SUBDIR = nonloc io/ezxml io common dvloc elph wfc symmetries
+SUBDIR = nonloc io/ezxml io common dvloc elph wfc symmetries fft
 ND_ARR_LIB = -L./nd_array/src -lnd_array
 
 

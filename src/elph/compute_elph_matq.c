@@ -37,9 +37,9 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     /* Computing the  change in local potential */
     ND_array(Nd_cmplxS) Vlocr[1];
     // allocate memory for Vlocr
-    ND_int dim_Buffer[2] = {eigVec->dims[0],lattice->nffts_loc}; //(nmodes, nffts_loc)
+    ND_int dim_Buffer[4] = {eigVec->dims[0],dVscfq->dims[2], dVscfq->dims[3], dVscfq->dims[4] }; //(nmodes, Nx, Ny, Nz_loc)
 
-    ND_function(init, Nd_cmplxS) (Vlocr, 2, dim_Buffer);
+    ND_function(init, Nd_cmplxS) (Vlocr, 4, dim_Buffer);
     ND_function(malloc, Nd_cmplxS)  (Vlocr);
 
     /* compute the local part of the bare */
@@ -58,15 +58,6 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
     ND_int nbnd = wfcs->wfc->dims[1] ; 
     ND_int elph_kstride = (eigVec->dims[0]) * (lattice->nspin) *nbnd * nbnd; // 1st stride value of elph_kq
 
-
-    struct wfcBox wfcRspace[1];
-    // allocate wfc buffers
-    {
-        const ND_int * fft_dims = lattice->fft_dims;
-        const ND_int dimensions[6] = {lattice->nspin,nbnd,lattice->nspinor,fft_dims[0],fft_dims[1],fft_dims[2]};
-        alloc_wfcBox(wfcRspace, dimensions, lattice->npw_max, FFTW_MEASURE, commK);
-    }
-
     /* Now Compute elph-matrix elements for each kpoint */
     for (ND_int ii =0 ; ii <k_in_this_color; ++ii )
     {   
@@ -82,12 +73,11 @@ void compute_elph(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * p
         
         ELPH_cmplx * elph_kq_mn = elph_kq + ii*elph_kstride ;
         
-        elphLocal(qpt, wfcs, lattice, ikq, ik, kqsym, ksym, dVscfq, commK, wfcRspace, elph_kq_mn);
+        elphLocal(qpt, wfcs, lattice, ikq, ik, kqsym, ksym, dVscfq, commK, elph_kq_mn);
         /* add the non local part elements */
         add_elphNonLocal(wfcs, lattice, pseudo, ikq, ik, kqsym, ksym, eigVec, elph_kq_mn, commK);
     }
     // free wfc buffers
-    free_wfcBox(wfcRspace);
     free(KplusQidxs);
 
 }

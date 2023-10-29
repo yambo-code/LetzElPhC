@@ -3,7 +3,7 @@
 /* Compute the electron phonon matrix elements i.e sandwich for Local part of KS potential */
 void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * lattice, \
                 int ikq, int ik, int kqsym, int ksym, ND_array(Nd_cmplxS) * dVlocr, \
-                MPI_Comm commK, struct wfcBox * wfcRspace, ELPH_cmplx * elph_kq)
+                MPI_Comm commK, ELPH_cmplx * elph_kq)
 {
     /* Computes <S2*k2 | dV_{q}local | S1*k1>
     Note that the inputs kvectors must full the following condition S2*k2 = S1*k1 + q + ulmveckq
@@ -15,7 +15,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
             . taukq and tauk are fractional translation
             . Gkq and Gk are Gvectors for k+q and k wf respectively
             . timerev(k)/(kq) -- true if sym(k/kq) is time rev
-            . dVlocr -> change in local KS potential i.e dVlocal + dVscf (nmodes, nmag, nffts_in_this_cpu) in for one mode
+            . dVlocr -> change in local KS potential i.e dVlocal + dVscf (nmodes, nmag, Nx,Ny,Nz-loc) in for one mode
             . qpt -> qpoint in crystal units
     output : (nu, nspin, mk, nk+q) // electron-phonon mat in mode basis (only the master process writes)
     */
@@ -26,27 +26,18 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     /*
     First we get the wfcs. */
 
-    ND_array(Nd_cmplxS) wfc_kq[1], dVpsiG[1];
-    ND_array(Nd_floatS) Gkq[1];
-
-    ND_int npwkq_total = (wfcs+ikq)->npw_total;
-    ND_int npwk_total =  (wfcs+ik)->npw_total;
+    ND_array(Nd_cmplxS) * wfc_kq = (wfcs+ikq)->wfc;;
+    ND_array(Nd_floatS) * Gkq    = (wfcs+ikq)->gvec;;
 
     ND_array(Nd_cmplxS) * wfc_k = (wfcs+ik)->wfc;
     ND_array(Nd_floatS) * Gk    = (wfcs+ik)->gvec;
+
+    ND_int npwkq_total = (wfcs+ikq)->npw_total;
+    ND_int npwk_total =  (wfcs+ik)->npw_total;
     /*initialization and setup */
-    ND_function(init,Nd_cmplxS)(wfc_kq, (wfcs+ikq)->wfc->rank[0],  (wfcs+ikq)->wfc->dims);
-    ND_function(malloc,Nd_cmplxS)(wfc_kq);
 
-    ND_function(init,Nd_cmplxS)(dVpsiG, (wfcs+ikq)->wfc->rank[0],  (wfcs+ikq)->wfc->dims);
-    ND_function(malloc,Nd_cmplxS)(dVpsiG);
-
-    ND_function(init,Nd_floatS)(Gkq,  (wfcs+ikq)->gvec->rank[0], (wfcs+ikq)->gvec->dims);
-    ND_function(malloc,Nd_floatS)(Gkq);
-    
-    // copy k+q wfcs and gvecs
-    ND_function(copy, Nd_cmplxS) ((wfcs+ikq)->wfc,wfc_kq);  
-    ND_function(copy, Nd_floatS) ((wfcs+ikq)->gvec,Gkq);
+    ELPH_float * gSkq_buf = calloc(3*Gkq->dims[0],sizeof(ELPH_float));
+    ELPH_float * gSk_buf =  calloc(3*Gk->dims[0] ,sizeof(ELPH_float));
 
     /*initialization and setup */
     const ELPH_float * kqvec            = ND_function(ele,Nd_floatS)(lattice->kpt_iredBZ, nd_idx{ikq,0});
@@ -66,8 +57,8 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     nbndsk  = wfc_k->dims[1] ;
     nbndskq = wfc_kq->dims[1];
     nspinor = wfc_k->dims[2] ;
-    npwkq   = Gkq->dims[1] ;
-    npwk    = Gk->dims[1] ;
+    npwkq   = Gkq->dims[0] ;
+    npwk    = Gk->dims[0] ;
     nmodes  = dVlocr->dims[0];
 
     ELPH_float ulmveckq[3]; // ulmveckq is shift that is applyed to k+q vector i.e -(Skq*kq - S*k - q)
@@ -86,42 +77,90 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         MatVec3f(blat,  qpt,  false,  tempSk);
         for (int xi = 0 ; xi<3 ; ++xi ) tempSk[xi] = tempSk[xi]/(2*ELPH_PI) ;
     }
+    // Skq+G = Sk + q => G = Sk+q-Skq
+    for (int xi = 0 ; xi<3 ; ++xi )  ulmveckq[xi] = (tempSkq[xi]-tempSk[xi]);
 
-    for (int xi = 0 ; xi<3 ; ++xi )  ulmveckq[xi] = -(tempSkq[xi]-tempSk[xi]);
+    rotateGvecs(Gkq->data, symkq, npwkq, lat_vec, false, true, ulmveckq, gSkq_buf);
+    rotateGvecs(Gk->data, symk, npwk, lat_vec, false, true, NULL, gSk_buf);
 
-    /* rotate gvectors and shift */
-    // C'_{S*G - G0} = C_{G}
-    for (ND_int ipw= 0 ; ipw <npwkq ; ++ipw)
-    {   
-        ELPH_float * restrict GPtr = Gkq->data + 3*ipw;
-        ELPH_float tempG[3]={0,0,0};
-        MatVec3f(symkq, GPtr, false, tempG);
-
-        GPtr[0] = tempG[0]-ulmveckq[0] ;
-        GPtr[1] = tempG[1]-ulmveckq[1] ;
-        GPtr[2] = tempG[2]-ulmveckq[2] ;
-    }
     // rotate the wave function in spin space 
     ELPH_cmplx su2kq[4]  = {1,0,0,1};
+    ELPH_cmplx su2k[4]  = {1,0,0,1};
     /* Get SU(2) matrices for spinors*/
     SU2mat(symkq,  nspinor,  false,  timerevkq,  su2kq);
-    /* Apply spinors to wfcs */
-    su2rotate(nspinor, npwkq,  nspin*nbndskq, su2kq,  wfc_kq->data);
+    SU2mat(symk,   nspinor,  false,  timerevk,   su2k);
+    
     // in case of time rev, we have to complex conj the wavefunction, 
     // which is done at sandwiching.
     
-    ND_int elph_buffer_len = nbndsk*nbndskq*nspin ; 
+    /* scatter the wfc and gvecs */
+    int * gvecSGkq ;
+    int * gvecSGk ;
+    ELPH_cmplx * wfcSkq;
+    ELPH_cmplx * wfcSk;
 
-    
+    ND_int nGxySkq, nGxySk;
+
+    Sort_pw(npwkq_total, npwkq, lattice->fft_dims, gSkq_buf , wfc_kq->data, \
+                nspin*nspinor*nbndskq, &npwkq, &nGxySkq, &gvecSGkq, &wfcSkq, commK);
+
+    Sort_pw(npwk_total, npwk, lattice->fft_dims, gSk_buf , wfc_k->data, \
+                nspin*nspinor*nbndsk, &npwk, &nGxySk, &gvecSGk, &wfcSk, commK);
+                
+    /* Apply spinors to wfcs */
+    su2rotate(nspinor, npwkq,  nspin*nbndskq, su2kq,  wfcSkq);
+
+    free(gSkq_buf);
+    free(gSk_buf);
+
+    ND_array(Nd_cmplxS) wfcSk_r[1];
+    ND_array(Nd_cmplxS) dVpsi_r[1], dVpsiG[1];
+    // s,b,sp,nx,ny,nz
+    ND_function(init, Nd_cmplxS) (wfcSk_r, 6, nd_idx{nspin,nbndsk,nspinor, \
+                                lattice->fft_dims[0], lattice->fft_dims[1],lattice->nfftz_loc});
+
+    ND_function(malloc, Nd_cmplxS) (wfcSk_r);
+
+    struct ELPH_fft_plan fft_plan; 
+
+    // create plan for Sk
+    wfc_plan(&fft_plan, npwk, lattice->nfftz_loc, nGxySk, gvecSGk, lattice->fft_dims, FFTW_MEASURE, commK);
+
+    /* FFT Sk wave function in real space */
+    for (ND_int iset = 0 ; iset < (nspin*nbndsk) ; ++iset )
+    {
+        // rotate spinor wfc
+        ELPH_cmplx * restrict wfcSk_tmp = wfcSk + iset*nspinor*npwk;
+        su2rotate(nspinor, npwk,  1, su2k, wfcSk_tmp);
+
+        ELPH_cmplx * restrict wfcSkr_tmp = wfcSk_r->data + iset*wfcSk_r->strides[1] ;
+
+        invfft3D(&fft_plan, nspinor, wfcSk_tmp, wfcSkr_tmp, timerevk);
+        
+    }
+
+    // free some buffers
+    wfc_destroy_plan(&fft_plan);
+    free(gvecSGk) ;
+    free(wfcSk);
+
+
+    // create plan for dvSpi
+    wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq, lattice->fft_dims, FFTW_MEASURE, commK);
+
+    ND_function(init, Nd_cmplxS) (dVpsi_r, 4, nd_idx{nspinor, lattice->fft_dims[0], lattice->fft_dims[1],lattice->nfftz_loc});
+    ND_function(malloc, Nd_cmplxS) (dVpsi_r);
+
+
+    ND_function(init, Nd_cmplxS) (dVpsiG, 4, nd_idx{nspin,nbndsk,nspinor, npwkq});
+    ND_function(malloc, Nd_cmplxS) (dVpsiG);
+
+    ND_int elph_buffer_len = nbndsk*nbndskq*nspin ; 
     if (krank ==0)
     {   
         ELPH_OMP_PAR_FOR_SIMD // FIX ME, only master node?
         for (ND_int i =0 ; i<elph_buffer_len; ++i) elph_kq[i] = 0.0 ;
     }
-    /* temporart buffer arrays */
-    const ELPH_float Imat3[9] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}; // 3x3 identity matrix 
-    const ELPH_float zero_temp[3] = {0.0,0.0,0.0} ;
-    int zero3[3] = {0,0,0};
     
     ND_int nmag = dVlocr->dims[1]; /* nmag = 1 for non magnetic and = 2/4 for spin polarized/magnetic systems */
     /* nmag is the spinor dimension of the change in potential */
@@ -133,13 +172,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     // create a temporary buffer to store local el-ph mat elements 
     ELPH_cmplx * elph_kq_mn  = calloc(nbndsk*nbndskq, sizeof(ELPH_cmplx));
     /* Now Get Sk in real space*/
-    
-    wfcinVFFT(wfc_k,symk,tauk,zero3,timerevk,lat_vec, npwk_total, Gk, wfcRspace, commK); 
-    // store the wfc in the other buffer
-    ND_function(copy, Nd_cmplxS) (&(wfcRspace->Buffer), &(wfcRspace->Buffer_temp));
-    
-    ND_array(Nd_cmplxS) wfc_Sk_real = wfcRspace->Buffer_temp;
-    ND_array(Nd_cmplxS) dv_psi_r    = wfcRspace->Buffer ;
+
 
     /* Compute dVpsi in G space and compute the sandwich */        
     for (ND_int iv =0 ; iv <nmodes; ++iv)
@@ -150,27 +183,36 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         ELPH_cmplx * dv_nu = dVlocr->data + dVlocr->strides[0]*iv ; // (nmodes, nmag, nffts_in_this_cpu)
         for (ND_int is = 0 ; is <nspin; ++is)
         {   
-            ELPH_cmplx * psi_r_spin = wfc_Sk_real.data  + is*wfc_Sk_real.strides[0];
+            // (wfcSk_r, 6, nd_idx{nspin,nbndsk,nspinor, \
+            //                     lattice->fft_dims[0], lattice->fft_dims[1],lattice->nfftz_loc});
+
+            ELPH_cmplx * psi_r_spin = wfcSk_r->data  + is*(wfcSk_r->strides[0]);
             ELPH_cmplx * dV_r = dv_nu +  dVlocr->strides[1]*is ; // only in nspin = 2 case, nmag represent nspin dimension
-
-            ELPH_cmplx * dv_psi = dv_psi_r.data + is*dv_psi_r.strides[0];
             
-            dvpsi(nbndsk, nmag, nspinor, dVlocr->strides[1], dV_r, psi_r_spin, dv_psi);
-        }
-        /***/
-        // get back to G space 
-        wfcFFT(wfcRspace, Imat3, zero_temp, zero3, false, lat_vec, npwkq_total, Gkq, dVpsiG, commK);
-        // Compute the sandwich
-        char blas_char = 'C';
-        if (timerevkq) blas_char = 'T'; // we perform the time reversal conjugation (if any) here now
+            // ND_function(init, Nd_cmplxS) (dVpsiG, 4, nd_idx{nspin,nbndsk,nspinor, npwkq});
+            
+            for (ND_int ibnd = 0 ; ibnd < nbndsk; ++ibnd)
+            {
+                
+                dvpsi(1, nmag, nspinor, dVpsi_r->strides[0], dV_r, psi_r_spin+ibnd*wfcSk_r->strides[1], dVpsi_r->data);
+                /***/
+                // get back to G space 
+                ELPH_cmplx * dV_psiG_ptr = dVpsiG->data + is*dVpsiG->strides[0] + ibnd*dVpsiG->strides[1];
+                
+                fft3D(&fft_plan, nspinor, dVpsi_r->data, dV_psiG_ptr, false);
 
-        for (ND_int is = 0 ; is <nspin; ++is )
-        {   /* msg, nsg -> mn */
+            }
+
+            // Compute the sandwich
+            char blas_char = 'C';
+            if (timerevkq) blas_char = 'T'; // we perform the time reversal conjugation (if any) here now
+        
+            /* msg, nsg -> mn */
             // FIX ME donot forget time reversal here. // wfc_kq->data
             // elph_kq_mn+ (iv*nspin+is)*nbndsk*nbndskq
-            ND_function(matmulX, Nd_cmplxS) ('N', blas_char, dVpsiG->data + is*(dVpsiG->strides[0]), \
-            wfc_kq->data + is*(wfc_kq->strides[0]), elph_kq_mn , 1.0, 0.0, dVpsiG->strides[1], \
-            wfc_kq->strides[1], nbndskq, nbndsk, nbndskq, dVpsiG->strides[1]);
+            ND_function(matmulX, Nd_cmplxS) ('N', blas_char, dVpsiG->data + is*dVpsiG->strides[0], \
+            wfcSkq + is*(dVpsiG->strides[0]), elph_kq_mn , 1.0, 0.0, dVpsiG->strides[1], \
+            dVpsiG->strides[1], nbndskq, nbndsk, nbndskq, dVpsiG->strides[1]);
             // reduce the electron phonon matrix elements
             ELPH_cmplx * elph_sum_buf ;
             ELPH_cmplx temp_sum = 0 ; // dummy
@@ -181,12 +223,15 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     }
     // Free stuff
     free(elph_kq_mn);
+    wfc_destroy_plan(&fft_plan);
+    ND_function(destroy, Nd_cmplxS) (dVpsiG);
+    ND_function(destroy, Nd_cmplxS) (wfcSk_r);
+    ND_function(destroy, Nd_cmplxS) (dVpsi_r);
+
+    free(gvecSGkq) ;
+    free(wfcSkq);
     // Free stuff
 
-    /*free wfc buffers */
-    ND_function(destroy,Nd_cmplxS)(wfc_kq);
-    ND_function(destroy,Nd_cmplxS)(dVpsiG);
-    ND_function(destroy,Nd_floatS)(Gkq);
 }
 
 

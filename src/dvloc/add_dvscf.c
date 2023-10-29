@@ -19,10 +19,10 @@ void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc)
     nmag = 2 : d{V} + d{Bz}  and d{V} - d{Bz} are stored (nspin = 2)
     nmag = 4 : d{V}, d{Bx},d{By},d{Bz} are stored (magnetic, non collinear)
     
-    dVscf -> (nmodes, nmag, nffts_in_this_cpu)
-    dVloc -> (nmodes, nffts_in_this_cpu)
+    dVscf -> (nmodes, nmag, Nx,Ny,Nz_loc)
+    dVloc -> (nmodes, Nx,Ny,Nz_loc)
     */  
-    if (dVloc->dims[1] != dVscf->dims[2]) error_msg("Wrong FFT dimensions in dVscf");
+    if (dVscf->strides[1] != dVloc->strides[0]) error_msg("Wrong FFT size in dVscf");
 
     ND_int nmodes = dVscf->dims[0];
     ND_int nmag   = dVscf->dims[1];

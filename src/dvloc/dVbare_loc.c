@@ -27,6 +27,13 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
             d Vloc/dtau (in cart) (nmode,nffts_this_cpu), 
     */
 
+    int mpi_error;
+    // get the total cpus in comm and rank of each cpu
+    int my_rank, Comm_size;
+    mpi_error = MPI_Comm_size(commK, &Comm_size);
+    mpi_error = MPI_Comm_rank(commK, &my_rank);
+
+
     const ND_array(Nd_floatS)* latvec       = lattice->alat_vec;
     const ND_int ntype                      = pseudo->ntype;
     const ND_array(Nd_floatS)* atom_pos     = lattice->atomic_pos;
@@ -37,14 +44,22 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     const ND_array(Nd_floatS)* rab_grid     = pseudo->rab_grid;
     const ND_int ngrid_max                  = pseudo->ngrid_max;
     const ELPH_float * Zval                 = pseudo->Zval;
-
-    ND_int size_Vr      = ND_function(size, Nd_cmplxS) (Vlocr);
-    ELPH_cmplx *  VlocG = malloc(sizeof(ELPH_cmplx)*size_Vr);
+    ND_int natom                            = atom_pos->dims[0];
 
     ND_function(set_all, Nd_cmplxS)(Vlocr , 0.0);
-    for (ND_int ig = 0; ig < size_Vr; ++ig) VlocG[ig] = 0.0 ;
+
+    ND_int G_vecs_xy, Gxy_shift;
     
-    ND_int natom = atom_pos->dims[0];
+    G_vecs_xy = get_mpi_local_size_idx(lattice->fft_dims[0]*lattice->fft_dims[1], \
+                                        &Gxy_shift, commK);
+
+    ND_int size_G_vecs      = G_vecs_xy*lattice->fft_dims[2]; 
+    ND_int size_VG          = 3*natom*size_G_vecs;
+
+    ELPH_cmplx *  VlocG      = malloc(size_VG*sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+    ELPH_cmplx *  VlocG_mode = calloc(size_VG, sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+
+    int * gvecs = malloc(3*size_G_vecs*sizeof(int));
     
     ELPH_float volume = fabs(det3x3(latvec->data));
 
@@ -59,8 +74,6 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     FFTy = lattice->fft_dims[1];
     FFTz = lattice->fft_dims[2];
 
-    ND_int fft_strides[3] = {FFTy*FFTz,FFTz,1};
-
     ELPH_OMP_PAR
     {
     ELPH_float * work_array;
@@ -69,71 +82,83 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     
     ELPH_float * VlocGtype = work_array+ngrid_max;
     
-    for (ND_int ifft = 0 ; ifft < lattice->nffts_loc; ++ifft)
+    for (ND_int ig = 0 ; ig < G_vecs_xy; ++ig)
     {   
-        ND_int fft_glob_idx = lattice->nfft_shift_loc + ifft;
-        ND_int Nx = fft_glob_idx/fft_strides[0] ;
-        ND_int temp_rem = fft_glob_idx%fft_strides[0] ;
-        ND_int Ny = temp_rem/fft_strides[1] ;
-        ND_int Nz = temp_rem%fft_strides[1] ;
+        ND_int fft_glob_idx = Gxy_shift + ig;
+        ND_int ix = fft_glob_idx/FFTy ;
+        ND_int jy = fft_glob_idx%FFTy ;
         
+        for (ND_int kz = 0; kz<FFTz ; ++kz )
+        {   
+            int * restrict g_temp_set =  gvecs + FFTz*3*ig + kz*3;
+            g_temp_set[0] = ix; g_temp_set[1] = jy;  g_temp_set[2] = kz;
 
-        ELPH_float qGtemp[3] = {get_miller_idx(Nx,FFTx)+qpt[0], \
-        get_miller_idx(Ny,FFTy)+qpt[1], get_miller_idx(Nz,FFTz)+qpt[2]}; // | q + G|
+            ELPH_float qGtemp[3] = {get_miller_idx(ix,FFTx)+qpt[0], \
+            get_miller_idx(jy,FFTy)+qpt[1], get_miller_idx(kz,FFTz)+qpt[2]}; // | q + G|
 
-        ELPH_float qGtempCart[3]; // in cartisian coordinate
+            ELPH_float qGtempCart[3]; // in cartisian coordinate
 
-        MatVec3f(blat,qGtemp,false,qGtempCart); // 2*pi is included here //
+            MatVec3f(blat,qGtemp,false,qGtempCart); // 2*pi is included here //
                 
-        ELPH_float qGnorm = sqrt(qGtempCart[0]*qGtempCart[0] + \
-                            qGtempCart[1]*qGtempCart[1] + qGtempCart[2]*qGtempCart[2]);
+            ELPH_float qGnorm = sqrt(qGtempCart[0]*qGtempCart[0] + \
+                                qGtempCart[1]*qGtempCart[1] + qGtempCart[2]*qGtempCart[2]);
                             
-        ELPH_cmplx * tmp_ptr =  VlocG + 3*natom*ifft; 
+            ELPH_cmplx * tmp_ptr =  VlocG + 3*natom*(ig*FFTz + kz); 
 
-        ELPH_float cutoff_fac = 1;
-        /* using analytic cutoff which works only when z periodicity is broken */
-        if (cutoff == '2')
-        {   
-            ELPH_float qGp = latvec->data[8] * sqrt(qGtempCart[0]*qGtempCart[0] + qGtempCart[1]*qGtempCart[1]) ; 
-            cutoff_fac -= exp(-qGp*0.5)*cos(qGtempCart[2]*latvec->data[8]*0.5) ;
-        }
+            ELPH_float cutoff_fac = 1;
+            /* using analytic cutoff which works only when z periodicity is broken */
+            if (cutoff == '2')
+            {   
+                ELPH_float qGp = latvec->data[8] * sqrt(qGtempCart[0]*qGtempCart[0] + qGtempCart[1]*qGtempCart[1]) ; 
+                cutoff_fac -= exp(-qGp*0.5)*cos(qGtempCart[2]*latvec->data[8]*0.5) ;
+            }
 
-        for (ND_int itype = 0; itype <ntype; ++itype )
-        {
-            VlocGtype[itype] = Vloc_Gspace(work_array, cutoff, qGnorm, Vloc_atomic+itype, \
+            for (ND_int itype = 0; itype <ntype; ++itype )
+            {
+                VlocGtype[itype] = Vloc_Gspace(work_array, cutoff, qGnorm, Vloc_atomic+itype, \
                             r_grid+itype, rab_grid+itype, Zval[itype],eta,cutoff_fac)/volume ;
-        }
-        ELPH_OMP_PAR_SIMD
-        for (ND_int ia = 0 ; ia<natom; ++ia)
-        {   
-            ND_int itype = atom_type[ia];
-                    
-            ELPH_float * pos_temp = atom_pos->data + 3*ia ;
-            ELPH_float qdottau = qGtempCart[0]*pos_temp[0]+qGtempCart[1]*pos_temp[1] + qGtempCart[2]*pos_temp[2];
-            ELPH_cmplx factor = -I*cexp(-I*qdottau);
-            factor *= VlocGtype[itype];
-            tmp_ptr[ia*3]   = factor*qGtempCart[0];
-            tmp_ptr[ia*3+1] = factor*qGtempCart[1];
-            tmp_ptr[ia*3+2] = factor*qGtempCart[2];
+            }
+            ELPH_OMP_PAR_SIMD
+            for (ND_int ia = 0 ; ia<natom; ++ia)
+            {   
+                ND_int itype = atom_type[ia];
+                ELPH_float * pos_temp = atom_pos->data + 3*ia ;
+                ELPH_float qdottau = qGtempCart[0]*pos_temp[0]+qGtempCart[1]*pos_temp[1] + qGtempCart[2]*pos_temp[2];
+                ELPH_cmplx factor = -I*cexp(-I*qdottau);
+                factor *= VlocGtype[itype];
+                tmp_ptr[ia*3]   = factor*qGtempCart[0];
+                tmp_ptr[ia*3+1] = factor*qGtempCart[1];
+                tmp_ptr[ia*3+2] = factor*qGtempCart[2];
+            }
         }
     }
     ELPH_OMP_PAR_CRITICAL
     free(work_array);
     }
+
+
     //VlocG -> (nffs,atom,3), 
     // get it in mode basis @ (nu,atom,3) @(nffs,atom,3)^T
     ND_int ldA_eigVec = eigVec->strides[0]; //
     ND_int nmodes_ph  = eigVec->dims[0];
-    ND_int nfft_dim   = lattice->nffts_loc ;
 
-    ND_function(matmulX, Nd_cmplxS) ('N', 'T', eigVec->data, VlocG, Vlocr->data, \
-        1.0, 0.0, ldA_eigVec, ldA_eigVec, nfft_dim, nmodes_ph, nfft_dim, ldA_eigVec);
-    
-    // free some buffers
+
+    ND_function(matmulX, Nd_cmplxS) ('N', 'T', eigVec->data, VlocG, VlocG_mode, \
+        1.0, 0.0, ldA_eigVec, ldA_eigVec, size_G_vecs, nmodes_ph, size_G_vecs, ldA_eigVec);
     free(VlocG);
+
+    struct ELPH_fft_plan fft_plan;
+
+    wfc_plan(&fft_plan, size_G_vecs, lattice->nfftz_loc, G_vecs_xy, gvecs, \
+            lattice->fft_dims, FFTW_MEASURE, commK);
+
+    invfft3D(&fft_plan, nmodes_ph, VlocG_mode, Vlocr->data, false);
     
-    // perform the inv FFT
-    VlocinVFFT(Vlocr, lattice, commK);
+    wfc_destroy_plan(&fft_plan);
+    // ND_function(write, Nd_cmplxS) ("Vloc.nc","local_pot",Vlocr,(char * []){"mode","ix","jy","kz"},NULL ) ;
+    free(gvecs);
+    free(VlocG_mode);
+
     
 }
 
