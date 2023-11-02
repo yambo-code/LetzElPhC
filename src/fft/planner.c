@@ -29,6 +29,9 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     ND_int size_fft_data = fft_dims[0]*fft_dims[1]*plan->nzloc ;
     if (size_fft_data < (fft_dims[2]*nGxyloc) ) size_fft_data = fft_dims[2]*nGxyloc ; 
 
+    plan->align_len = alignment_len();
+    size_fft_data += plan->align_len; // we add alignment_len to make alignment_len plans for x and y
+
     // alloc memory for fft_data and nz_buf;
     plan->fft_data = fftw_fun(malloc)(size_fft_data*sizeof(ELPH_cmplx));
     plan->nz_buf   = fftw_fun(malloc)(size_fft_data*sizeof(ELPH_cmplx)); 
@@ -38,9 +41,6 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     
     memset(plan->fft_data,0,size_fft_data*sizeof(ELPH_cmplx)); // 0 the buffer
     memset(plan->nz_buf,  0,size_fft_data*sizeof(ELPH_cmplx)); // 0 the buffer
-
-    
-    fft_data->data = plan->fft_data ;
 
     plan->comm        = comm;
     plan->gvecs       = gvecs;
@@ -53,36 +53,6 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     mpi_error = MPI_Allreduce(&nGxyloc, &(plan->nGxy), 1, ELPH_MPI_ND_INT, MPI_SUM, comm);
 
     if (nGxyloc != get_mpi_local_size_idx(plan->nGxy, NULL,comm)) error_msg("Wrong xy local dimensions to planner.");
-
-    /*
-    Now time to create plans
-    */
-    // a) first create a plan in XY direction
-    // Nx,Ny,Nz_thiscpu
-    // fwd plan r->G
-    const ND_int in_idx[2] = {0,1};
-    ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 2, \
-                    in_idx, -1, NULL, fft_flags, &(plan->fplan_xy));
-    if (plan->fplan_xy == NULL) error_msg("XY forward plan failed");
-
-    // backward plan G->r
-    ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 2, \
-                    in_idx, +1, NULL, fft_flags, &(plan->bplan_xy));
-    if (plan->bplan_xy == NULL) error_msg("XY backward plan failed");
-    
-    // uninitiate the fft_data
-    ND_function(uninit, Nd_cmplxS) (fft_data);
-    
-    // b) create a z plan. 
-    // forward plan-> 
-    plan->fplan_z = fftw_fun(plan_many_dft)(1, (int[1]){fft_dims[2]}, nGxyloc, plan->nz_buf, \
-                        NULL, 1, fft_dims[2], plan->nz_buf, NULL,1, fft_dims[2],-1, fft_flags);
-    if (plan->fplan_z == NULL) error_msg("Z forward plan failed");
-    
-    // backward plan 
-    plan->bplan_z = fftw_fun(plan_many_dft)(1, (int[1]){fft_dims[2]}, nGxyloc, plan->nz_buf, \
-                        NULL, 1, fft_dims[2], plan->nz_buf, NULL,1, fft_dims[2],+1, fft_flags);
-    if (plan->bplan_z == NULL) error_msg("Z backward plan failed");
     
     int * Gxy_loc   = malloc(sizeof(int)*2*nGxyloc);       // local gxy (nGxyloc,2)
     plan->Gxy_total = malloc(sizeof(int)*2*plan->nGxy);
@@ -101,8 +71,15 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     // zero the buffer
     for (ND_int i = 0 ; i < nGxyloc; ++i) plan->ngxy_z[i] = 0;
 
+    int Gxmin = gvecs[0] ; int Gxmax = gvecs[0]; // min and max values of Gx
+
     for (ND_int ig = 0; ig < plan->ngvecs_loc; ++ig)
     {   
+        int Gx_temp = gvecs[3*ig];
+        if (Gx_temp > 0) Gx_temp = get_miller_idx(Gx_temp, fft_dims[0]);
+        if (Gx_temp < Gxmin) Gxmin = Gx_temp;
+        if (Gx_temp > Gxmax) Gxmax = Gx_temp;
+
         if (gvecs[3*ig+1] != Gy_prev || gvecs[3*ig] != Gx_prev)
         {   
             Gx_prev = gvecs[3*ig];
@@ -121,6 +98,11 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     }
 
     if (xycount != nGxyloc) error_msg("Wrong number of xy components in each cpu");
+    // get global Gmin anf Gmax
+    mpi_error = MPI_Allreduce(MPI_IN_PLACE, &Gxmin, 1, MPI_INT, MPI_MIN, comm);
+    mpi_error = MPI_Allreduce(MPI_IN_PLACE, &Gxmax, 1, MPI_INT, MPI_MAX, comm);
+    // so we have to perform ffts from [0,Gxmax] and [Nx-Gxmin,Gxmax]
+
 
     mpi_error = MPI_Allgather(&xycount, 1, MPI_INT, gxy_counts, 1, MPI_INT, comm);
 
@@ -152,6 +134,124 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
         dispdisp_temp += z_counts[i];
     }
 
+    /* Now time to create plans */
+    // i) create plan along entire X direction
+    // ii) create two plans along y for -Gx_min < Gx < Gx_max
+    // iii) create plan for along z only for set of (Gx,Gy) pairs
+    
+    // create plan buffers
+    plan->fplan_x  = malloc(sizeof(ND_function(FFT_plan, Nd_cmplxS))* 6 * plan->align_len);  // (naligment plans) for x 
+    plan->fplan_y  = plan->fplan_x + plan->align_len;  // (naligment plans) for y
+    plan->fplan_y1 = plan->fplan_x + 2*plan->align_len; // (naligment plans) for y
+
+    /* backward plans G->r */
+    plan->bplan_x  = plan->fplan_x + 3*plan->align_len;  // (naligment plans) for x 
+    plan->bplan_y  = plan->fplan_x + 4*plan->align_len;  // (naligment plans) for y
+    plan->bplan_y1 = plan->fplan_x + 5*plan->align_len; // (naligment plans) for y
+    
+    
+    if (Gxmin >= 0 || Gxmax <= 0) 
+    {   
+        /* In this case something is fishy, so do a full fft along x,y */
+        if (fft_dims[0]%2 == 0)
+        {
+            Gxmin = -fft_dims[0]/2;
+            Gxmax =  (fft_dims[0]/2)-1;
+        }
+        else
+        {
+            Gxmin = -(fft_dims[0]-1)/2;
+            Gxmax =  (fft_dims[0]-1)/2; 
+        }
+    }
+    
+    Gxmin += fft_dims[0];    
+    plan->Gxmin = Gxmin;   
+    plan->Gxmax = Gxmax;
+
+    // DEbug// comment me later
+    if (Gxmin <0 || Gxmax <0) error_msg("FFT fail along xy");
+
+    // i) create forward plan and bwd plan along X
+    for (ND_int i = 0; i<plan->align_len; ++i)
+    {
+        fft_data->data = plan->fft_data+i;
+        const ND_int in_idx[2] = {0,1};
+        
+        ND_int ia = fftw_fun(alignment_of)((void *)fft_data->data);
+        ia /= sizeof(ELPH_cmplx);
+
+        ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 1, \
+                    in_idx, -1, NULL, fft_flags, plan->fplan_x+ia);
+        if (plan->fplan_x[ia] == NULL) error_msg("X forward plan failed");
+
+        // backward plan G->r
+        ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 1, \
+                    in_idx, +1, NULL, fft_flags, plan->bplan_x+ia);
+        if (plan->bplan_x[ia] == NULL) error_msg("X backward plan failed");
+    }
+
+    // uninitiate the fft_data
+    ND_function(uninit, Nd_cmplxS) (fft_data);
+    ND_function(init, Nd_cmplxS) (fft_data, 3, nd_idx{(Gxmax+1),fft_dims[1],plan->nzloc});
+
+    
+    // ii) create two Y ffts plans along Y :  N-Gmin < Gx < N-1 and 
+
+    //  first we create Y plans for 0 <= Gx <= Gmax
+    for (ND_int i = 0; i<plan->align_len; ++i)
+    {
+        fft_data->data = plan->fft_data+i;
+        const ND_int in_idx = 1;
+        
+        ND_int ia = fftw_fun(alignment_of)((void *)fft_data->data);
+        ia /= sizeof(ELPH_cmplx);
+
+        ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 1, \
+                    &in_idx, -1, NULL, fft_flags, plan->fplan_y+ia);
+        if (plan->fplan_y[ia] == NULL) error_msg("Y forward plan failed");
+
+        // backward plan G->r
+        ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 1, \
+                    &in_idx, +1, NULL, fft_flags, plan->bplan_y+ia);
+        if (plan->bplan_y[ia] == NULL) error_msg("Y backward plan failed");
+    }
+    
+    ND_function(uninit, Nd_cmplxS) (fft_data);
+    ND_function(init, Nd_cmplxS) (fft_data, 3, nd_idx{(fft_dims[0]-Gxmin),fft_dims[1],plan->nzloc});
+
+
+    // Then we create Y plans for N-Gmin < Gx < N-1
+    for (ND_int i = 0; i<plan->align_len; ++i)
+    {
+        fft_data->data = plan->fft_data+i;
+        const ND_int in_idx = 1;
+        
+        ND_int ia = fftw_fun(alignment_of)((void *)fft_data->data);
+        ia /= sizeof(ELPH_cmplx);
+
+        ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 1, \
+                    &in_idx, -1, NULL, fft_flags, plan->fplan_y1+ia);
+        if (plan->fplan_y1[ia] == NULL) error_msg("Y1 forward plan failed");
+
+        // backward plan G->r
+        ND_function(fft_planner, Nd_cmplxS) (fft_data, fft_data, 1, \
+                    &in_idx, +1, NULL, fft_flags, plan->bplan_y1+ia);
+        if (plan->bplan_y1[ia] == NULL) error_msg("Y1 backward plan failed");
+    }
+    ND_function(uninit, Nd_cmplxS) (fft_data);
+
+    // iii) create a single z plan. 
+    // forward plan-> 
+    plan->fplan_z = fftw_fun(plan_many_dft)(1, (int[1]){fft_dims[2]}, nGxyloc, plan->nz_buf, \
+                        NULL, 1, fft_dims[2], plan->nz_buf, NULL,1, fft_dims[2],-1, fft_flags);
+    if (plan->fplan_z == NULL) error_msg("Z forward plan failed");
+    
+    // backward plan 
+    plan->bplan_z = fftw_fun(plan_many_dft)(1, (int[1]){fft_dims[2]}, nGxyloc, plan->nz_buf, \
+                        NULL, 1, fft_dims[2], plan->nz_buf, NULL,1, fft_dims[2],+1, fft_flags);
+    if (plan->bplan_z == NULL) error_msg("Z backward plan failed");
+
 }
 
 
@@ -161,12 +261,24 @@ void wfc_destroy_plan(struct ELPH_fft_plan * plan)
     fftw_fun(free)(plan->fft_data);
     fftw_fun(free)(plan->nz_buf);
     // destroy plans
-    ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_xy);
-    ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_xy);
+
+    for (ND_int i = 0; i<plan->align_len; ++i)
+    {
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_x[i]);
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_x[i]);
+
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_y[i]);
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_y[i]);
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_y1[i]);
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_y1[i]);
+        
+    }
+
     ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_z);
     ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_z);
 
     // free remaining buffers
+    free(plan->fplan_x);
     free(plan->comm_bufs);
     free(plan->Gxy_total);
     free(plan->ngxy_z);

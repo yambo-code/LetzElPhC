@@ -335,3 +335,34 @@ void Gemm3x3f(const ELPH_float * restrict A, const char transA, \
     else error_msg("Wrong Trans type");
     return ;
 }
+
+
+
+/* functions related to fft */
+
+ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension)
+{
+    // returns FFT Indices to [-N/2, N/2) if FFT_dimension is even
+    // [-(n-1)/2,(n-1)/2 )] of FFT_dimension is odd
+    ND_int mid_pnt = (FFT_dimension-1)/2 + 1 ;
+    if ( idx_in < mid_pnt ) return idx_in;
+    else return (idx_in-mid_pnt)-FFT_dimension/2 ;
+}
+
+
+/* This function converts miller indices to FFT indices*/
+int get_fft_idx(ELPH_float idx_in, int FFT_dimension)
+{      
+    /*
+    We need this functions because FFT libraries assume that the 
+    indices run from [0,N) but where as miller indices are from 
+    [-N/2,N/1)
+    */
+    // returns FFT Indices to [0, N-1]
+    int temp_idx = rint(idx_in);
+    if (temp_idx>=0) return temp_idx;
+    else return FFT_dimension+temp_idx ;
+
+}
+
+

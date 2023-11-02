@@ -31,16 +31,30 @@ void fft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
     ELPH_float norm = Nx*Ny*Nz ;
     norm = 1.0/norm ;
 
+    ND_int Ny1_stride = plan->nzloc * Ny;
+
     ND_int fft_buf_size = Nx*Ny*plan->nzloc; 
     
     for (ND_int iset = 0 ; iset < nsets; ++iset)
     {   
         ELPH_cmplx * wfcr_tmp = wfcr + iset*fft_buf_size;
         ELPH_cmplx * wfcG_tmp = wfcG + iset*plan->ngvecs_loc ;
-        // copy to the buffer
-        memcpy(plan->fft_data,wfcr_tmp,sizeof(ELPH_cmplx)*fft_buf_size);
-        // a) perform FFTs along xy slab
-        ND_function(fft_execute_plan, Nd_cmplxS) (plan->fplan_xy);
+
+        ND_int ia = fftw_fun(alignment_of)((void *)wfcr_tmp);
+        ia /= sizeof(ELPH_cmplx);
+        // a) (i) FFT along X
+        fftw_fun(execute_dft)(plan->fplan_x[ia],wfcr_tmp,wfcr_tmp);
+
+        // a) (ii) FFT along Y 0<=Gx<=Gmax
+        fftw_fun(execute_dft)(plan->fplan_y[ia],wfcr_tmp,wfcr_tmp);
+
+        // a) (iii) FFT along Y1   Gmin <= Gx < N
+        ELPH_cmplx * wfcr_tmp_y1 = wfcr_tmp + plan->Gxmin*Ny1_stride ; //(Gx,Ny,Nz_log)
+
+        ia = fftw_fun(alignment_of)((void *)wfcr_tmp_y1);
+        ia /= sizeof(ELPH_cmplx);
+
+        fftw_fun(execute_dft)(plan->fplan_y1[ia],wfcr_tmp_y1,wfcr_tmp_y1);
         
         // b) (i) pack the data for transpose 
         for (ND_int ixy = 0 ; ixy < plan->nGxy; ++ixy)
@@ -48,7 +62,7 @@ void fft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
             ND_int Gx = plan->Gxy_total[2*ixy];
             ND_int Gy = plan->Gxy_total[2*ixy+1];
             // [Gx,Gy,0] =  Gx*Ny*Nzloc + Gy*Nzloc 
-            ELPH_cmplx * xy_buf = plan->fft_data + plan->nzloc*(Gy + Gx*Ny);
+            ELPH_cmplx * xy_buf = wfcr_tmp + plan->nzloc*(Gy + Gx*Ny);
             // (Nxy,Zloc)
             memcpy(plan->nz_buf + ixy*plan->nzloc, xy_buf, sizeof(ELPH_cmplx)*plan->nzloc);
         }
@@ -75,6 +89,8 @@ void fft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
         if (igvec != plan->ngvecs_loc) error_msg("Gvec mismatch in fwd execute. ");
     }
 }
+
+
 
 
 

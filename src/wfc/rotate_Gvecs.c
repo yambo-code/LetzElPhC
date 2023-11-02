@@ -3,22 +3,6 @@ This file contains helper functions that are use in wfc routines
 */
 #include "wfc.h"
 
-/* This function converts miller indices to FFT indices*/
-int get_fft_idx(ELPH_float idx_in, int FFT_dimension)
-{      
-    /*
-    We need this functions because FFT libraries assume that the 
-    indices run from [0,N) but where as miller indices are from 
-    [-N/2,N/1)
-    */
-    // returns FFT Indices to [0, N-1]
-    int temp_idx = rint(idx_in);
-    if (temp_idx>=0) return temp_idx;
-    else return FFT_dimension+temp_idx ;
-
-}
-
-
 /* rotate Gvectors */
 void rotateGvecs(const ELPH_float * Gvecs, const ELPH_float * sym, const ND_int ngvecs, 
                 const  ELPH_float * lat_vec, const bool inverse, const bool crystal,

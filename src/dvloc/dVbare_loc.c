@@ -1,7 +1,5 @@
 #include "dvloc.h"
 
-static ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension);
-
 
 void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \
             ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * Vlocr, MPI_Comm commK)
@@ -165,12 +163,3 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
 
 
 
-/* Static helper functions */
-static ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension)
-{
-    // returns FFT Indices to [-N/2, N/2) if FFT_dimension is even
-    // [-(n-1)/2,(n-1)/2 )] of FFT_dimension is odd
-    ND_int mid_pnt = (FFT_dimension-1)/2 + 1 ;
-    if ( idx_in < mid_pnt ) return idx_in;
-    else return (idx_in-mid_pnt)-FFT_dimension/2 ;
-}
