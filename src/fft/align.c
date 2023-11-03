@@ -7,7 +7,6 @@
 ND_int alignment_len(void)
 {   
     /* get the aligment len in units of sizeof(ELPH_cmplx) bytes*/
-    // return -1 incase of error which means we should turn off simd
     ND_int align_len = ELPH_FFTW_SIMD_LEN+10;
     ND_int temp_len = sizeof(ELPH_cmplx)*ELPH_FFTW_SIMD_LEN;
 
