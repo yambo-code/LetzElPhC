@@ -22,8 +22,8 @@ struct ELPH_fft_plan
 
     ND_int nGxyloc;     // number of Gvecs local //
     ND_int nGxy;        // total number of Gvecs local //
-    ND_int Gxmin;       // min value of Gx
-    ND_int Gxmax;       // max value of Gx
+    ND_int Gxmin;       // min value of Gx for 2nd y set of y plans; Nx-abs(Gx)
+    ND_int Gxmax;       // max value of Gx for 1st y set of y plans;
     int * Gxy_total;     // total gxy (nGxy,2) must be in [0,N)
     int * ngxy_z;        // number of z components for each x,y
 
