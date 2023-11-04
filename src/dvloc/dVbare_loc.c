@@ -5,8 +5,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
             ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * Vlocr, MPI_Comm commK)
 {   
     /* 
-    Computes the change in local bare potential on reciprocal fft grid. the output must 
-    be fourier transformed
+    Computes the change in local bare potential in real space
     
     Input 
     qpt       : q-point in crystal coordinates
@@ -37,9 +36,6 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     const ND_array(Nd_floatS)* atom_pos     = lattice->atomic_pos;
     const int * atom_type                   = lattice->atom_type; 
     const char cutoff                       = lattice->dimension;
-    const ND_array(Nd_floatS)* Vloc_atomic  = pseudo->Vloc_atomic;
-    const ND_array(Nd_floatS)* r_grid       = pseudo->r_grid;
-    const ND_array(Nd_floatS)* rab_grid     = pseudo->rab_grid;
     const ND_int ngrid_max                  = pseudo->ngrid_max;
     const ELPH_float * Zval                 = pseudo->Zval;
     ND_int natom                            = atom_pos->dims[0];
@@ -55,7 +51,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     ND_int size_VG          = 3*natom*size_G_vecs;
 
     ELPH_cmplx *  VlocG      = malloc(size_VG*sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
-    ELPH_cmplx *  VlocG_mode = calloc(size_VG, sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+    
 
     int * gvecs = malloc(3*size_G_vecs*sizeof(int));
     
@@ -72,11 +68,16 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     FFTy = lattice->fft_dims[1];
     FFTz = lattice->fft_dims[2];
 
-    ELPH_OMP_PAR
-    {
-    ELPH_float * work_array;
-    ELPH_OMP_PAR_CRITICAL
-    work_array = malloc(sizeof(ELPH_float)*(ntype+ngrid_max));
+    ND_int npts_co; 
+    ELPH_float * g_co;
+    ELPH_float * vlocg;
+    ELPH_float * vploc_co;
+    // 1st compute the interpolation table
+    vlocg_table(lattice, pseudo, &npts_co, &g_co, &vlocg, &vploc_co, commK);
+
+    ELPH_float dg = g_co[1]-g_co[0]; // spacing between two g points in g_co
+
+    ELPH_float * work_array = malloc(sizeof(ELPH_float)*(ntype+ngrid_max));
     
     ELPH_float * VlocGtype = work_array+ngrid_max;
     
@@ -100,7 +101,11 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
                 
             ELPH_float qGnorm = sqrt(qGtempCart[0]*qGtempCart[0] + \
                                 qGtempCart[1]*qGtempCart[1] + qGtempCart[2]*qGtempCart[2]);
-                            
+            
+            if (qGnorm > g_co[npts_co-1]) error_msg("Vlocg Interpolation failed due to out of bounds");
+
+            ND_int gidx = floor(qGnorm/dg);
+
             ELPH_cmplx * tmp_ptr =  VlocG + 3*natom*(ig*FFTz + kz); 
 
             ELPH_float cutoff_fac = 1;
@@ -113,8 +118,14 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
 
             for (ND_int itype = 0; itype <ntype; ++itype )
             {
-                VlocGtype[itype] = Vloc_Gspace(work_array, cutoff, qGnorm, Vloc_atomic+itype, \
-                            r_grid+itype, rab_grid+itype, Zval[itype],eta,cutoff_fac)/volume ;
+                VlocGtype[itype] = spline_interpolate(qGnorm, gidx, g_co, vlocg+itype*npts_co , vploc_co+itype*npts_co);
+                // add long range part back
+                if (qGnorm >= ELPH_EPS) 
+                {
+                    VlocGtype[itype] -= \
+                    (4*ELPH_PI*ELPH_e2)*Zval[itype]*exp(-qGnorm*qGnorm*0.25/eta)*cutoff_fac/(qGnorm*qGnorm*volume) ;
+                }
+                //printf("%f \n",VlocGtype[itype]);
             }
             ELPH_OMP_PAR_SIMD
             for (ND_int ia = 0 ; ia<natom; ++ia)
@@ -130,10 +141,13 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
             }
         }
     }
-    ELPH_OMP_PAR_CRITICAL
-    free(work_array);
-    }
 
+    free(g_co);
+    free(vlocg);
+    free(vploc_co);
+    free(work_array);
+
+    ELPH_cmplx *  VlocG_mode = calloc(size_VG, sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
 
     //VlocG -> (nffs,atom,3), 
     // get it in mode basis @ (nu,atom,3) @(nffs,atom,3)^T
@@ -159,7 +173,4 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
 
     
 }
-
-
-
 

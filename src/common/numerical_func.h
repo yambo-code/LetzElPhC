@@ -39,4 +39,15 @@ int get_fft_idx(ELPH_float idx_in, int FFT_dimension);
 ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension);
 
 
+/* spline.c*/
+// spline interpolation functions
+ELPH_float spline_interpolate(const ELPH_float x, ND_int inear, \
+                const ELPH_float * restrict xi, const ELPH_float * restrict yi, \
+                const ELPH_float * restrict dy);
+
+void prepare_spline(const ND_int nvals, ELPH_float * restrict xin, \
+                    ELPH_float * restrict yin, ELPH_float * restrict dy);
+
+
+
 
