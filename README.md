@@ -1,11 +1,12 @@
 The main prototype of the code is done but there are some minor issues. 
 The developement will be very slow from now on. I will only develop in 
-my free times.
+my free time.
 
 # TODO (Short term). (Should be addressed after return)
 1) Distribute wfcs across all the kpools (now data is duplicated)
 2) Compute the representation matrices to rotate in q space
 3) Prepare test cases
+4) Improve OPENMP
 
 # TODOs (LONG TERM)
 1) Prepare an interface 
