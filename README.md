@@ -17,7 +17,7 @@ my free times.
 2) fft transpose.c routine ( FFTW MPI has a direct inplace transpose but looks 
 like there is a bug if the Block size is not set to default). Alternatively,
 if possible, directly perform transpose without rearrangement ?
-3) dVloc routines needs to slightly rewritten to avoid multiple array allocations
+3) dVloc routines needs to be slightly rewritten to avoid multiple array allocations
 
 
 
