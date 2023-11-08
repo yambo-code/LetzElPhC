@@ -1,5 +1,6 @@
-The main prototype of the code is done but there some minor issues. 
-The developement will be very slow from now on. Only in free times 
+The main prototype of the code is done but there are some minor issues. 
+The developement will be very slow from now on. I will only develop in 
+my free times.
 
 # TODO (Short term). (Should be addressed after return)
 1) Distribute wfcs across all the kpools (now data is duplicated)
