@@ -1,14 +1,4 @@
 /* This function reads all the lattice, pseudo and wfcs data from SAVE DIR */
-/*
-We now enable two choices on how to read wfcs. 
-1) read serially and scatter
-2) use parallel io read. (enabled by -DENABLE_PAR_WFC_READ_IO)
-
-Although the code implements both version, by default we use serial io and scatter.
-The main issue with parallel io is that it is hugely FS dependent and there is a 
-huge performace degradation when the FS does not support MPI-IO. Also I encountered 
-many problems with file opening when using on UniLux-HPC clusters. 
-*/
 
 #include "io.h"
 
@@ -19,7 +9,6 @@ static void quick_read(const int ncid, char* var_name, void * data_out);
 static void alloc_and_set_Gvec(ND_array(Nd_floatS) * gvec, ND_int ik, ND_array(Nd_floatS) * totalGvecs, \
                     ND_array(Nd_floatS) * Gvecidxs, ELPH_float * lat_param, ND_int nG, ND_int nG_shift);
 
-#ifdef ENABLE_PAR_WFC_READ_IO
 static void quick_read_sub(const int ncid, char* var_name, const size_t * startp, \
                             const size_t * countp, void * data_out);
 
@@ -27,14 +16,6 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ND_int nspin, ND_int nspinor, ND_int start_band, ND_int nbnds, \
             ND_int nG, ND_int G_shift, const char * save_dir, char * work_array, \
             ELPH_cmplx * out_wfc, MPI_Comm comm);
-#else
-static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
-            ND_int nspin, ND_int nspinor, ND_int start_band, ND_int nbnds, \
-            ND_int npw_total, const char * save_dir, char * work_array, \
-            int * mpi_buff_array, int nG, int G_shift, \
-            ELPH_cmplx * read_bufs, MPI_Request * mpi_requests, \
-            ELPH_cmplx * out_wfc, MPI_Comm comm);
-#endif
 
 /* Function body */
 void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
@@ -352,9 +333,6 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     /* Bcast ELPH_float * nGmax */
     mpi_error = MPI_Bcast(nGmax, nibz, ELPH_MPI_float, 0, MPI_COMM_WORLD );
 
-    // find the max number of pws i.e max(nGmax)
-    lattice->npw_max  = rint(find_maxfloat(nGmax, nibz)) ;
-
     ND_array(Nd_floatS) totalGvecs, Gvecidxs ;
     
     if (my_rank == 0) 
@@ -368,35 +346,6 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     }
     Bcast_ND_arrayFloat(&totalGvecs, true, 0, MPI_COMM_WORLD);
     Bcast_ND_arrayFloat(&Gvecidxs, true, 0, MPI_COMM_WORLD);
-
-    #ifndef ENABLE_PAR_WFC_READ_IO
-    // we need temporary buffers 
-    MPI_Request mpi_requests[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
-    int * mpi_buff_array = NULL;
-    ELPH_cmplx * read_buffer = NULL ; // this is only allocated by room (2, npw_max)
-    ND_int dims_kb[3];
-    if (krank == 0)
-    {   /* we allocate two buffers, one working on retriving data from disk and other 
-        is scattering the data to cpus */
-        mpi_buff_array = malloc(sizeof(int)*2*npw_cpus);
-        read_buffer = malloc(sizeof(ELPH_cmplx)* 2* lattice->npw_max);
-    }
-    if (my_rank == 0)
-    {
-        // get dimensions of klienbylander
-        sprintf(temp_str, "%s/ns.kb_pp_pwscf", SAVEdir) ;  // fix be for abinit 
-        NC_open_file(temp_str, 'r', &ppid);
-        {
-            ELPH_float kb_pars[4];
-            quick_read(ppid, "PARS", kb_pars);
-            dims_kb[0] = rint(kb_pars[2]); // pp_n_l_times_proj_max
-            dims_kb[1] = rint(kb_pars[1]); //n_atomic_species
-        }
-        NC_close_file(ppid); 
-    }
-    mpi_error = MPI_Bcast(dims_kb, 2, ELPH_MPI_ND_INT, 0, MPI_COMM_WORLD);
-    
-    #endif
 
     // ! Warning, Only read only mode for opening files
     for (ND_int ik = 0 ; ik <nibz ; ++ik)
@@ -421,25 +370,16 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         // (nspin, bands, nspinor, npw)
         ND_function(malloc,Nd_cmplxS)((wfc_temp+ik)->wfc);
 
-        #ifdef ENABLE_PAR_WFC_READ_IO
         get_wfc_from_save((wfc_temp+ik)->wfc->strides[0], ik, nibz, \
         lattice->nspin, lattice->nspinor, lattice->start_band, \
         lattice->nbnds, pw_this_cpu,G_shift, SAVEdir, temp_str, \
         (wfc_temp+ik)->wfc->data, commK);
-        #else
-        get_wfc_from_save((wfc_temp+ik)->wfc->strides[0], ik, nibz, lattice->nspin, \
-                        lattice->nspinor, lattice->start_band, lattice->nbnds, \
-                        (wfc_temp+ik)->npw_total, SAVEdir, temp_str, mpi_buff_array, pw_this_cpu, \
-                        G_shift, read_buffer, mpi_requests, (wfc_temp+ik)->wfc->data, commK);
-        #endif
-        
+
         /* initiate, allocate and load Fk (Kleinbylander Coefficients)*/
         (wfc_temp+ik)->Fk = Fk_alloc_arrays+ik ;
-        /* Abinit has a aditional spin dimension instead of 2*n projectors */
-
-        #ifdef ENABLE_PAR_WFC_READ_IO
         ND_function(init,Nd_floatS)((wfc_temp+ik)->Fk, 0, NULL); 
         sprintf(temp_str, "%s/ns.kb_pp_pwscf_fragment_%d", SAVEdir, (int)(ik+1) ) ;  // fix it for abinit 
+        /* Abinit has a aditional spin dimension instead of 2*n projectors */
         if ((retval = nc_open_par(temp_str, NC_NOWRITE, commK, MPI_INFO_NULL, &ppid))) ERR(retval);
         sprintf(temp_str, "PP_KB_K%d", (int)(ik+1)) ;  // fix be for abinit
         int varid_temp;
@@ -448,61 +388,9 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         if ((retval = nc_var_par_access(ppid, varid_temp, NC_COLLECTIVE))) ERR(retval); // NC_COLLECTIVE or NC_INDEPENDENT
 
         ND_function(readVar_sub, Nd_floatS)(ppid, temp_str, (wfc_temp+ik)->Fk, ND_ALL,ND_ALL,nd_idx{G_shift,G_shift+pw_this_cpu,1} );
-        nc_close(ppid);
-        #else
-
-        dims_kb[2] = pw_this_cpu;
-        ND_function(init,Nd_floatS)((wfc_temp+ik)->Fk, 3, dims_kb); 
-        ND_function(malloc,Nd_floatS)((wfc_temp+ik)->Fk);
-
-        sprintf(temp_str, "%s/ns.kb_pp_pwscf_fragment_%d", SAVEdir, (int)(ik+1) ) ;  // fix it for abinit 
-
-        int varid_temp;
-        ELPH_float * read_buffer_float = NULL;
-        if (krank == 0)
-        {   
-            read_buffer_float = (void *)read_buffer ;
-            if ((retval = nc_open(temp_str, NC_NOWRITE, &ppid))) ERR(retval);
-            sprintf(temp_str, "PP_KB_K%d", (int)(ik+1)) ;  // fix be for abinit
-            if ((retval = nc_inq_varid(ppid, temp_str, &varid_temp))) ERR(retval); // get the varible id of the file
-        }
-        for (ND_int ikbp = 0 ; ikbp < (dims_kb[0]*dims_kb[1]); ++ikbp)
-        {
-            //// (nspin, bands, nspinor, npw)
-            
-            int ireq = ikbp%2;
-            ND_int iproj = ikbp/dims_kb[1]; // (nbnd,nspinor)
-            ND_int iat = ikbp%dims_kb[1];
-            // before reading data wait if data is acutally scattered
-            ELPH_float * data_out = NULL;
-            MPI_Wait(mpi_requests+ireq, MPI_STATUS_IGNORE);
-            if (my_rank == 0)
-            {
-                data_out = read_buffer_float + ireq*(wfc_temp+ik)->npw_total;
-                size_t startp[3] = {iproj, iat, 0};
-                size_t countp[3] = {1, 1, (wfc_temp+ik)->npw_total};
-                // now read the data
-                if ((retval = nc_get_vara(ppid, varid_temp, startp, countp, data_out))) ERR(retval);
-            }
-            // scatter the data
-            ELPH_float * out_ptr = (wfc_temp+ik)->Fk->data + ikbp*pw_this_cpu ;
-            /**** Note mpi_buff_array is already filled when reading wfcs. we can use that buffer directly*/
-            mpi_error = MPI_Iscatterv(data_out, mpi_buff_array, mpi_buff_array+npw_cpus, \
-                    ELPH_MPI_float, out_ptr, pw_this_cpu, ELPH_MPI_float, 0, commK, mpi_requests+ireq);
-        }
-
-        #endif
+        
+        NC_close_file(ppid);
     }
-
-    #ifndef ENABLE_PAR_WFC_READ_IO
-    MPI_Waitall(2, mpi_requests, MPI_STATUSES_IGNORE);
-    if (krank == 0)
-    {   
-        free(mpi_buff_array);
-        free(read_buffer); 
-    }
-    #endif
-
     // MPI_Barrier(MPI_COMM_WORLD);
     /* Free temp gvec arrays */
     ND_function(destroy, Nd_floatS)(&totalGvecs);
@@ -610,7 +498,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     }
 
     pseudo->ngrid_max = find_maxint(pseudo_order,pseudo->ntype );
-    
+    lattice->npw_max  = find_maxfloat(nGmax, nibz) ; // find the max number of pws i.e max(nGmax)
 
     // free all buffers
     free(pseudo_order);
@@ -692,20 +580,7 @@ static void alloc_and_set_Gvec(ND_array(Nd_floatS) * gvec, ND_int ik, ND_array(N
 }
 
 
-static void quick_read(const int ncid, char* var_name, void * data_out)
-{   /*  Serial read
-        load the entire varible data to data_out pointer 
-    */
-    int varid, retval;
 
-    if ((retval = nc_inq_varid(ncid, var_name, &varid))) ERR(retval); // get the varible id of the file
-    
-    if ((retval = nc_get_var(ncid, varid, data_out))) ERR(retval); //get data in floats
-
-}
-
-
-#ifdef ENABLE_PAR_WFC_READ_IO
 static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ND_int nspin, ND_int nspinor, ND_int start_band, ND_int nbnds, \
             ND_int nG, ND_int G_shift, const char * save_dir, char * work_array, \
@@ -731,6 +606,20 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
     }
 }
 
+
+static void quick_read(const int ncid, char* var_name, void * data_out)
+{   /*  Serial read
+        load the entire varible data to data_out pointer 
+    */
+    int varid, retval;
+
+    if ((retval = nc_inq_varid(ncid, var_name, &varid))) ERR(retval); // get the varible id of the file
+    
+    if ((retval = nc_get_var(ncid, varid, data_out))) ERR(retval); //get data in floats
+
+}
+
+
 static void quick_read_sub(const int ncid, char* var_name, const size_t * startp, \
                             const size_t * countp, void * data_out)
 {   /*  Serial read
@@ -746,64 +635,5 @@ static void quick_read_sub(const int ncid, char* var_name, const size_t * startp
     if ((retval = nc_get_vara(ncid, varid, startp, countp,data_out))) ERR(retval); //get data in floats
 
 }
-#else
-static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
-            ND_int nspin, ND_int nspinor, ND_int start_band, ND_int nbnds, \
-            ND_int npw_total, const char * save_dir, char * work_array, \
-            int * mpi_buff_array, int nG, int G_shift, \
-            ELPH_cmplx * read_bufs, MPI_Request * mpi_requests, \
-            ELPH_cmplx * out_wfc, MPI_Comm comm)
-{   
-    int my_rank, ncps_totall, mpi_error;
-    MPI_Comm_rank(comm, &my_rank);
-    MPI_Comm_size(comm, &ncps_totall);
-
-    int wfID, retval, varid;
-    
-    mpi_error = MPI_Gather(&nG, 1, MPI_INT, mpi_buff_array, 1, MPI_INT, 0, comm);
-    mpi_error = MPI_Gather(&G_shift, 1, MPI_INT, mpi_buff_array+ncps_totall, 1, MPI_INT, 0, comm);
-    // NO OPENMP !! , Not thread safe and memory bound
-
-    for (ND_int is = 0; is<nspin; ++is)
-    {   
-        sprintf(work_array, "%s/ns.wf_fragments_%d_1", save_dir, (int)( is*nkiBZ + (ik+1) ) ) ;
-        //NC_open_file(work_array, 'r', &wfID);
-        if (my_rank == 0) if ((retval = nc_open(work_array, NC_NOWRITE, &wfID))) ERR(retval);
-
-        sprintf(work_array, "WF_COMPONENTS_@_SP_POL%d_K%d_BAND_GRP_1", (int)(is+1) , (int)(ik+1) ) ;
-        if (my_rank == 0) if ((retval = nc_inq_varid(wfID, work_array, &varid))) ERR(retval); // get the varible id of the file
-
-        ELPH_cmplx * out_wfc_spin = out_wfc + is*spin_stride_len;
-        for (ND_int i = 0 ; i < nbnds*nspinor ; ++i)
-        {
-            //// (nspin, bands, nspinor, npw)
-            
-            int ireq = i%2;
-            ND_int ibnd = i/nspinor; // (nbnd,nspinor)
-            ND_int ispinor = i%nspinor;
-            // before reading data wait if data is acutally scattered
-            ELPH_cmplx * data_out = NULL;
-            MPI_Wait(mpi_requests+ireq, MPI_STATUS_IGNORE);
-            if (my_rank == 0)
-            {
-                data_out = read_bufs + ireq*npw_total;
-                size_t startp[4] = {start_band-1+ibnd, ispinor, 0, 0};
-                size_t countp[4] = {1, 1, npw_total, 2};
-                // now read the data
-                if ((retval = nc_get_vara(wfID, varid, startp, countp, data_out))) ERR(retval);
-            }
-            // scatter the data
-            ELPH_cmplx * out_wfc_bnd = out_wfc_spin + ibnd*nspinor*nG + ispinor*nG;
-            mpi_error = MPI_Iscatterv(data_out, mpi_buff_array, mpi_buff_array+ncps_totall, \
-                    ELPH_MPI_cmplx, out_wfc_bnd, nG, ELPH_MPI_cmplx, 0, comm, mpi_requests+ireq);
-        }
-        MPI_Waitall(2, mpi_requests, MPI_STATUSES_IGNORE);
-        if (my_rank == 0) nc_close(wfID); 
-    }
-}
-#endif
-
-
-
 
 
