@@ -15,10 +15,7 @@ my free time.
 
 # Some Uncertain improvements (should be addressed after return)
 1) Improve IO performace(AION and IRIS FS report very bad file open times)
-2) fft transpose.c routine ( FFTW MPI has a direct inplace transpose but looks 
-like there is a bug if the Block size is not set to default). Alternatively,
-if possible, directly perform transpose without rearrangement ?
-3) dVloc routines needs to be slightly rewritten to avoid multiple array allocations
+2) dVloc routines needs to be slightly rewritten to avoid multiple array allocations
 
 
 
