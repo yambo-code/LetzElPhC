@@ -5,7 +5,7 @@ This file contains functions related to cublic spline interpolation
 https://en.wikipedia.org/wiki/Spline_interpolation
 */
 
-int xin_xmp(const void* a, const void* b);
+// int xin_xmp(const void* a, const void* b);
 
 ELPH_float spline_interpolate(const ELPH_float x, ND_int inear, \
                 const ELPH_float * restrict xi, const ELPH_float * restrict yi, \
@@ -56,7 +56,7 @@ void prepare_spline(const ND_int nvals, ELPH_float * restrict xin, \
         ELPH_float s1  = (yin[1]-yin[0])/dx1;
         ELPH_float dx2 = xin[2]-xin[1] ;
         ELPH_float s2  = (yin[2]-yin[1])/dx2 ;
-
+        
         ai[0] = dx2*dx2 ; 
         bi[0] = dx2*dx2 - dx1*dx1;
         ci[0] = -dx1*dx1 ;
@@ -96,13 +96,22 @@ void prepare_spline(const ND_int nvals, ELPH_float * restrict xin, \
     ci[0] += alpha*ci[1];
     di[0] += alpha*di[1];
 
+    // now rearrange 
+    ci[0] = bi[0];
+    bi[0] = ai[0];
+    ai[0] = 0;
+
     //alpha = -an-1/an-2
     alpha = -ai[nvals-1]/ai[nvals-2];
     ai[nvals-1] += alpha*ai[nvals-2];
     bi[nvals-1] += alpha*bi[nvals-2];
     ci[nvals-1] += alpha*ci[nvals-2];
     di[nvals-1] += alpha*di[nvals-2];
-
+    
+    // now rearrange the last row
+    ai[nvals-1] = bi[nvals-1];
+    bi[nvals-1] = ci[nvals-1];
+    ci[nvals-1] = 0;
     /*solve Thomas algorithm*/
     // a) Inplane forward sweep 
     for (ND_int i = 1; i< nvals ; ++i)
@@ -126,14 +135,14 @@ void prepare_spline(const ND_int nvals, ELPH_float * restrict xin, \
 
 
 
-/**** static functions *****/
-int xin_xmp(const void* a, const void* b)
-{
-    const ELPH_float arg1 = *(const ELPH_float*)a;
-    const ELPH_float arg2 = *(const ELPH_float*)b;
+// /**** static functions *****/
+// int xin_xmp(const void* a, const void* b)
+// {
+//     const ELPH_float arg1 = *(const ELPH_float*)a;
+//     const ELPH_float arg2 = *(const ELPH_float*)b;
 
-    return (arg1 > arg2) - (arg1 < arg2); 
-}
+//     return (arg1 > arg2) - (arg1 < arg2); 
+// }
 
 
 
