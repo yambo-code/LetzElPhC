@@ -113,7 +113,7 @@ void prepare_spline(const ND_int nvals, ELPH_float * restrict xin, \
     bi[nvals-1] = ci[nvals-1];
     ci[nvals-1] = 0;
     /*solve Thomas algorithm*/
-    // a) Inplane forward sweep 
+    // a) Inplace forward sweep 
     for (ND_int i = 1; i< nvals ; ++i)
     {
         ELPH_float ww = ai[i]/bi[i-1] ; 
