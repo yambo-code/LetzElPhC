@@ -5,8 +5,9 @@ my free time.
 # TODO (Short term). (Should be addressed after return)
 1) Distribute wfcs across all the kpools (now data is duplicated)
 2) Compute the representation matrices to rotate in q space
-3) Prepare test cases
-4) Improve OPENMP
+3) Rearrange non-local part (compute beta functions at the start)
+4) Prepare test cases
+5) Improve OPENMP
 
 # TODOs (LONG TERM)
 1) Prepare an interface 
