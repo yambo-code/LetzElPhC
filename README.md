@@ -1,8 +1,7 @@
 The main prototype of the code is done but there are some minor issues. 
-The developement will be very slow from now on. I will only develop in 
-my free time.
 
-# TODO (Short term). (Should be addressed after return)
+
+# TODO (Short term). 
 1) Distribute wfcs across all the kpools (now data is duplicated)
 2) Compute the representation matrices to rotate in q space
 3) Rearrange non-local part (compute beta functions at the start)
