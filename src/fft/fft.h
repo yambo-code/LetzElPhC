@@ -48,6 +48,10 @@ struct ELPH_fft_plan
     ND_function(FFT_plan, Nd_cmplxS) * bplan_y1; // (naligment plans) for y
     ND_function(FFT_plan, Nd_cmplxS)   bplan_z; 
 
+    /* convolution plans */
+    // In convolutions we use these plans instead of fplan_x
+    ND_function(FFT_plan, Nd_cmplxS) * cplan_x;  // (naligment plans) for x 
+
     MPI_Comm comm;   // comm
 };
 
@@ -75,3 +79,8 @@ void fwd_transpose(struct ELPH_fft_plan * plan);
 void bwd_transpose(struct ELPH_fft_plan * plan);
 
 
+void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
+            ND_int nmag, const ELPH_cmplx * Vpotr, const ELPH_cmplx * psir, \
+            ELPH_cmplx * wfcG, const bool conjugate);
+
+    

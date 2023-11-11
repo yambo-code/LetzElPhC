@@ -114,7 +114,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     free(gSk_buf);
 
     ND_array(Nd_cmplxS) wfcSk_r[1];
-    ND_array(Nd_cmplxS) dVpsi_r[1], dVpsiG[1];
+    ND_array(Nd_cmplxS) dVpsiG[1];
     // s,b,sp,nx,ny,nz
     ND_function(init, Nd_cmplxS) (wfcSk_r, 6, nd_idx{nspin,nbndsk,nspinor, \
                                 lattice->fft_dims[0], lattice->fft_dims[1],lattice->nfftz_loc});
@@ -148,10 +148,6 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     // create plan for dvSpi
     wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq, lattice->fft_dims, FFTW_MEASURE, commK);
 
-    ND_function(init, Nd_cmplxS) (dVpsi_r, 4, nd_idx{nspinor, lattice->fft_dims[0], lattice->fft_dims[1],lattice->nfftz_loc});
-    ND_function(malloc, Nd_cmplxS) (dVpsi_r);
-
-
     ND_function(init, Nd_cmplxS) (dVpsiG, 4, nd_idx{nspin,nbndsk,nspinor, npwkq});
     ND_function(malloc, Nd_cmplxS) (dVpsiG);
 
@@ -183,26 +179,17 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         ELPH_cmplx * dv_nu = dVlocr->data + dVlocr->strides[0]*iv ; // (nmodes, nmag, nffts_in_this_cpu)
         for (ND_int is = 0 ; is <nspin; ++is)
         {   
-            // (wfcSk_r, 6, nd_idx{nspin,nbndsk,nspinor, \
-            //                     lattice->fft_dims[0], lattice->fft_dims[1],lattice->nfftz_loc});
-
             ELPH_cmplx * psi_r_spin = wfcSk_r->data  + is*(wfcSk_r->strides[0]);
             ELPH_cmplx * dV_r = dv_nu +  dVlocr->strides[1]*is ; // only in nspin = 2 case, nmag represent nspin dimension
             
             // ND_function(init, Nd_cmplxS) (dVpsiG, 4, nd_idx{nspin,nbndsk,nspinor, npwkq});
-            
             for (ND_int ibnd = 0 ; ibnd < nbndsk; ++ibnd)
             {
-                
-                dvpsi(1, nmag, nspinor, dVpsi_r->strides[0], dV_r, psi_r_spin+ibnd*wfcSk_r->strides[1], dVpsi_r->data);
-                /***/
-                // get back to G space 
+                /* compute the convolution FFT(dV(r)*psi(r))*/
                 ELPH_cmplx * dV_psiG_ptr = dVpsiG->data + is*dVpsiG->strides[0] + ibnd*dVpsiG->strides[1];
-                
-                fft3D(&fft_plan, nspinor, dVpsi_r->data, dV_psiG_ptr, false);
-
+                fft_convolution3D(&fft_plan, nspinor, nmag, dV_r, psi_r_spin+ibnd*wfcSk_r->strides[1], dV_psiG_ptr, false);
             }
-
+            
             // Compute the sandwich
             char blas_char = 'C';
             if (timerevkq) blas_char = 'T'; // we perform the time reversal conjugation (if any) here now
@@ -226,7 +213,6 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     wfc_destroy_plan(&fft_plan);
     ND_function(destroy, Nd_cmplxS) (dVpsiG);
     ND_function(destroy, Nd_cmplxS) (wfcSk_r);
-    ND_function(destroy, Nd_cmplxS) (dVpsi_r);
 
     free(gvecSGkq) ;
     free(wfcSkq);

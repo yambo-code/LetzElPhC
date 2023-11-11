@@ -32,13 +32,13 @@ void invfft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
     
     for (ND_int iset = 0 ; iset < nsets; ++iset)
     {   
-        ELPH_cmplx * wfcG_tmp = wfcG + iset*plan->ngvecs_loc ;
+        ELPH_cmplx * restrict wfcG_tmp = wfcG + iset*plan->ngvecs_loc ;
         ELPH_cmplx * wfcr_tmp = wfcr + iset*fft_buf_size;
 
         ND_int igvec = 0 ;
         for (ND_int ixy = 0 ; ixy < plan->nGxyloc; ++ixy)
         {
-            ELPH_cmplx * zfft_ptr = plan->nz_buf + ixy*Nz;
+            ELPH_cmplx * restrict zfft_ptr = plan->nz_buf + ixy*Nz;
 
             // a) sphere to box
             for (ND_int iz = 0 ; iz< Nz; ++iz) zfft_ptr[iz] = 0;

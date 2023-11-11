@@ -140,7 +140,7 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     // iii) create plan for along z only for set of (Gx,Gy) pairs
     
     // create plan buffers
-    plan->fplan_x  = malloc(sizeof(ND_function(FFT_plan, Nd_cmplxS))* 6 * plan->align_len);  // (naligment plans) for x 
+    plan->fplan_x  = malloc(sizeof(ND_function(FFT_plan, Nd_cmplxS))* 7 * plan->align_len);  // (naligment plans) for x 
     plan->fplan_y  = plan->fplan_x + plan->align_len;  // (naligment plans) for y
     plan->fplan_y1 = plan->fplan_x + 2*plan->align_len; // (naligment plans) for y
 
@@ -148,6 +148,9 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
     plan->bplan_x  = plan->fplan_x + 3*plan->align_len;  // (naligment plans) for x 
     plan->bplan_y  = plan->fplan_x + 4*plan->align_len;  // (naligment plans) for y
     plan->bplan_y1 = plan->fplan_x + 5*plan->align_len; // (naligment plans) for y
+
+    /* convolution plan x */
+    plan->cplan_x = plan->fplan_x + 6*plan->align_len; // (naligment plans) for x 
     
     
     if (Gxmin >= 0 || Gxmax <= 0) 
@@ -252,6 +255,24 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
                         NULL, 1, fft_dims[2], plan->nz_buf, NULL,1, fft_dims[2],+1, fft_flags);
     if (plan->bplan_z == NULL) error_msg("Z backward plan failed");
 
+
+    /*
+    Finally create convolution plan for FFT along x
+    In convolutions we use these plans instead of fplan_x
+    */ 
+    for (ND_int i = 0; i<plan->align_len; ++i)
+    {   
+        ELPH_cmplx * tmp_pln_ptr = plan->fft_data+i;        
+        ND_int ia = fftw_fun(alignment_of)((void *)tmp_pln_ptr);
+        ia /= sizeof(ELPH_cmplx);
+        // (Nx, k, Nz_loc)
+        plan->cplan_x[ia] = fftw_fun(plan_many_dft)(1, (int[1]){fft_dims[0]}, nzloc, tmp_pln_ptr, \
+                                NULL, fft_dims[1]*nzloc, 1, tmp_pln_ptr, NULL, fft_dims[1]*nzloc, \
+                                1, -1, fft_flags);
+                                
+        if (plan->cplan_x[ia] == NULL) error_msg("convolution forward X plan failed");
+    }
+
 }
 
 
@@ -271,7 +292,8 @@ void wfc_destroy_plan(struct ELPH_fft_plan * plan)
         ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_y[i]);
         ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_y1[i]);
         ND_function(fft_destroy_plan, Nd_cmplxS) (plan->bplan_y1[i]);
-        
+
+        ND_function(fft_destroy_plan, Nd_cmplxS) (plan->cplan_x[i]);
     }
 
     ND_function(fft_destroy_plan, Nd_cmplxS) (plan->fplan_z);
