@@ -8,7 +8,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     Computes the change in local bare potential in real space
     
     Input 
-    qpt       : q-point in crystal coordinates
+    qpt       : q-point in crystal coordinates (FIX ME. qpt must be in [-1,1]
     atom_pos  : atomic positions in cart coordinates
     nDim      : '3','2','1' for 3D, 2D, 1D cutoffs
     Vloc_atomic :   Local potential of eqch atom in radial grid.
