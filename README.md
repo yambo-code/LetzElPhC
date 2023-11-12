@@ -14,8 +14,7 @@ The main prototype of the code is done but there are some minor issues.
 
 
 # Some Uncertain improvements (should be addressed after return)
-1) Improve IO performace(AION and IRIS FS report very bad file open times)
-2) dVloc routines needs to be slightly rewritten to avoid multiple array allocations
+1) dVloc routines needs to be slightly rewritten to avoid multiple array allocations
 
 
 
