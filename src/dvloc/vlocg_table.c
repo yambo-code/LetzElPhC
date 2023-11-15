@@ -53,9 +53,10 @@ void vlocg_table(const struct Lattice * lattice, const struct Pseudo * pseudo,
     // coarse spacing = b_min, npts ~ (1.5*N_max + 3)*b_max/b_min. 
     */
 
+    if (bmin > 0.001) bmin = 0.001; // set some bare minimum
+    
     gmax = (1.7*Nmax +3)*bmax; // we choose 1.7 instead of 1.5
     npts = ceil(gmax/bmin);
-    if (npts < 1000) npts = 1000; // set some bare minimum
     gmin = 0.0;
     }
 
