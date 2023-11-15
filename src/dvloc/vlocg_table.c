@@ -55,6 +55,7 @@ void vlocg_table(const struct Lattice * lattice, const struct Pseudo * pseudo,
 
     gmax = (1.7*Nmax +3)*bmax; // we choose 1.7 instead of 1.5
     npts = ceil(gmax/bmin);
+    if (npts < 1000) npts = 1000; // set some bare minimum
     gmin = 0.0;
     }
 
