@@ -12,7 +12,7 @@ This is the header for functions related to wfcs
 
 void rotateGvecs(const ELPH_float * Gvecs, const ELPH_float * sym, const ND_int ngvecs, 
                 const  ELPH_float * lat_vec, const bool inverse, const bool crystal,
-                const ELPH_float * G0, ELPH_float *  Gvec_out);
+                ELPH_float * G0, ELPH_float *  Gvec_out);
 
 void su2rotate(const int nspinor, const ND_int npw, const ND_int nsets, \
             const ELPH_cmplx * restrict su2mat, ELPH_cmplx * restrict wfc);
