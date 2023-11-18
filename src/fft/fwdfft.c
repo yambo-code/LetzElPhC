@@ -31,7 +31,7 @@ void fft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
     ELPH_float norm = Nx*Ny*Nz ;
     norm = 1.0/norm ;
 
-    ND_int Ny1_stride = plan->nzloc * Ny;
+    ND_int Ny_stride = plan->nzloc * Ny;
 
     ND_int fft_buf_size = Nx*Ny*plan->nzloc; 
     
@@ -45,17 +45,16 @@ void fft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
         // a) (i) FFT along X
         fftw_fun(execute_dft)(plan->fplan_x[ia],wfcr_tmp,wfcr_tmp);
 
-        // a) (ii) FFT along Y 0<=Gx<=Gmax
-        fftw_fun(execute_dft)(plan->fplan_y[ia],wfcr_tmp,wfcr_tmp);
+        // a) (ii) FFT along Y 
+        for (ND_int ix = 0; ix < plan->fft_dims[0]; ++ix)
+        {   
+            if (!(plan->gx_inGvecs[ix])) continue;
 
-        // a) (iii) FFT along Y1   Gmin <= Gx < N
-        ELPH_cmplx * wfcr_tmp_y1 = wfcr_tmp + plan->Gxmin*Ny1_stride ; //(Gx,Ny,Nz_log)
-
-        ia = fftw_fun(alignment_of)((void *)wfcr_tmp_y1);
-        ia /= sizeof(ELPH_cmplx);
-
-        fftw_fun(execute_dft)(plan->fplan_y1[ia],wfcr_tmp_y1,wfcr_tmp_y1);
-        
+            ELPH_cmplx * wfcr_tmp_y = wfcr_tmp + ix*Ny_stride ; //(Gx,Ny,Nz_log)
+            ND_int iax = fftw_fun(alignment_of)((void *)wfcr_tmp_y);
+            iax /= sizeof(ELPH_cmplx);
+            fftw_fun(execute_dft)(plan->fplan_y[iax],wfcr_tmp_y,wfcr_tmp_y);
+        }
         // b) (i) pack the data for transpose 
         for (ND_int ixy = 0 ; ixy < plan->nGxy; ++ixy)
         {   
@@ -70,7 +69,7 @@ void fft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
         fwd_transpose(plan); // nz_buf has (NGxy_loc,Nz)
         
         // c) perform fft along z
-        ND_function(fft_execute_plan, Nd_cmplxS) (plan->fplan_z);
+        fftw_fun(execute) (plan->fplan_z);
 
         // d) box to sphere
         ND_int igvec = 0 ;

@@ -45,7 +45,7 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
     ELPH_float norm = Nx*Ny*Nz ;
     norm = 1.0/norm ;
 
-    ND_int Ny1_stride = plan->nzloc * Ny;
+    ND_int Ny_stride = plan->nzloc * Ny;
 
     ND_int fft_buf_size = Nx*Ny*plan->nzloc; 
 
@@ -109,19 +109,15 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
             }
         }
 
-        ND_int ia = fftw_fun(alignment_of)((void *)plan->fft_data);
-        ia /= sizeof(ELPH_cmplx);
-
-        // a) (ii) FFT along Y 0<=Gx<=Gmax
-        fftw_fun(execute_dft)(plan->fplan_y[ia],plan->fft_data,plan->fft_data);
-
-        // a) (iii) FFT along Y1   Gmin <= Gx < N
-        ELPH_cmplx * wfcr_tmp_y1 = plan->fft_data + plan->Gxmin*Ny1_stride ; //(Gx,Ny,Nz_log)
-
-        ia = fftw_fun(alignment_of)((void *)wfcr_tmp_y1);
-        ia /= sizeof(ELPH_cmplx);
-
-        fftw_fun(execute_dft)(plan->fplan_y1[ia],wfcr_tmp_y1,wfcr_tmp_y1);
+        // a) (ii) FFT along Y 
+        for (ND_int ix = 0; ix < plan->fft_dims[0]; ++ix)
+        {   
+            if (!(plan->gx_inGvecs[ix])) continue;
+            ELPH_cmplx * wfcr_tmp_y = plan->fft_data + ix*Ny_stride ; //(Gx,Ny,Nz_log)
+            ND_int iax = fftw_fun(alignment_of)((void *)wfcr_tmp_y);
+            iax /= sizeof(ELPH_cmplx);
+            fftw_fun(execute_dft)(plan->fplan_y[iax],wfcr_tmp_y,wfcr_tmp_y);
+        }
         
         // b) (i) pack the data for transpose 
         for (ND_int ixy = 0 ; ixy < plan->nGxy; ++ixy)
@@ -137,7 +133,7 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
         fwd_transpose(plan); // nz_buf has (NGxy_loc,Nz)
         
         // c) perform fft along z
-        ND_function(fft_execute_plan, Nd_cmplxS) (plan->fplan_z);
+        fftw_fun(execute) (plan->fplan_z);
 
         // d) box to sphere
         ND_int igvec = 0 ;

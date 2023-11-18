@@ -2,6 +2,9 @@
 #include "../elphC.h"
 #include "../common/numerical_func.h"
 
+// plan for fft
+typedef fftw_fun(plan) fftw_generic_plan ;
+
 /* struct store FFT plans for the forward and back.*/
 struct ELPH_fft_plan
 {      
@@ -22,8 +25,7 @@ struct ELPH_fft_plan
 
     ND_int nGxyloc;     // number of Gvecs local //
     ND_int nGxy;        // total number of Gvecs local //
-    ND_int Gxmin;       // min value of Gx for 2nd set of y plans; Nx-abs(Gx)
-    ND_int Gxmax;       // max value of Gx for 1st set of y plans;
+    bool * gx_inGvecs;   // this is a Nx array of bools (true if gx is present in gvecs)
     int * Gxy_total;     // total gxy (nGxy,2) must be in [0,N)
     int * ngxy_z;        // number of z components for each x,y
 
@@ -37,20 +39,18 @@ struct ELPH_fft_plan
     */
 
     /* forward plans r->G */
-    ND_function(FFT_plan, Nd_cmplxS) * fplan_x;  // (naligment plans) for x 
-    ND_function(FFT_plan, Nd_cmplxS) * fplan_y;  // (naligment plans) for y
-    ND_function(FFT_plan, Nd_cmplxS) * fplan_y1; // (naligment plans) for y
-    ND_function(FFT_plan, Nd_cmplxS)   fplan_z; 
+    fftw_generic_plan * fplan_x;  // (naligment plans) for x 
+    fftw_generic_plan * fplan_y;  // (naligment plans) for y
+    fftw_generic_plan   fplan_z; 
 
     /* backward plans G->r */
-    ND_function(FFT_plan, Nd_cmplxS) * bplan_x;  // (naligment plans) for x 
-    ND_function(FFT_plan, Nd_cmplxS) * bplan_y;  // (naligment plans) for y
-    ND_function(FFT_plan, Nd_cmplxS) * bplan_y1; // (naligment plans) for y
-    ND_function(FFT_plan, Nd_cmplxS)   bplan_z; 
+    fftw_generic_plan * bplan_x;  // (naligment plans) for x 
+    fftw_generic_plan * bplan_y;  // (naligment plans) for y
+    fftw_generic_plan   bplan_z; 
 
     /* convolution plans */
-    // In convolutions we use these plans instead of fplan_x
-    ND_function(FFT_plan, Nd_cmplxS) * cplan_x;  // (naligment plans) for x 
+    // In convolutions we use these plans instead of fplan_x (just for convienence)
+    fftw_generic_plan * cplan_x;  // (naligment plans) for x 
 
     MPI_Comm comm;   // comm
 };

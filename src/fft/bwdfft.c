@@ -28,7 +28,7 @@ void invfft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
 
     ND_int fft_buf_size = Nx*Ny*plan->nzloc; 
 
-    ND_int Ny1_stride = plan->nzloc * Ny;
+    ND_int Ny_stride = plan->nzloc * Ny;
     
     for (ND_int iset = 0 ; iset < nsets; ++iset)
     {   
@@ -56,7 +56,7 @@ void invfft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
         if (igvec != plan->ngvecs_loc) error_msg("Gvec mismatch in bwd execute.");
 
         // b) perform invfft along z
-        ND_function(fft_execute_plan, Nd_cmplxS) (plan->bplan_z);
+        fftw_fun(execute) (plan->bplan_z);
 
         // c) (i) transpose the data
         bwd_transpose(plan); // nz_buf has (NGxy,Nz_loc)
@@ -74,19 +74,19 @@ void invfft3D(struct ELPH_fft_plan * plan, const ND_int nsets, \
             memcpy(xy_buf, plan->nz_buf + ixy*plan->nzloc, sizeof(ELPH_cmplx)*plan->nzloc);
         }
         
-        
-        ELPH_cmplx * wfcr_tmp_y1 = wfcr_tmp + plan->Gxmin*Ny1_stride ; 
-        ND_int ia = fftw_fun(alignment_of)((void *)wfcr_tmp_y1);
-        ia /= sizeof(ELPH_cmplx);
+        // c) (ii) FFT along Y 
+        for (ND_int ix = 0; ix < plan->fft_dims[0]; ++ix)
+        {   
+            if (!(plan->gx_inGvecs[ix])) continue;
 
-        // d) (i) invFFT along Y1   Gmin <= Gx < N
-        fftw_fun(execute_dft)(plan->bplan_y1[ia],wfcr_tmp_y1,wfcr_tmp_y1);
+            ELPH_cmplx * wfcr_tmp_y = wfcr_tmp + ix*Ny_stride ; //(Gx,Ny,Nz_log)
+            ND_int iax = fftw_fun(alignment_of)((void *)wfcr_tmp_y);
+            iax /= sizeof(ELPH_cmplx);
+            fftw_fun(execute_dft)(plan->bplan_y[iax],wfcr_tmp_y,wfcr_tmp_y);
+        }
 
-        ia = fftw_fun(alignment_of)((void *)wfcr_tmp); 
+        ND_int ia = fftw_fun(alignment_of)((void *)wfcr_tmp);
         ia /= sizeof(ELPH_cmplx);
-        
-        // d) (ii) FFT along Y 0<=Gx<=Gmax
-        fftw_fun(execute_dft)(plan->bplan_y[ia],wfcr_tmp,wfcr_tmp);
 
         // d) FFT along X
         fftw_fun(execute_dft)(plan->bplan_x[ia],wfcr_tmp,wfcr_tmp);
