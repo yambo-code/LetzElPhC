@@ -63,7 +63,7 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
             for (ND_int iy = 0 ; iy < Ny ; ++iy)
             {
                 ND_int iyshift = iy*plan->nzloc;
-                for (ND_int ix = 0; ix < Nx ; ++ix)
+                for (ND_int ix = Nx-1; ix >=0 ; --ix)
                 {   
                     ND_int ixshift = ix*Ny*plan->nzloc + iyshift;
                     ELPH_cmplx * restrict dvpsi_xyz =  plan->fft_data + ixshift;
@@ -87,7 +87,7 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
             for (ND_int iy = 0 ; iy < Ny ; ++iy)
             {
                 ND_int iyshift = iy*plan->nzloc;
-                for (ND_int ix = 0; ix < Nx ; ++ix)
+                for (ND_int ix = Nx-1; ix >=0 ; --ix)
                 {   
                     ND_int ixshift = ix*Ny*plan->nzloc + iyshift;
                     ELPH_cmplx * restrict dvpsi_out =  plan->fft_data + ixshift;
