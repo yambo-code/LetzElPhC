@@ -1,22 +1,6 @@
+include make.inc
+
 TARGET 		 :=  elphc
-
-CC               :=  mpicc
-CFLAGS           :=  -O1 -g  -fsanitize=address -fno-omit-frame-pointer #-O3 #-march=native
-OPENMP_FLAGS     :=  #-DELPH_OMP_PARALLEL_BUILD
-
-FFTW_INC 	 :=  -I/opt/homebrew/include 
-FFTW3_LIB        :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
-
-BLAS_INC 	 :=  -I/opt/homebrew/Cellar/openblas/0.3.24/include 
-BLAS_LIB 	 :=  -L/opt/homebrew/Cellar/openblas/0.3.24/lib -lopenblas 
-
-NETCDF_INC       :=  -I/Users/murali/softwares/core/include 
-NETCDF_LIB 	 :=  -L/Users/murali/softwares/core/lib -lnetcdf
-HDF5_LIB         :=  -L/opt/homebrew/lib  -lhdf5
-
-LD_FLAGS         :=  -g -fsanitize=address -Wl,-no_compact_unwind
-
-
 
 #### make start here
 
@@ -32,17 +16,23 @@ INC_DIRS = $(FFTW_INC) $(BLAS_INC) $(NETCDF_INC)
 LIBS     = $(ND_ARR_LIB) $(FFTW3_LIB) $(BLAS_LIB) $(NETCDF_LIB) $(HDF5_LIB) -lm
 
 
-PHONY := $(TARGET)
+libnd_array = ./nd_array/src/libnd_array.a
 
-$(TARGET): $(OBJS)
+
+PHONY := $(TARGET)
+$(TARGET): $(libnd_array) $(OBJS) 
 	$(CC) -o ./$@ $(OBJS) $(LIBS) $(LD_FLAGS)
 
-%.o: %.c $(INCS)
+%.o: %.c $(INCS) 
 	$(CC) $(CFLAGS) -c $< $(INC_DIRS) $(OPENMP_FLAGS) -o $@
+
+$(libnd_array):
+	$(MAKE) -C nd_array
 
 PHONY += clean
 clean:
 	rm ./$(TARGET) $(OBJS)
+	$(MAKE) -C nd_array clean
 
 PHONY += echoes
 echoes:
