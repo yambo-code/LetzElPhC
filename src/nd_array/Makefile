@@ -1,4 +1,4 @@
-include ../make.inc
+include make.inc
 
 TARGET 		 :=  libnd_array.a
 

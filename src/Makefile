@@ -17,16 +17,19 @@ LIBS     = $(ND_ARR_LIB) $(FFTW3_LIB) $(BLAS_LIB) $(NETCDF_LIB) $(HDF5_LIB) -lm
 
 
 libnd_array = ./nd_array/src/libnd_array.a
-
+libnd_make = ./nd_array/make.inc
 
 PHONY := $(TARGET)
-$(TARGET): $(libnd_array) $(OBJS) 
+$(TARGET): $(libnd_make)  $(libnd_array) $(OBJS) 
 	$(CC) -o ./$@ $(OBJS) $(LIBS) $(LD_FLAGS)
 
-%.o: %.c $(INCS) 
+%.o: %.c $(INCS) make.inc
 	$(CC) $(CFLAGS) -c $< $(INC_DIRS) $(OPENMP_FLAGS) -o $@
 
-$(libnd_array):
+$(libnd_make): make.inc
+	cp make.inc nd_array
+
+$(libnd_array): $(libnd_make)
 	$(MAKE) -C nd_array
 
 PHONY += clean

@@ -1,7 +1,6 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
 
 /* Macro to get the function name */
 #ifndef Current_Function_NAME

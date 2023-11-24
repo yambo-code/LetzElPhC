@@ -2,3 +2,4 @@ test/nc.temp*
 test/test_sample_fft.c
 src/.vscode
 .DS_Store
+git.sh

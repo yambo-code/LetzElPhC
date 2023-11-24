@@ -43,7 +43,6 @@
     #include <lapacke.h>
 #endif
 #include "common_def.h"
-
 //
 
 
