@@ -226,7 +226,7 @@ void wfc_plan(struct ELPH_fft_plan * plan, const ND_int ngvecs_loc, const ND_int
         // (Nx, k, Nz_loc)
         plan->cplan_x[ia] = fftw_fun(plan_many_dft)(1, (int[1]){fft_dims[0]}, nzloc, tmp_pln_ptr, \
                                 NULL, fft_dims[1]*nzloc, 1, tmp_pln_ptr, NULL, fft_dims[1]*nzloc, \
-                                1, -1, fft_flags);
+                                1, FFTW_FORWARD, fft_flags);
                                 
         if (plan->cplan_x[ia] == NULL) error_msg("convolution forward X plan failed");
     }

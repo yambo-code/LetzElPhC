@@ -85,6 +85,8 @@ int main(int argc, char* argv[])
         }
     }
 
+    free_save_data(wfcs, &lattice, &pseudo);
+    free(pseudo_pots);
     free(elph_kq);
     ND_function(destroy,Nd_cmplxS)(&eigVec);
     ND_function(destroy,Nd_cmplxS)(&dVscf);
