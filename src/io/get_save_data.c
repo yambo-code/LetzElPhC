@@ -17,6 +17,22 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ND_int nG, ND_int G_shift, const char * save_dir, char * work_array, \
             ELPH_cmplx * out_wfc, MPI_Comm comm);
 
+
+static bool check_ele_in_array(ND_int *arr_in, ND_int nelements, ND_int check_ele)
+{
+    bool found = false;
+    for (int ii = 0 ; ii<nelements; ++ii)
+    {
+        if (arr_in[ii] == check_ele)
+        {
+            found = true;
+            break;
+        }
+
+    }
+    return found;
+}
+
 /* Function body */
 void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
                 ND_int start_band, ND_int end_band, struct WFC ** wfcs,char * pseudo_dir, \
@@ -439,6 +455,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     /* Read upf data */
     /* First get the pseudo pots order */
     ND_int * pseudo_order = malloc(sizeof(ND_int)*pseudo->ntype);
+    for (ND_int ipot1 = 0 ; ipot1<pseudo->ntype ; ++ipot1) pseudo_order[ipot1] = -1;
 
     if (my_rank == 0)
     {
@@ -453,7 +470,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
 
             for (ND_int ipot2 = 0 ; ipot2<pseudo->ntype ; ++ipot2)
             {
-                if(strcmp(temp_ele,atom_symbols + 3*ipot2)  == 0)
+                if(strcmp(temp_ele,atom_symbols + 3*ipot2)  == 0 && !check_ele_in_array(pseudo_order, pseudo->ntype, ipot2) )
                 {
                     found = true;
                     pseudo_order[ipot1] = ipot2;

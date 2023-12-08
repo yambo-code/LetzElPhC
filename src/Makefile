@@ -4,7 +4,7 @@ TARGET 		 :=  elphc
 
 #### make start here
 
-SUBDIR = nonloc io/ezxml io common dvloc elph wfc symmetries fft
+SUBDIR = nonloc io/ezxml io/inih io common dvloc elph wfc symmetries fft
 ND_ARR_LIB = -L./nd_array/src -lnd_array
 
 

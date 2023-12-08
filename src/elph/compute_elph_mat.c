@@ -3,17 +3,23 @@ This function computes electron-matrix elements for all q's
 */
 #include "elph.h"
 
-#define NK 1
-#define NQ 1
-#define SAVEDIR "/Users/murali/phd/one_phonon_raman/wse2/SAVE" //"/Users/murali/phd/one_phonon_raman/si/bse/si_data/raman/silicon.save/SAVE" 
-#define FIRST_BAND  1
-#define LAST_BAND 40
-#define PSEUDO_DIR "/Users/murali/phd/one_phonon_raman/wse2"
-#define DVSCF_NC "/Users/murali/phd/one_phonon_raman/wse2/nc.dVscf"
-
 int main(int argc, char* argv[])
 {
     MPI_Init(&argc, &argv);
+
+    struct usr_input * input_data;
+
+    read_input_file(argv[1], &input_data);
+
+    ELPH_float qpt[3] = {0.0,0.0,0.0};
+
+    ND_int NK = input_data->nkpool;
+    ND_int NQ  = input_data->nqpool;
+    char * SAVEDIR  = input_data->save_dir ;
+    ND_int FIRST_BAND   = input_data->start_bnd ;
+    ND_int LAST_BAND  = input_data->end_bnd ;
+    char * PSEUDO_DIR  = input_data->pseudo_dir ;
+    char * DVSCF_NC  = input_data->dvscf_file ;
 
     MPI_Comm commQ, commK ;
 
@@ -23,17 +29,11 @@ int main(int argc, char* argv[])
     struct Pseudo pseudo ;
     struct WFC * wfcs;
 
-    lattice.dimension = '2';
-
-    char ** pseudo_pots = malloc(sizeof(char *)*10);
-    //pseudo_pots[0] = "Si.upf" ;//"Si_PBE_SR.SG15v1.2.UPF" ;//"Mo.upf";
-    pseudo_pots[0] = "W_PBE_nof_FR.SG15v1.2.UPF";
-    pseudo_pots[1] = "Se_PBE_FR.SG15v1.2.UPF";
-
+    lattice.dimension = input_data->dimension;
+    char ** pseudo_pots = input_data->pseudos ;
 
     ND_int FFT_dims[3];
     ND_int nq;
-    
     
     get_FFT_dims(DVSCF_NC, &nq, FFT_dims);
 
@@ -49,9 +49,7 @@ int main(int argc, char* argv[])
     read_dvscfq(DVSCF_NC, &eigVec, &lattice, &dVscf,0, commK);
 
     printf("Computing el-ph \n");
-    ELPH_float qpt[3] = {0.0,0.0,0.0};
     
-
     /*compute el-ph*/
 
     ELPH_cmplx * elph_kq = NULL;
@@ -76,7 +74,13 @@ int main(int argc, char* argv[])
     int nb22 = 36 ; 
 
     if (krank ==0 )
-    {
+    {   
+        ND_array(Nd_cmplxS) elph_w;
+        ND_function(init, Nd_cmplxS)(&elph_w, 5, nd_idx{lattice.kmap->dims[0], eigVec.dims[0], lattice.nspin, lattice.nbnds, lattice.nbnds  } );
+        elph_w.data = elph_kq;
+        ND_function(write, Nd_cmplxS)("nc.elph", "elph_mat", &elph_w, (char * [5]) {"nk", "modes", "nspin", "nbndK", "nbndKq"},NULL);
+        ND_function(uninit, Nd_cmplxS)(&elph_w);
+
         for (int imode = 0; imode < 9 ; ++imode)
         {   
             ND_int shi_idx = nb22 + lattice.nbnds*nb11 + (lattice.nbnds*lattice.nbnds)*(0 + imode*lattice.nspin + nk11*lattice.nspin*eigVec.dims[0]);
@@ -85,8 +89,8 @@ int main(int argc, char* argv[])
         }
     }
 
+    free_usr_input(input_data);
     free_save_data(wfcs, &lattice, &pseudo);
-    free(pseudo_pots);
     free(elph_kq);
     ND_function(destroy,Nd_cmplxS)(&eigVec);
     ND_function(destroy,Nd_cmplxS)(&dVscf);
