@@ -24,15 +24,16 @@ void init_usr_input(struct usr_input ** input)
 
     for (int i = 0; i<MAX_PSEUDO_NUM; ++i) inp->pseudos[i] = NULL;
 
-    strcpy(inp->save_dir,"./SAVE");
-
     // defaults
     inp->nkpool = 1;
     inp->nqpool = 1;
     inp->start_bnd = 0;
     inp->end_bnd   = 0;
+    strcpy(inp->save_dir,"./SAVE");
     inp->pseudo_dir = inp->save_dir + 600 ;
     inp->dvscf_file = inp->save_dir + 1200;
+    strcpy(inp->pseudo_dir,"");
+    strcpy(inp->dvscf_file,"");
     inp->dimension = '3';
 
 }
@@ -64,6 +65,19 @@ static int handler(void* user, const char* section, const char* name,
             const char* value)
 {
     struct usr_input * inp = user;
+
+    size_t nospace_len =0 ;
+    size_t val_len = strlen(value);
+    for (size_t i =0; i < val_len; ++i)
+    {
+        if (value[i] != ' ') ++nospace_len;
+    }
+
+    if (nospace_len == 0)
+    {
+        printf("Invalid input for %s ",name);
+        error_msg("Invalid input");
+    }
 
     if (strcmp(section, "input") == 0)
     {
@@ -97,12 +111,22 @@ static int handler(void* user, const char* section, const char* name,
         }
         else if (strcmp(name, "pseudos") == 0)
         {   
+            // for now we copy to memory starting from inp->save_dir + 1800 
             char * tmp_pseudo = inp->save_dir + 1800;
+            // we will later extract from inp->save_dir + 1800
             strcpy(tmp_pseudo,value);
         }
         else if (strcmp(name, "dimension") == 0)
-        {
-            inp->dimension = atoi(value) + '0';
+        {   
+            int temp_a2i_val = atoi(value);
+            if (temp_a2i_val < 2 || temp_a2i_val >3) 
+            {
+                error_msg("Invalid value for dimension. Only 2 or 3 is supported");
+            }
+            else 
+            {
+                inp->dimension = temp_a2i_val + '0';
+            }
         }
         else
         {   
@@ -132,7 +156,13 @@ void read_input_file(const char * input_file, struct usr_input ** input_data)
         if (ini_parse(input_file, handler, *input_data) < 0) {
             error_msg("Cannot open input file input file.");
         }
+        if (strlen((*input_data)->pseudo_dir) == 0 ) error_msg("Pseudo Directory not found input");
+        if (strlen((*input_data)->dvscf_file) == 0 ) error_msg("dVscf file not found in input");
     }
+    // broad cast;
+    Bcast_input_data(*input_data, 0, MPI_COMM_WORLD);
+
+
     // parse the pseudo
     char * pseudo_parse = strtok ((*input_data)->save_dir + 1800,",");
     
@@ -145,8 +175,7 @@ void read_input_file(const char * input_file, struct usr_input ** input_data)
         ++ipot;
     }
 
-    // broad cast;
-    Bcast_input_data(*input_data, 0, MPI_COMM_WORLD);
+    
 
 }
 
