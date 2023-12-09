@@ -118,6 +118,7 @@ static int handler(void* user, const char* section, const char* name,
         }
         else if (strcmp(name, "dimension") == 0)
         {   
+            // sanity check (to avoid any overflow)
             int temp_a2i_val = atoi(value);
             if (temp_a2i_val < 2 || temp_a2i_val >3) 
             {
@@ -174,8 +175,6 @@ void read_input_file(const char * input_file, struct usr_input ** input_data)
         pseudo_parse = strtok (NULL, ",");
         ++ipot;
     }
-
-    
 
 }
 
