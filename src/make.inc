@@ -10,7 +10,8 @@ OPENMP_FLAGS   	 :=  #-DELPH_OMP_PARALLEL_BUILD ## uncomment for openmp build
 FFTW_INC 	 :=  -I/opt/homebrew/include 
 FFTW3_LIB        :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
 
-BLAS_INC 	 :=  -I/opt/homebrew/Cellar/openblas/0.3.24/include 
+### If you donot have cblas.h header leave BLAS_INC empty and add "-DND_DEFAULT_BLAS_HEADER" to cflags
+BLAS_INC 	 :=  -I/opt/homebrew/Cellar/openblas/0.3.24/include   
 BLAS_LIB 	 :=  -L/opt/homebrew/Cellar/openblas/0.3.24/lib -lopenblas 
 
 NETCDF_INC       :=  -I/Users/murali/softwares/core/include 

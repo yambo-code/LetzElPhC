@@ -33,6 +33,7 @@
 #include "nd_error.h"
 #include <fftw3.h>
 //
+#include "common_def.h" // this must be included before blas headers
 #ifdef ND_MKL_BLAS
     #define lapack_complex_float    float _Complex
     #define lapack_complex_double   double _Complex
@@ -44,7 +45,7 @@
     #include <cblas.h>
 //    #include <lapacke.h> // for now no lapack is needed
 #endif
-#include "common_def.h"
+
 //
 
 

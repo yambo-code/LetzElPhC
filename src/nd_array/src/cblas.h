@@ -67,27 +67,6 @@ extern "C" {            /* Assume C declarations for C++ */
  */
 #define CBLAS_INDEX size_t /* this may vary between platforms */
 
-/*
- * Integer type
- */
-#ifndef CBLAS_INT
-#ifdef WeirdNEC
-   #define CBLAS_INT int64_t
-#else
-   #define CBLAS_INT int32_t
-#endif
-#endif
-
-/*
- * Integer format string
- */
-#ifndef CBLAS_IFMT
-#ifdef WeirdNEC
-   #define CBLAS_IFMT PRId64
-#else
-   #define CBLAS_IFMT PRId32
-#endif
-#endif
 
 typedef enum CBLAS_LAYOUT {CblasRowMajor=101, CblasColMajor=102} CBLAS_LAYOUT;
 typedef enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113} CBLAS_TRANSPOSE;
@@ -96,20 +75,6 @@ typedef enum CBLAS_DIAG {CblasNonUnit=131, CblasUnit=132} CBLAS_DIAG;
 typedef enum CBLAS_SIDE {CblasLeft=141, CblasRight=142} CBLAS_SIDE;
 
 #define CBLAS_ORDER CBLAS_LAYOUT /* this for backward compatibility with CBLAS_ORDER */
-
-#include "cblas_mangling.h"
-
-/*
- * Integer specific API
- */
-#ifndef API_SUFFIX
-#ifdef CBLAS_API64
-#define API_SUFFIX(a) a##_64
-#include "cblas_64.h"
-#else
-#define API_SUFFIX(a) a
-#endif
-#endif
 
 
 /*
