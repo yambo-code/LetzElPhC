@@ -49,7 +49,7 @@
 //
 
 
-#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(EXIT_FAILURE);}
+#define ERR(e) {nd_error_msg(nc_strerror(e), "netcdf function");}
 
 #define BLAS_CALL(FUN_NAME, TYPE_SMALL)         BLAS_CALL_HIDDEN(FUN_NAME, TYPE_SMALL)
 #define BLAS_CALL_HIDDEN(FUN_NAME, TYPE_SMALL)  cblas_ ## TYPE_SMALL ## FUN_NAME
