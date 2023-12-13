@@ -6,7 +6,7 @@
 
 #if defined(COMPILE_ND_DOUBLE_COMPLEX) || defined(COMPILE_ND_SINGLE_COMPLEX) || defined(COMPILE_ND_FLOAT) || defined(COMPILE_ND_DOUBLE)
 
-static CBLAS_TRANSPOSE get_gemmn_T(char Trans);
+static enum CBLAS_TRANSPOSE get_gemmn_T(char Trans);
 
 #if defined(COMPILE_ND_TBLIS)
 static void nd_free_tblis(tblis_tensor * A_arr);
@@ -424,7 +424,7 @@ void ND_function(einsum, TYPE_S) (char * einsum_indices, ND_array(TYPE_S) * nd_a
 /************************************* INTERNAL STATIC HELPER ND_functionS ******************************************************/
 
 /* ND_function OF MATMUL to identify transpose/conjuate*/
-static CBLAS_TRANSPOSE get_gemmn_T(char Trans)
+static enum CBLAS_TRANSPOSE get_gemmn_T(char Trans)
 {
     if (Trans == 'N')      return CblasNoTrans ;
     else if (Trans == 'T') return CblasTrans;

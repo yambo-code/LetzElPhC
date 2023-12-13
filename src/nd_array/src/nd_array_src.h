@@ -37,10 +37,12 @@
     #define lapack_complex_float    float _Complex
     #define lapack_complex_double   double _Complex
     #include <mkl.h>
+#elif defined ND_DEFAULT_BLAS_HEADER
+    #include "cblas.h"
 #else
     #define LAPACK_COMPLEX_C99
     #include <cblas.h>
-    #include <lapacke.h>
+//    #include <lapacke.h> // for now no lapack is needed
 #endif
 #include "common_def.h"
 //
