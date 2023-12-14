@@ -78,8 +78,8 @@ void SU2mat(const ELPH_float * sym_in, const ND_int nspinor, \
         su2mat[0] = -c1 ; su2mat[1] = -d1;
         su2mat[2] =  a1 ; su2mat[3] =  b1;
 
-        /* The below if def is due to backward compatiblity. In Yambo ver < 5.12, the pauli matrix 
-        are not correct. so due to this it picks up an aditional phase factor of -1 for time_rev matrix */
+        /* The below if def is due to backward compatiblity. In Yambo ver <= 5.12, the pauli matrix 
+        are not correct. so due to this it picks up an additional phase factor of -1 for time_rev matrix */
         #if defined(YAMBO_LT_5_1)
         for (int is11= 0 ; is11<4; ++is11) su2mat[is11] = -su2mat[is11];
         #endif

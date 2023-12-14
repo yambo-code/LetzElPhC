@@ -1,9 +1,11 @@
 CC               :=  mpicc
 CPP              :=  gcc -E -P
+
+### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
 #CFLAGS          :=  -O3 -march=native # -DND_MKL_BLAS -fopenmp
 
 ##Debug
-CFLAGS       	 := -O1 -g  -fsanitize=address -fno-omit-frame-pointer # for mkl add 
+CFLAGS       	 := -O1 -g -fsanitize=address -fno-omit-frame-pointer # for mkl add 
 
 OPENMP_FLAGS   	 :=  #-DELPH_OMP_PARALLEL_BUILD ## uncomment for openmp build
 
@@ -30,5 +32,6 @@ LD_FLAGS         := -g -fsanitize=address -Wl,-no_compact_unwind
 CFLAGS           += -DWITH_MPI_ERROR
 
 #### Notes Extra CFLAGS
+### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
 ## if using intel mkl use -DND_MKL_BLAS in clags
 ### for openmp use -DELPH_OMP_PARALLEL_BUILD in CFLAGS and set -fopenmp in LD_FLAGS and CFLAGS

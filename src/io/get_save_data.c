@@ -109,9 +109,15 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         sprintf(temp_str, "%s/ndb.kindx", SAVEdir) ; 
         NC_open_file(temp_str, 'r', &tempid);
 
+        #if defined(YAMBO_LT_5_1)
         ELPH_float kindx_pars[7];
         quick_read(tempid, "PARS", kindx_pars);
         nkBZ = (int)rint(kindx_pars[0]); // FIX ME !! or kindx_pars[5] ?
+        #else
+        int nkBZ_read;
+        quick_read(tempid, "nXkbz", &nkBZ_read);
+        nkBZ = nkBZ_read;
+        #endif
 
         NC_close_file(tempid);
     } 
