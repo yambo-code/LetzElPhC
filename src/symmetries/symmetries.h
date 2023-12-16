@@ -2,6 +2,7 @@
 #include "../elphC.h"
 #include "../common/numerical_func.h"
 
+
 #define Function(FUN_NAME, TYPE_SMALL)                  Function_HIDDEN(FUN_NAME, TYPE_SMALL)
 #define Function_HIDDEN(FUN_NAME, TYPE_SMALL)           ELPH_ ## TYPE_SMALL ## FUN_NAME
 
@@ -13,3 +14,22 @@ void get_KplusQ_idxs(ND_array(Nd_floatS) * kpoints, int * KplusQidxs , \
 
 bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  \
                                 const ELPH_float * vec, ND_int * idx  );
+
+
+
+// sorting gvecs (sort_gvecs.c)
+
+void build_gtree(void ** gtree, const ND_int ngvecs, \
+    const ELPH_float * restrict lat_vec, \
+    ELPH_float * restrict gvecs);
+
+
+void free_gtree(void * gtree);
+
+
+void sort_gvec(void *gtree, const ELPH_float * restrict tree_gvecs,
+    const ND_int ngvecs, const ELPH_float * restrict sym_mat, \
+    const ELPH_float * restrict G0, const ELPH_float * restrict lat_vec, \
+    const ELPH_float * restrict gvecs_out, ND_int * restrict out_idx);
+
+
