@@ -2,12 +2,7 @@
 This file contains function which sorts gvectors
 */
 #include "wfc.h"
-
-
-
-int sort_cmp(const void *a, const void *b);
-static void Sorted_gvecs_idxs(const ND_int npw, ELPH_float * gvecs, ND_int * indices);
-
+#include "gsort.h"
 
 
 void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int * fft_dims,\
@@ -16,7 +11,7 @@ void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int * fft_dims
                 int ** gvec_out, ELPH_cmplx ** wfc_out, MPI_Comm mpi_comm)
 {
     /*
-    This function sorts pws and wfcs
+    This function sorts pws and wfcs and group them into z columns
     */
     /*
     First gather wfc and gvecs
@@ -201,58 +196,5 @@ void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int * fft_dims
 
 
 
-
-
-static void Sorted_gvecs_idxs(const ND_int npw, ELPH_float * gvecs, ND_int * indices )
-{
-    /*
-    Sort gvecs and group all gvecs with same (x,y).
-
-    // gvecs in crystal coordinates
-    */
-    if (gvecs == NULL) return ; 
-
-    ELPH_float ** gvec_ptrs = malloc(sizeof(ELPH_float *)*npw);
-
-    /* fill the struct */
-    for (ND_int i = 0 ; i< npw; ++i)
-    {
-        gvec_ptrs[i] = gvecs + 3*i; 
-    }
-
-    qsort(gvec_ptrs, npw, sizeof(ELPH_float *), sort_cmp);
-
-    // store the sorted indices
-    for (ND_int i = 0 ; i< npw; ++i) indices[i] = (gvec_ptrs[i]-gvecs)/3;
-    
-    free(gvec_ptrs);
-
-}
-
-int sort_cmp(const void *a, const void *b)
-{   
-    /*
-    First sorts along y, then x and finally z
-    */
-    ELPH_float * v1 = *(ELPH_float **)a;
-    ELPH_float * v2 = *(ELPH_float **)b;
-
-    ND_int Gax, Gay, Gaz;
-    ND_int Gbx, Gby, Gbz;
-    Gax = rint(v1[0]);
-    Gay = rint(v1[1]);
-    Gaz = rint(v1[2]);
-
-    Gbx = rint(v2[0]);
-    Gby = rint(v2[1]);
-    Gbz = rint(v2[2]);
-
-    if (Gay == Gby)
-    {
-        if (Gax == Gbx) return (Gaz > Gbz)-(Gaz < Gbz);
-        else            return (Gax > Gbx)-(Gax < Gbx);
-    }
-    else return (Gay > Gby)-(Gay < Gby);
-}
 
 

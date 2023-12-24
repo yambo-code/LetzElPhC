@@ -17,19 +17,7 @@ bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  \
 
 
 
-// sorting gvecs (sort_gvecs.c)
-
-void build_gtree(void ** gtree, const ND_int ngvecs, \
-    const ELPH_float * restrict lat_vec, \
-    ELPH_float * restrict gvecs);
 
 
-void free_gtree(void * gtree);
-
-
-void sort_gvec(void *gtree, const ELPH_float * restrict tree_gvecs,
-    const ND_int ngvecs, const ELPH_float * restrict sym_mat, \
-    const ELPH_float * restrict G0, const ELPH_float * restrict lat_vec, \
-    const ELPH_float * restrict gvecs_out, ND_int * restrict out_idx);
 
 
