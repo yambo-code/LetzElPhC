@@ -5,7 +5,7 @@ used in the Code.
 Some comments :
 1) "DO NOT" typedef a struct. always define the 
 structure before prefixing "struct" for example
-    write way to define :
+    correct way to define :
     ```
     struct lattice a ;
     struct wfc a ;
