@@ -1,18 +1,5 @@
 #pragma once 
 
-
-#ifdef ND_MKL_BLAS
-    typedef MKL_INT BLAS_INT;
-#else
-    #ifdef USE64BITINT
-        typedef long long int BLAS_INT;
-    #else
-        typedef int BLAS_INT; /* Internal type used for blas indices. set this according to the blas library (32 or 64 bit) */   
-    #endif
-#endif
-
-#define CBLAS_INT BLAS_INT
-
 typedef long long int ND_int; /* type used for all indices internally. */
 #define nd_idx (ND_int []) /* macro for giving indices to ND_functions*/
 #define ND_ALL ((void *)0)
@@ -25,3 +12,4 @@ typedef long long int ND_int; /* type used for all indices internally. */
 
 #define ND_array(TYPE_SMALL)         ND_array_HIDDEN(TYPE_SMALL)
 #define ND_array_HIDDEN(TYPE_SMALL)  nd_arr ## _ ## TYPE_SMALL
+
