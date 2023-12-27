@@ -23,9 +23,11 @@ void SU2mat(const ELPH_float * sym_in, const ND_int nspinor, \
 
 
 void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int * fft_dims,\
-                const ELPH_float * restrict gvec_in, const ELPH_cmplx * wfc_in, \
+                const ELPH_float * gvec_in, const ELPH_cmplx * wfc_in, \
                 const ND_int nsets, ND_int * npw_loc_out, ND_int * nG_xy,
                 int ** gvec_out, ELPH_cmplx ** wfc_out, MPI_Comm mpi_comm);
+
+
 
 
 

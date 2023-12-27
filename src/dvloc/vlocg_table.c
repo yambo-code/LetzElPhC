@@ -87,8 +87,8 @@ void vlocg_table(const struct Lattice * lattice, const struct Pseudo * pseudo,
     
     for (ND_int itype = 0; itype <ntype; ++itype )
     {   
-        ELPH_float * restrict vlocg_atom = yins + itype*npts;
-        ELPH_float * restrict dyy = *vploc_co + itype*npts;
+        ELPH_float * vlocg_atom = yins + itype*npts;
+        ELPH_float * dyy = *vploc_co + itype*npts;
         // loop not thread safe
         for (ND_int i = 0 ; i < npts_loc; ++i)
         {

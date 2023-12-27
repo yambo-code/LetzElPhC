@@ -1,7 +1,7 @@
 #pragma once
 #include "../dvloc/dvloc.h"
 
-void sum_VNL_KKp(ELPH_cmplx * K_ptr, ELPH_cmplx *  Kp_ptr, ELPH_cmplx * restrict fcoeff, \
+void sum_VNL_KKp(ELPH_cmplx * K_ptr, ELPH_cmplx *  Kp_ptr, ELPH_cmplx * fcoeff, \
                         ND_int nspin, ND_int nbnd, ND_int nspinor, ELPH_cmplx * out);
 
 void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, \

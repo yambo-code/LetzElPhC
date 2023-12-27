@@ -89,7 +89,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
         
         for (ND_int kz = 0; kz<FFTz ; ++kz )
         {   
-            int * restrict g_temp_set =  gvecs + FFTz*3*ig + kz*3;
+            int * g_temp_set =  gvecs + FFTz*3*ig + kz*3;
             g_temp_set[0] = ix; g_temp_set[1] = jy;  g_temp_set[2] = kz;
 
             ELPH_float qGtemp[3] = {get_miller_idx(ix,FFTx)+qpt[0], \

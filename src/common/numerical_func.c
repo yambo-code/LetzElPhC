@@ -336,7 +336,14 @@ void Gemm3x3f(const ELPH_float * restrict A, const char transA, \
     return ;
 }
 
-
+void matmul_Cmpl2x2(ELPH_cmplx * restrict mat1, ELPH_cmplx * restrict mat2, \
+                            ELPH_cmplx * restrict out)
+{
+    out[0] = mat1[0]*mat2[0] + mat1[1]*mat2[2] ;
+    out[1] = mat1[0]*mat2[1] + mat1[1]*mat2[3] ;
+    out[2] = mat1[2]*mat2[0] + mat1[3]*mat2[2] ;
+    out[3] = mat1[2]*mat2[1] + mat1[3]*mat2[3] ;
+}
 
 /* functions related to fft */
 

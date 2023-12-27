@@ -157,8 +157,8 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
 
             ND_int ilim_idx = (il*il) + im ;
             
-            ELPH_float * restrict YlmKtemp  = YlmK  + ilim_idx*npwK;
-            ELPH_float * restrict YlmKptemp = YlmKp + ilim_idx*npwKp;
+            ELPH_float * YlmKtemp  = YlmK  + ilim_idx*npwK;
+            ELPH_float * YlmKptemp = YlmKp + ilim_idx*npwKp;
 
             ELPH_OMP_PAR_FOR_SIMD
             for (ND_int ipw = 0 ; ipw < npwK; ++ipw )
@@ -248,7 +248,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
             for (ND_int im1 =0 ; im1 <= 2*l ; ++im1)
             {   
                 ELPH_float * YlmKtemp  = YlmK  + (l*l+im1)*npwK;
-                ELPH_cmplx * restrict betaK_temp = betaK + idxK*4*npwK;
+                ELPH_cmplx * betaK_temp = betaK + idxK*4*npwK;
 
                 ELPH_cmplx * restrict betaK0 = betaK_temp;
                 ELPH_cmplx * restrict betaK1 = betaK_temp + npwK;
@@ -272,7 +272,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
             for (ND_int im2 =0 ; im2 <= 2*l ; ++im2)
             {   
                 ELPH_float * YlmKptemp = YlmKp + (l*l+im2)*npwKp ;
-                ELPH_cmplx * restrict betaKp_temp = betaKp + idxKp*4*npwKp;
+                ELPH_cmplx * betaKp_temp = betaKp + idxKp*4*npwKp;
 
                 ELPH_cmplx * restrict betaKp0 = betaKp_temp;
                 ELPH_cmplx * restrict betaKp1 = betaKp_temp + npwKp;
@@ -345,11 +345,11 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
 
                 for (ND_int im1 =0 ; im1 <= 2*l ; ++im1)
                 {   
-                    ELPH_cmplx * restrict betaPsi_K = bandbufferK + (il_counter+im1)*bandbuffer_stride;
+                    ELPH_cmplx * betaPsi_K = bandbufferK + (il_counter+im1)*bandbuffer_stride;
 
                     for (ND_int im2 =0 ; im2 <= 2*l ; ++im2)
                     {   
-                        ELPH_cmplx * restrict betaPsi_Kp = bandbufferKp + (il_counter+im2)*bandbuffer_stride;
+                        ELPH_cmplx * betaPsi_Kp = bandbufferKp + (il_counter+im2)*bandbuffer_stride;
 
                         if (nspinor == 1 && im1 != im2) continue;
 

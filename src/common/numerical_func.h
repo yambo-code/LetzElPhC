@@ -35,6 +35,10 @@ void Gemm3x3f(const ELPH_float * restrict A, const char transA, \
                 const ELPH_float * restrict B,  const char transB, \
                 ELPH_float * restrict C);
 
+void matmul_Cmpl2x2(ELPH_cmplx * restrict mat1, ELPH_cmplx * restrict mat2, \
+                            ELPH_cmplx * restrict out);
+
+
 int get_fft_idx(ELPH_float idx_in, int FFT_dimension);
 ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension);
 

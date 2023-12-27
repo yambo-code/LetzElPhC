@@ -1,8 +1,8 @@
 #include "nd_array_src.h"
 
-static void ND_function(slice_internal, TYPE_S) ( const ND_int * restrict start_idx, const ND_int * restrict end_idx, const ND_int * restrict step_idx, \
-        const ND_int * restrict stride_F, const ND_int * restrict stride_S, ND_int idx_F,  ND_int idx_S, const ND_int ndim, \
-        const ND_int idim, const TYPE_L * restrict arrF, TYPE_L * restrict arrS);
+static void ND_function(slice_internal, TYPE_S) ( const ND_int * start_idx, const ND_int * end_idx, const ND_int * step_idx, \
+        const ND_int * stride_F, const ND_int * stride_S, ND_int idx_F,  ND_int idx_S, const ND_int ndim, \
+        const ND_int idim, const TYPE_L * arrF, TYPE_L * arrS);
 
 
 
@@ -300,9 +300,9 @@ void ND_function(copy, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, ND_array(TYP
 
 /* Not availble for user */
 
-static void ND_function(slice_internal, TYPE_S) ( const ND_int * restrict start_idx, const ND_int * restrict end_idx, const ND_int * restrict step_idx, \
-        const ND_int * restrict stride_F, const ND_int * restrict stride_S, ND_int idx_F,  ND_int idx_S, const ND_int ndim, \
-        const ND_int idim, const TYPE_L * restrict arrF, TYPE_L * restrict arrS)
+static void ND_function(slice_internal, TYPE_S) ( const ND_int * start_idx, const ND_int * end_idx, const ND_int * step_idx, \
+        const ND_int * stride_F, const ND_int * stride_S, ND_int idx_F,  ND_int idx_S, const ND_int ndim, \
+        const ND_int idim, const TYPE_L * arrF, TYPE_L * arrS)
 {
     
     if (idim == ndim) arrS[idx_S] = arrF[idx_F] ;

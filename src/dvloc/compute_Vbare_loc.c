@@ -130,10 +130,10 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     for (ND_int iset = 0 ; iset < (nspin*nbndsk) ; ++iset )
     {
         // rotate spinor wfc
-        ELPH_cmplx * restrict wfcSk_tmp = wfcSk + iset*nspinor*npwk;
+        ELPH_cmplx * wfcSk_tmp = wfcSk + iset*nspinor*npwk;
         su2rotate(nspinor, npwk,  1, su2k, wfcSk_tmp);
 
-        ELPH_cmplx * restrict wfcSkr_tmp = wfcSk_r->data + iset*wfcSk_r->strides[1] ;
+        ELPH_cmplx * wfcSkr_tmp = wfcSk_r->data + iset*wfcSk_r->strides[1] ;
 
         invfft3D(&fft_plan, nspinor, wfcSk_tmp, wfcSkr_tmp, timerevk);
         
