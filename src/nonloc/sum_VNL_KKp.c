@@ -8,7 +8,7 @@ used to compute the sandwich with nonlocal potential
 
 
 void sum_VNL_KKp(ELPH_cmplx * K_ptr, ELPH_cmplx *  Kp_ptr, ELPH_cmplx * fcoeff, \
-                        ND_int nspin, ND_int nbnd, ND_int nspinor, ELPH_cmplx * out)
+                        ND_int nspin, ND_int nbnd, ND_int nspinor, ELPH_cmplx * restrict out)
 {
     /*This is a helper function to sum over K and K' in non local part */
     // sum_K_K' V_NL = \sum_{sigma,sigma'} npwK^\sigma[0]*npwKp^\sigma'[1:4]*f + f*npwKp^\sigma'[0]*npwK^\sigma[1:4] ;
@@ -37,7 +37,7 @@ void sum_VNL_KKp(ELPH_cmplx * K_ptr, ELPH_cmplx *  Kp_ptr, ELPH_cmplx * fcoeff, 
                     ELPH_cmplx * ib2_temp3 = K3_ptr + strideb2 + nspin*nbnd*nspinor*ix;
 
                     //(3 * nspin, nbnd * nbnd ) (nbnd*nbnd*nspin,nbnd*nbnd,nbnd,1)
-                    ELPH_cmplx * temp_out = out + ib2 + ib1*nbnd +  \
+                    ELPH_cmplx * restrict temp_out = out + ib2 + ib1*nbnd +  \
                                             ispin*nbnd*nbnd + ix*nbnd*nbnd*nspin; 
 
                     for (ND_int isp1 = 0; isp1 < nspinor; ++isp1) // for K
