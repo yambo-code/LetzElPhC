@@ -21,8 +21,8 @@ void dvpsi(const ND_int nbnd, const ND_int nmag, const ND_int nspinor, const ND_
         ND_int nsets = nspinor*nbnd;
         for (ND_int is = 0; is<nsets ; ++is)
         {   
-            const ELPH_cmplx * restrict tmp_psi = psi_r     + is*nFFT ;
-            ELPH_cmplx * restrict       tmp_out = dVpsi_out + is*nFFT ;
+            const ELPH_cmplx * tmp_psi = psi_r     + is*nFFT ;
+            ELPH_cmplx * restrict tmp_out = dVpsi_out + is*nFFT ;
             //"i,msi=>msi"
             ELPH_OMP_PAR_SIMD
             for (ND_int i = 0 ; i < nFFT; ++i ) tmp_out[i] = dV_r[i]*tmp_psi[i] ;
@@ -34,16 +34,16 @@ void dvpsi(const ND_int nbnd, const ND_int nmag, const ND_int nspinor, const ND_
         
         /* Hard coded for nspinor == 2*/
         //"rsi,msi->mri"
-        const ELPH_cmplx * restrict dV_r0    = dV_r   ;
-        const ELPH_cmplx * restrict dV_r1    = dV_r + 1*nFFT  ;
-        const ELPH_cmplx * restrict dV_r2    = dV_r + 2*nFFT  ;
-        const ELPH_cmplx * restrict dV_r3    = dV_r + 3*nFFT  ;
+        const ELPH_cmplx * dV_r0    = dV_r   ;
+        const ELPH_cmplx * dV_r1    = dV_r + 1*nFFT  ;
+        const ELPH_cmplx * dV_r2    = dV_r + 2*nFFT  ;
+        const ELPH_cmplx * dV_r3    = dV_r + 3*nFFT  ;
 
         ELPH_OMP_PAR_SIMD
         for (ND_int ibnd = 0 ; ibnd<nbnd ; ++ibnd)
         {   
-            const ELPH_cmplx * restrict psir0    = psi_r + ibnd*2*nFFT;
-            const ELPH_cmplx * restrict psir1    = psi_r + ibnd*2*nFFT + nFFT  ;
+            const ELPH_cmplx * psir0    = psi_r + ibnd*2*nFFT;
+            const ELPH_cmplx * psir1    = psi_r + ibnd*2*nFFT + nFFT  ;
 
             ELPH_cmplx * restrict dVpsir0  = dVpsi_out + ibnd*2*nFFT;
             ELPH_cmplx * restrict dVpsir1  = dVpsi_out + ibnd*2*nFFT + nFFT  ;

@@ -52,14 +52,14 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
     for (ND_int ispinor = 0 ; ispinor < nspinor; ++ispinor)
     {   
         ELPH_cmplx * restrict wfcG_tmp = wfcG + ispinor*plan->ngvecs_loc ;
-        const ELPH_cmplx * restrict dV_r = Vpotr;
+        const ELPH_cmplx * dV_r = Vpotr;
 
         // we store V(r)*psi(r) in plan->fft_data and perform FFT
         /* now we do blocking to reuse cache. we divide into Ny blocks and 
             perform convolution and FFT */
         if (nmag == 1)
         {   
-            const ELPH_cmplx * restrict psi_spinor = psir + ispinor*fft_buf_size;
+            const ELPH_cmplx * psi_spinor = psir + ispinor*fft_buf_size;
             for (ND_int iy = 0 ; iy < Ny ; ++iy)
             {
                 ND_int iyshift = iy*plan->nzloc;
@@ -67,8 +67,8 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
                 {   
                     ND_int ixshift = ix*Ny*plan->nzloc + iyshift;
                     ELPH_cmplx * restrict dvpsi_xyz =  plan->fft_data + ixshift;
-                    const ELPH_cmplx * restrict psi_xyz  = psi_spinor + ixshift;
-                    const ELPH_cmplx * restrict dV_xyz   = dV_r + ixshift;
+                    const ELPH_cmplx * psi_xyz  = psi_spinor + ixshift;
+                    const ELPH_cmplx * dV_xyz   = dV_r + ixshift;
                     for (ND_int iz = 0; iz < plan->nzloc ; ++iz)
                     {
                         dvpsi_xyz[iz] = psi_xyz[iz]*dV_xyz[iz];
@@ -91,11 +91,11 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
                 {   
                     ND_int ixshift = ix*Ny*plan->nzloc + iyshift;
                     ELPH_cmplx * restrict dvpsi_out =  plan->fft_data + ixshift;
-                    const ELPH_cmplx * restrict psi0  = psir + ixshift;
-                    const ELPH_cmplx * restrict psi1  = psir + ixshift + fft_buf_size;
+                    const ELPH_cmplx * psi0  = psir + ixshift;
+                    const ELPH_cmplx * psi1  = psir + ixshift + fft_buf_size;
 
-                    const ELPH_cmplx * restrict dV0   = dV_r + ixshift;
-                    const ELPH_cmplx * restrict dV1   = dV_r + ixshift + fft_buf_size;
+                    const ELPH_cmplx * dV0   = dV_r + ixshift;
+                    const ELPH_cmplx * dV1   = dV_r + ixshift + fft_buf_size;
                     for (ND_int iz = 0; iz < plan->nzloc ; ++iz)
                     {
                         dvpsi_out[iz] = psi0[iz]*dV0[iz] + psi1[iz]*dV1[iz];
@@ -139,7 +139,7 @@ void fft_convolution3D(struct ELPH_fft_plan * plan, const ND_int nspinor, \
         ND_int igvec = 0 ;
         for (ND_int ixy = 0 ; ixy < plan->nGxyloc; ++ixy)
         {
-            ELPH_cmplx * restrict zfft_ptr = plan->nz_buf + ixy*Nz ;
+            ELPH_cmplx * zfft_ptr = plan->nz_buf + ixy*Nz ;
             for (ND_int ig = 0; ig < plan->ngxy_z[ixy]; ++ig)
             {
                 ND_int Gz = plan->gvecs[3*igvec+2];
