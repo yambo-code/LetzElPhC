@@ -8,6 +8,9 @@ anyways mandate that true = 1 and false = 0. this is
 just for readability. Any decent compiler will remove this.
 */
 
+#define XOR(a,b) ((bool2int(a) + bool2int(b))%2)
+
+
 
 void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const ELPH_float * Rsym_mat,  const ELPH_float * Rsym_v, \
@@ -15,10 +18,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 {
     /*
     This is a function to compute representation matrices for the given symmetry and k point
-
     Dkmn_rep (<b Rk |U(R) | k,a>): (nspin, b_{bnd} , a_{bnd}) 
     */
-    
     // compute the Rk vector and find it in the list of k-points
     ELPH_float Rk_vec[3] = {0,0,0};
 
@@ -54,14 +55,24 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
     if (iRkBZ < 0) error_msg("Rotated k point not found. Either Wrong Phonon symmetry or using non-uniform kgrid");
 
+    
 
-    /* 
-    Now we compute the Dmats i.e $ \langle Rk | U(R) | k \rangle $
-    if k = Sym1 * ik1 and Rk = Sym2 * ik2 then 
-    Dmats = $ \langle Sym2 * k2 | U(R) | Sym1 * k1  \rangle $
+    /*
+    $\langle Rk,b |U(R) | k,a \rangle = \langle Sym_2*k_2,b | \big(U(R) U(Sym_1) | k_1,a\rangle\big) $
+    where Rk = Sym_2*k_2  and k = Sym_1*k_1  (upto to a G-vector)
+    
+    => $ \langle Rk,b |U(R) | k,a \rangle  = \Big(\big(\langle k_1, a |U^\dagger(Sym_1) U^\dagger(R)\big) | Sym_2*k_2 ,b \rangle\Big)^* \\
+    = \Big(\langle k_1, a |\big( U^\dagger(Sym_1) U^\dagger(R) | Sym_2*k_2 ,b \rangle\big)\Big)^{1+C(Sym_1) + C(R)}$
+    where C(A) = 1 if A is time reversal symmetry else 0
+    if  {1+C(Sym_1) + C(R)} = odd implies conjugation of bracket else (in case of even) does nothing
     */
 
-    // now get the corresponding iBZ point and symmetry for k and Rk
+    /*
+    Note that we apply all the symmetry operations to k2 and leave k1 wavefunction untouched. 
+    This will avoid expensive memory copies and memory usage
+    */
+
+    // First get the corresponding iBZ point and symmetry for k and Rk
     const int ik1      = *(lattice->kmap->data + ikBZ*2)      ;
     const int iSym1     = *(lattice->kmap->data + ikBZ*2 + 1)  ;
 
@@ -76,21 +87,6 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
     const ELPH_float * tau1  = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{iSym1,0});
     const ELPH_float * tau2  = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{iSym2,0});
-    
-    /* 
-    note to reduce copying of memory, we apply all symmetry operations 
-    to only one wave-function. here we apply on ik2
-    
-
-    => Dmats = $ \langle ik2 | {U^\dagger(Sym2) U(R) U(Sym1)} | ik1  \rangle $
-    where operator in brackets is applied on left
-    if R or Sym1 is time reversal then we must conjugate i.e Dmats = conj(Dmats)
-
-    (U^\dagger(Sym2) U(R) U(Sym1))^\dagger  is applied to ik2
-    */
-
-    //  R or Sym1 is time reversal then we must conjugate i.e Dmats = conj(Dmats)
-    const bool conj_dmat = ( bool2int(tr1) + bool2int(tim_revR) )%2;
 
     // Get the wfcs in iBZ
     //
@@ -106,43 +102,34 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const ND_int npw_k1_total = (wfcs+ik1)->npw_total ;
     const ND_int npw_k2_total = (wfcs+ik2)->npw_total ;
 
-    
+
     /*
-    In general for three symmetric operations : (A3,v3)@(A2,v2)@(A1,v1) = (A3@A2@A1, v3 + A3*v2 + A3@A2*v1)
+    U^\dagger(Sym_1) U^\dagger(R) | Sym_2*k_2\rangle  = U^\dagger(Sym_1) U^\dagger(R) U(Sym_2)|k_2\rangle 
 
-    In our case : A1 = Sym2, A2 = R^{-1}, A3 = Sym1^{-1}
+    If we write time reversal as T = UK where K is complex conjugation operator and U is unitary
+    then
+    U^\dagger(Sym_1) U^\dagger(R) U(Sym_2) = U^\dagger(Sym_1) K(Sym_1) U^\dagger(R) K(R) K(Sym_2) U(Sym_2)
+    where K(A) = K if A is time reversal else ignored
 
-    If Ax + v is symmetry then its inverse operation is A^{-1}x - A^{-1}v
+    It is important to note that the conjugation is passed to right side for the inverse operators
+
+    => We rotate the G-vectors with symmtry matrix 
+        Sym123= Sym_1^{-1}@R^{-1}@Sym_2
+    and the fractional translation part is 
+        tau_123 = -Sym_1^{-1}(tau_1)- Sym_1^{-1}@R^{-1}*(tau_R)*(-1)^{T(Sym_1)} 
+            + Sym_1^{-1}@R^{-1}*(tau_2)*(-1)^{T(Sym_1) + T(R) + T(Sym_2)} 
     
-    In case of time reversal symmetries, 
-
-    v1 -> v1*(-1)^{T(A1) + T(A2) + T(A3)}
-    v2 -> v2*(-1)^{T(A2) + T(A3)}
-    v3 -> v3*(-1)^{T(A3)}
-
-    where T(A) = 1 if A is time reversal symmetry. else 0
-    
-
-    => A3@A2@A1 = Sym1^{-1}@R^{-1}@Sym2 
-        and 
-    tau_123 = v_123 = -Sym1^{-1}(tau_1)*(-1)^{T(A3)} - Sym1^{-1}@R^{-1}*(tau_R)*(-1)^{T(A2) + T(A3)} 
-            + Sym1^{-1}@R^{-1}*(tau_2)*(-1)^{T(A1) + T(A2) + T(A3)} 
-    
-    In case of spinors
-    (SU^\dagger(Sym1))^{T(A3)} @ (SU^\dagger(R))^{T(A2) + T(A3)}  @ (SU(Sym2))^{T(A1) + T(A2) + T(A3)} 
-    
-    In the tau_123 amd spinors : if sum of T(A) in power is odd then we conjugate
-
-    Wavefunction co-efficients Cg = conj(Cg) if (T(A1) + T(A2) + T(A3))%2 = 1
-
+    C_G = cong(C_G) if t(Sym_1) + t(R) + t(Sym_2) is odd
+    where t(A) = 1 for time reversal else 0
     */
     
-    //{T(Sym1) + T(R) + T(Sym2)} 
-    const bool tr_123 =  (bool2int(tr1) + bool2int(tim_revR) + bool2int(tr2))%2 ;
-    // {T(Sym1) + T(R)}
-    const bool tr_23 =  (bool2int(tr1) + bool2int(tim_revR))%2 ;
-    // {T(Sym1)}
-    const bool tr_3 =  (bool2int(tr1))%2 ;
+    //  R or Sym1 is time reversal then we must conjugate i.e Dmats = conj(Dmats)
+    // {1+C(Sym_1) + C(R)} 
+    const bool conj_dmat = ( bool2int(tr1) + bool2int(tim_revR) + 1)%2;
+    
+    // t(Sym_1) + t(R) + t(Sym_2) 
+    const bool conj_123 =  (bool2int(tr1) + bool2int(tim_revR) + bool2int(tr2))%2 ; 
+
 
     ELPH_cmplx SU2_mat123[4]={1,0,0,1};  // SU^\dagger(S1)@SU^\dagger(R)@SU(S2)
 
@@ -156,18 +143,18 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
         ELPH_cmplx SU2_temp[4]={1,0,0,1}; // temp
         
-        SU2mat(Sym1, lattice->nspinor, true, tr1, SU2_tempS1); //SU^dagger(S1)
+        // Note the U^-1 from time reversal is include in SU2 mats
+        SU2mat(Sym1, lattice->nspinor, true, tr1, SU2_tempS1); //SU^dagger(S1) 
         SU2mat(Rsym_mat, lattice->nspinor, true, tim_revR, SU2_tempR); //SU^dagger(R)
         SU2mat(Sym2, lattice->nspinor, false, tr2, SU2_tempS2); //SU(S2)
 
         // conjugate if required (due to time reversal symmetries)
         for (ND_int i = 0; i < (lattice->nspinor*lattice->nspinor); ++i)
         {
-            if (tr_3) SU2_tempS1[i] = conj(SU2_tempS1[i]);
-            if (tr_23) SU2_tempR[i] = conj(SU2_tempR[i]);
-            if (tr_123) SU2_tempS2[i] = conj(SU2_tempS2[i]);
+            if (tr1) SU2_tempR[i] = conj(SU2_tempR[i]); // we apply conjugation from Sym_1^-1 
+            if (conj_123) SU2_tempS2[i] = conj(SU2_tempS2[i]); 
+            // we apply conjugation from Sym_1^-1, R^-1 and Sym_2 
         }
-
         // compute the product of the 3 su(2) mats i.e 
         // SU^\dagger(S1)@SU^\dagger(R)@SU(S2)
         matmul_Cmpl2x2(SU2_tempS1, SU2_tempR, SU2_temp); // SU^\dagger(S1)@SU^\dagger(R)
@@ -193,9 +180,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
         ELPH_float v2_fac = 1; 
         ELPH_float v3_fac = 1; 
 
-        if (tr_123) v1_fac = -1; // (-1)^{T(A1) + T(A2) + T(A3)}
-        if(tr_23) v2_fac = -1; // (-1)^{ T(A2) + T(A3)}
-        if(tr_3) v3_fac = -1; // (-1)^{T(A3)
+        if (conj_123) v1_fac = -1; // (-1)^{T(A1) + T(A2) + T(A3)}
+        if(tr1) v2_fac = -1; // (-1)^{ T(A2) + T(A3)}
 
         // v1_tmp = Sym1^{T}@R^{T}*(tau_2*v1_fac -Rsym_v*v2_fac )
         for (int i = 0 ; i<3 ; ++i) v1_tmp[i] = v1_fac*tau2[i]-Rsym_v[i]*v2_fac;
@@ -207,8 +193,10 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
     // Now rotate the gvecs of ik2 and convert to crystal units
     
-    ELPH_float * S1G_crys   = malloc(sizeof(ELPH_float)*3*npw_k1_loc);
-    ELPH_float * S123G_crys = malloc(sizeof(ELPH_float)*3*npw_k2_loc);
+    ELPH_float * S1G_crys   = malloc(sizeof(ELPH_float)*3*npw_k1_loc); 
+    // gvectors for k1 point in crystal coordinate
+    ELPH_float * S123G_crys = malloc(sizeof(ELPH_float)*3*npw_k2_loc); 
+    // gvectors for k2 point in crystal coordinate rotated with Sym1^{T}@R^{T}@Sym2
 
     { // create a small scope 12
         const ELPH_float Iden3x3[9] = {1,0,0,0,1,0,0,0,1};
@@ -375,7 +363,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
                         wfc_k2_sorted + ispinor*npw_k1_loc, npw_k1_loc, ELPH_MPI_cmplx, 0, commK);
             
             // complex conjugate the C_G due to time reversal
-            if (tr_123) 
+            if (conj_123) 
             {   
                 ELPH_cmplx * tmp_ptr = wfc_k2_sorted + ispinor*npw_k1_loc;
                 for (ND_int ig = 0; ig<npw_k1_loc; ++ig) tmp_ptr[ig] = conj(tmp_ptr[ig]);
@@ -386,19 +374,16 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
         ND_int g_pw_tmp = lattice->nspinor*npw_k1_loc;
         
-        // conjugate the left wfc
-        for (ND_int ig = 0; ig<g_pw_tmp; ++ig) wfc_k2_sorted[ig] = conj(wfc_k2_sorted[ig]);
         // compute the sandwitch
-        ND_function(matmulX, Nd_cmplxS) ('N', 'T', wfc_k2_sorted, wfc_k1 + ispin*lattice->nbnds*g_pw_tmp, \
+        ND_function(matmulX, Nd_cmplxS) ('N', 'C', wfc_k2_sorted, wfc_k1 + ispin*lattice->nbnds*g_pw_tmp, \
                 Dkmn_rep_tmp, 1.0, 0.0, g_pw_tmp, g_pw_tmp, lattice->nbnds, 1, lattice->nbnds, g_pw_tmp);
-        // (1,pw)@ (nbn,pw)^T
+        // (1,pw)@ (nbn,pw)^C
 
         // Conjuge D_mat if one of Sym1 or R is time rev
         if (conj_dmat)
         {
             for (ND_int ibnd=0; ibnd < lattice->nbnds; ++ibnd) Dkmn_rep_tmp[ibnd] = conj(Dkmn_rep_tmp[ibnd]);
         }
-
         // reduce to root node
         ELPH_cmplx * Dkmn_ptr = NULL;
         if (my_rank == 0) Dkmn_ptr = Dkmn_rep + iset*lattice->nbnds;
@@ -420,6 +405,10 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     }
 
 }
+
+
+
+
 
 
 
