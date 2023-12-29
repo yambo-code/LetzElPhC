@@ -9,6 +9,7 @@ This is the header for functions related to wfcs
 #include "../common/parallel.h"
 #include "../io/io.h"
 #include "../fft/fft.h"
+#include "gsort.h"
 
 void rotateGvecs(const ELPH_float * Gvecs, const ELPH_float * sym, const ND_int ngvecs, 
                 const  ELPH_float * lat_vec, const bool inverse, const bool crystal,

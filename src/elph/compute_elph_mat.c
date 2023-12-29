@@ -37,7 +37,11 @@ int main(int argc, char* argv[])
     
     get_FFT_dims(DVSCF_NC, &nq, FFT_dims);
 
-    printf("Reading \n");
+
+    int npw_cpus, krank;
+    MPI_Comm_rank(commK, &krank);
+
+    if (krank ==0 ) printf("Reading \n");
     
     read_and_alloc_save_data(SAVEDIR, commQ, commK, FIRST_BAND, LAST_BAND, \
                 &wfcs, PSEUDO_DIR, pseudo_pots, &lattice, &pseudo,FFT_dims);
@@ -48,13 +52,12 @@ int main(int argc, char* argv[])
     // ND_function(init, Nd_cmplxS) (&dVscf, 0, NULL);
     read_dvscfq(DVSCF_NC, &eigVec, &lattice, &dVscf,0, commK);
 
-    printf("Computing el-ph \n");
+    if (krank ==0 ) printf("Computing el-ph \n");
     
     /*compute el-ph*/
 
     ELPH_cmplx * elph_kq = NULL;
-    int npw_cpus, krank;
-    MPI_Comm_rank(commK, &krank);
+
 
     if (krank ==0 )
     {   
@@ -89,6 +92,35 @@ int main(int argc, char* argv[])
         }
     }
 
+    ND_array(Nd_cmplxS) Dmat_w;
+    if (krank ==0 )
+    {   
+        printf("Computing electronic representation matrices...\n");
+        ND_function(init, Nd_cmplxS)(&Dmat_w, 5, nd_idx{lattice.sym_mat->dims[0],lattice.kmap->dims[0], lattice.nspin, lattice.nbnds, lattice.nbnds});
+        ND_function(malloc, Nd_cmplxS) (&Dmat_w);
+    }
+
+    for (ND_int isym=0; isym< lattice.sym_mat->dims[0]; ++isym)
+    {
+        for (ND_int ikBZ=0; ikBZ< lattice.kmap->dims[0]; ++ikBZ)
+        {   
+            ELPH_cmplx * Dkmn_rep_ptr = NULL;
+            if (krank ==0 ) Dkmn_rep_ptr = ND_function(ele, Nd_cmplxS)(&Dmat_w,nd_idx{isym,ikBZ,0,0,0});
+
+            electronic_reps(wfcs, &lattice, lattice.sym_mat->data + 9*isym,  (ELPH_float []){0,0,0}, \
+            lattice.time_rev_array[isym], ikBZ, Dkmn_rep_ptr, commK);
+        }
+
+    }
+
+    if (krank ==0 ) 
+    {
+        ND_function(write, Nd_cmplxS)("nc.Dmats", "Dmats", &Dmat_w, (char * [5]) {"nsym", "nk", "nspin", "nbndb", "nbnda"},NULL);
+        ND_function(destroy, Nd_cmplxS) (&Dmat_w);
+    }
+
+
+    // cleanup
     free_usr_input(input_data);
     free_save_data(wfcs, &lattice, &pseudo);
     free(elph_kq);

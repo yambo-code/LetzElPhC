@@ -16,6 +16,11 @@ bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  \
                                 const ELPH_float * vec, ND_int * idx  );
 
 
+void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
+    const ELPH_float * Rsym_mat,  const ELPH_float * Rsym_v, \
+    const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, MPI_Comm commK);
+
+
 
 
 
