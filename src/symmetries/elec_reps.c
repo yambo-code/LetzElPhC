@@ -1,16 +1,6 @@
 #include "symmetries.h"
 #include "../wfc/wfc.h"
 
-#define bool2int(bval) (bval ? 1 : 0)
-/*
-Note that the bool2int() is not needed in practice, the standard 
-anyways mandate that true = 1 and false = 0. this is 
-just for readability. Any decent compiler will remove this.
-*/
-
-#define XOR(a,b) ((bool2int(a) + bool2int(b))%2)
-
-
 
 void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const ELPH_float * Rsym_mat,  const ELPH_float * Rsym_v, \
@@ -20,18 +10,18 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     This is a function to compute representation matrices for the given symmetry and k point
     Dkmn_rep (<b Rk |U(R) | k,a>): (nspin, b_{bnd} , a_{bnd}) 
     */
+
+    int my_rank, Comm_size, mpi_error;
+    mpi_error = MPI_Comm_size(commK, &Comm_size);
+    mpi_error = MPI_Comm_rank(commK, &my_rank);
+
     // compute the Rk vector and find it in the list of k-points
     ELPH_float Rk_vec[3] = {0,0,0};
-
-    // start of small scope
-    { 
     ELPH_float Rk_tmp[3] = {0,0,0};
     MatVec3f(Rsym_mat, lattice->kpt_fullBZ->data + 3*ikBZ, false, Rk_tmp);
     // convert to crystal coordinates
     MatVec3f(lattice->alat_vec->data,Rk_tmp, true, Rk_vec);
-    } 
-    // end of scope
-    
+
     // now find the index of the rotated k point
     ND_int iRkBZ = -1;
     // find the index
@@ -55,21 +45,9 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
     if (iRkBZ < 0) error_msg("Rotated k point not found. Either Wrong Phonon symmetry or using non-uniform kgrid");
 
-    
-
     /*
     $\langle Rk,b |U(R) | k,a \rangle = \langle Sym_2*k_2,b | \big(U(R) U(Sym_1) | k_1,a\rangle\big) $
     where Rk = Sym_2*k_2  and k = Sym_1*k_1  (upto to a G-vector)
-    
-    => $ \langle Rk,b |U(R) | k,a \rangle  = \Big(\big(\langle k_1, a |U^\dagger(Sym_1) U^\dagger(R)\big) | Sym_2*k_2 ,b \rangle\Big)^* \\
-    = \Big(\langle k_1, a |\big( U^\dagger(Sym_1) U^\dagger(R) | Sym_2*k_2 ,b \rangle\big)\Big)^{1+C(Sym_1) + C(R)}$
-    where C(A) = 1 if A is time reversal symmetry else 0
-    if  {1+C(Sym_1) + C(R)} = odd implies conjugation of bracket else (in case of even) does nothing
-    */
-
-    /*
-    Note that we apply all the symmetry operations to k2 and leave k1 wavefunction untouched. 
-    This will avoid expensive memory copies and memory usage
     */
 
     // First get the corresponding iBZ point and symmetry for k and Rk
@@ -81,6 +59,9 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
     const ELPH_float * Sym1  = lattice->sym_mat->data + 9*iSym1;
     const ELPH_float * Sym2  = lattice->sym_mat->data + 9*iSym2;
+    
+    const ELPH_float * k1_vec = lattice->kpt_iredBZ->data + 3*ik1;
+    const ELPH_float * k2_vec = lattice->kpt_iredBZ->data + 3*ik2;
 
     const bool tr1 = lattice->time_rev_array[iSym1];
     const bool tr2 = lattice->time_rev_array[iSym2];
@@ -103,125 +84,48 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const ND_int npw_k2_total = (wfcs+ik2)->npw_total ;
 
 
-    /*
-    U^\dagger(Sym_1) U^\dagger(R) | Sym_2*k_2\rangle  = U^\dagger(Sym_1) U^\dagger(R) U(Sym_2)|k_2\rangle 
-
-    If we write time reversal as T = UK where K is complex conjugation operator and U is unitary
-    then
-    U^\dagger(Sym_1) U^\dagger(R) U(Sym_2) = U^\dagger(Sym_1) K(Sym_1) U^\dagger(R) K(R) K(Sym_2) U(Sym_2)
-    where K(A) = K if A is time reversal else ignored
-
-    It is important to note that the conjugation is passed to right side for the inverse operators
-
-    => We rotate the G-vectors with symmtry matrix 
-        Sym123= Sym_1^{-1}@R^{-1}@Sym_2
-    and the fractional translation part is 
-        tau_123 = -Sym_1^{-1}(tau_1)- Sym_1^{-1}@R^{-1}*(tau_R)*(-1)^{T(Sym_1)} 
-            + Sym_1^{-1}@R^{-1}*(tau_2)*(-1)^{T(Sym_1) + T(R) + T(Sym_2)} 
+    // compute the SU(2) mats for spinor rotation
+    ELPH_cmplx SU2_S1[4]={1,0,0,1};
+    ELPH_cmplx SU2_R[4]={1,0,0,1}; 
+    ELPH_cmplx SU2_S2[4]={1,0,0,1}; 
     
-    C_G = cong(C_G) if t(Sym_1) + t(R) + t(Sym_2) is odd
-    where t(A) = 1 for time reversal else 0
-    */
-    
-    //  R or Sym1 is time reversal then we must conjugate i.e Dmats = conj(Dmats)
-    // {1+C(Sym_1) + C(R)} 
-    const bool conj_dmat = ( bool2int(tr1) + bool2int(tim_revR) + 1)%2;
-    
-    // t(Sym_1) + t(R) + t(Sym_2) 
-    const bool conj_123 =  (bool2int(tr1) + bool2int(tim_revR) + bool2int(tr2))%2 ; 
+    SU2mat(Sym1, lattice->nspinor, false, tr1, SU2_S1); 
+    SU2mat(Rsym_mat, lattice->nspinor, false, tim_revR, SU2_R); 
+    SU2mat(Sym2, lattice->nspinor, false, tr2, SU2_S2); 
 
+    // compute the rotated gvecs in crystal coordinates
+    ELPH_float * G_S1k1    = calloc(3*npw_k1_loc, sizeof(ELPH_float)); // S1*k1 gvecs
+    ELPH_float * G_RS1k1   = calloc(3*npw_k1_loc, sizeof(ELPH_float)); // R*S1*k1 gvecs
+    ELPH_float * G_S2k2    = calloc(3*npw_k2_loc, sizeof(ELPH_float)); // S2*k2 gvecs
 
-    ELPH_cmplx SU2_mat123[4]={1,0,0,1};  // SU^\dagger(S1)@SU^\dagger(R)@SU(S2)
+    // compute the ulm vec i.e S2K2 + G = R*S1*k1 = > G = R*S1*k1-S2K2 
+    // C'_G-G0 = C_G. we need to add -G0 = S2*k2-R*S1*k1;
 
-    // initiate to I_2x2. if nspinor == 1 then only first element in considered
-    // compute SU(2) mats
-    if (lattice->nspinor == 2)
-    { 
-        ELPH_cmplx SU2_tempS1[4]={1,0,0,1}; //SU^dagger(S1)
-        ELPH_cmplx SU2_tempR[4]={1,0,0,1}; //SU^dagger(R)
-        ELPH_cmplx SU2_tempS2[4]={1,0,0,1}; //SU(S2)
+    ELPH_float SymRS1[9] ={0,0,0, 0,0,0, 0,0,0}; // R@S1 matrix
+    Gemm3x3f(Rsym_mat, 'N', Sym1,  'N', SymRS1);
 
-        ELPH_cmplx SU2_temp[4]={1,0,0,1}; // temp
-        
-        // Note the U^-1 from time reversal is include in SU2 mats
-        SU2mat(Sym1, lattice->nspinor, true, tr1, SU2_tempS1); //SU^dagger(S1) 
-        SU2mat(Rsym_mat, lattice->nspinor, true, tim_revR, SU2_tempR); //SU^dagger(R)
-        SU2mat(Sym2, lattice->nspinor, false, tr2, SU2_tempS2); //SU(S2)
+    // Compute the ulmvec i.e -G0 = S2*k2-R*S1*k1
+    ELPH_float ulm_vec[3] = {0,0,0}; // (in cart)
+    MatVec3f(Sym2, k2_vec, false, ulm_vec); // first compute and store S2K2 in ulm_vec
+    // we store Rk = R*S1*k1 in Rk_vec (in cart)
+    MatVec3f(SymRS1, k1_vec, false, Rk_vec);
+    for (int i = 0; i<3; ++i) ulm_vec[i] -= Rk_vec[i] ;
 
-        // conjugate if required (due to time reversal symmetries)
-        for (ND_int i = 0; i < (lattice->nspinor*lattice->nspinor); ++i)
-        {
-            if (tr1) SU2_tempR[i] = conj(SU2_tempR[i]); // we apply conjugation from Sym_1^-1 
-            if (conj_123) SU2_tempS2[i] = conj(SU2_tempS2[i]); 
-            // we apply conjugation from Sym_1^-1, R^-1 and Sym_2 
-        }
-        // compute the product of the 3 su(2) mats i.e 
-        // SU^\dagger(S1)@SU^\dagger(R)@SU(S2)
-        matmul_Cmpl2x2(SU2_tempS1, SU2_tempR, SU2_temp); // SU^\dagger(S1)@SU^\dagger(R)
-        matmul_Cmpl2x2(SU2_temp, SU2_tempS2, SU2_mat123); // SU^\dagger(S1)@SU^\dagger(R)@SU(S2)
-    } 
+    // rotate G vectors and out put them in crystal coordinates
+    // S1*G
+    rotateGvecs(gvecs_k1,   Sym1, npw_k1_loc, lattice->alat_vec->data, false, true, NULL,  G_S1k1);
+    // R*S1*G
+    rotateGvecs(gvecs_k1, SymRS1, npw_k1_loc, lattice->alat_vec->data, false, true, NULL, G_RS1k1);
+    // S2*G
+    rotateGvecs(gvecs_k2,   Sym2, npw_k2_loc, lattice->alat_vec->data, false, true, ulm_vec, G_S2k2);
+    // Now ulm_vec is in crys coordinates as rotateGvecs internally converted it from cart to crys
 
-    // Compute the total rotation matrix and frac trans
-    ELPH_float Sym123[9] = {0,0,0,0,0,0,0,0,0}; // rotation matrix
-    ELPH_float tau_123[3] = {0,0,0}; // frac trans
+    // Now we need to rearrange the wavefunctions. We need to find the indices of G_S2k2 in G_RS1k1
 
-    { // create a small scope 11
-        // 1st compute the rotational matrix
-        ELPH_float Sym_1R_temp[9] = {0,0,0,0,0,0,0,0,0}; //Sym1^{-1}@R^{-1} i.e Sym1^{T}@R^{T}
-        Gemm3x3f(Sym1, 'T', Rsym_mat,'T',Sym_1R_temp);
-        Gemm3x3f(Sym_1R_temp, 'N', Sym2,'N',Sym123); //Sym1^{-1}@R^{-1}@Sym2 i.e,  Sym1^{T}@R^{T}@Sym2
-        // fractional translation
-        // v1 = tau_2, v2 = -R^{-1}Rsym_v, v3 = -Sym1^{-1}tau_1
-
-        ELPH_float v1_tmp[3] = {0,0,0};
-        ELPH_float v12_tmp[3] = {0,0,0};
-
-        ELPH_float v1_fac = 1; 
-        ELPH_float v2_fac = 1; 
-        ELPH_float v3_fac = 1; 
-
-        if (conj_123) v1_fac = -1; // (-1)^{T(A1) + T(A2) + T(A3)}
-        if(tr1) v2_fac = -1; // (-1)^{ T(A2) + T(A3)}
-
-        // v1_tmp = Sym1^{T}@R^{T}*(tau_2*v1_fac -Rsym_v*v2_fac )
-        for (int i = 0 ; i<3 ; ++i) v1_tmp[i] = v1_fac*tau2[i]-Rsym_v[i]*v2_fac;
-        MatVec3f(Sym_1R_temp, v1_tmp, false, v12_tmp);
-        // -Sym1^{-1}(tau_1)*v3_fac}
-        MatVec3f(Sym1, tau1, true, tau_123); // Sym1^{-1}*tau_1
-        for (int i = 0 ; i<3 ; ++i) tau_123[i]  = tau_123[i]*(-1)*v3_fac + v12_tmp[i];
-    } // end of scope 11
-
-    // Now rotate the gvecs of ik2 and convert to crystal units
-    
-    ELPH_float * S1G_crys   = malloc(sizeof(ELPH_float)*3*npw_k1_loc); 
-    // gvectors for k1 point in crystal coordinate
-    ELPH_float * S123G_crys = malloc(sizeof(ELPH_float)*3*npw_k2_loc); 
-    // gvectors for k2 point in crystal coordinate rotated with Sym1^{T}@R^{T}@Sym2
-
-    { // create a small scope 12
-        const ELPH_float Iden3x3[9] = {1,0,0,0,1,0,0,0,1};
-        ELPH_float G0[3] = {0,0,0}; // ulmvec (in cart) G0 + Sym1^{T}@R^{T}@Sym2*k2 = k1 -> G0 = k1-Sym1^{T}@R^{T}@Sym2*k2
-        // note C'_{G-G0} = C_G, so we need add -G0
-        // get the iBZ kpoints k1 and k2
-        const ELPH_float * k1_vec = lattice->kpt_iredBZ->data + 3*ik1;
-        const ELPH_float * k2_vec = lattice->kpt_iredBZ->data + 3*ik2;
-        MatVec3f(Sym123, k2_vec, false, G0); // Sym1^{T}@R^{T}@Sym2*k2
-        for (int i = 0; i<3; ++i) G0[i] -= k1_vec[i];  //-G0 = Sym1^{T}@R^{T}@Sym2*k2-k1
-        // convert gvecs of k1 to cystal coorinates
-        rotateGvecs(gvecs_k1, Iden3x3, npw_k1_loc, lattice->alat_vec->data, false, true, NULL, S1G_crys);
-        // convert gvecs to k2 -> Sym1^{T}@R^{T}@Sym2*k2
-        rotateGvecs(gvecs_k2,  Sym123, npw_k2_loc, lattice->alat_vec->data, false, true, G0, S123G_crys);
-    } // end of scope  12
-	
-    // Now we need to rearrange the wavefunctions. We need to find the indices of S123G_crys in S1G_crys
-    int my_rank, Comm_size, mpi_error;
-    mpi_error = MPI_Comm_size(commK, &Comm_size);
-    mpi_error = MPI_Comm_rank(commK, &my_rank);
-
-    // First get S123G_crys and S1G_crys on the root node
-    ND_int * idx_arr = NULL ; // This is the array that maps S123G_crys to S1G_crys; (only allocated in root)
-    ELPH_float * S123Gvecs_all = NULL; // all gvectors collected on root process
-    ELPH_float * S1Gvecs_all = NULL; // all gvectors collected on root process
+    // First get G_RS1k1 and G_S2k2 on the root node
+    ND_int * idx_arr = NULL ; // This is the array that maps G_S2k2 to G_RS1k1; (only allocated on root)
+    ELPH_float * G_S2k2_root_all = NULL; // all gvectors collected on root process for sorting
+    ELPH_float * G_RS1k1_root_all = NULL; // all gvectors collected on root process for sorting
 
     // mpi buffers
     int * counts = NULL; 
@@ -232,8 +136,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
     if (my_rank == 0)
     {   
-        S1Gvecs_all      = malloc(sizeof(ELPH_float)*npw_k1_total*3);
-        S123Gvecs_all    = malloc(sizeof(ELPH_float)*npw_k2_total*3);
+        G_RS1k1_root_all = malloc(sizeof(ELPH_float)*npw_k1_total*3);
+        G_S2k2_root_all  = malloc(sizeof(ELPH_float)*npw_k2_total*3);
         idx_arr          = malloc(sizeof(ND_int)*npw_k2_total);
         counts           = malloc(4*sizeof(int)*Comm_size);
         disp             = counts +   Comm_size ;
@@ -242,12 +146,12 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
         
 
         if (counts   == NULL) error_msg("Failed to allocate comm array");
-        if (S123Gvecs_all == NULL)   error_msg("Failed to allocate gvec123 array");
-        if (S1Gvecs_all == NULL)   error_msg("Failed to allocate gvec1 array");
+        if (G_S2k2_root_all == NULL)   error_msg("Failed to allocate gvec123 array");
+        if (G_RS1k1_root_all == NULL)   error_msg("Failed to allocate gvec1 array");
         if (idx_arr == NULL)     error_msg("Failed to allocate indices array");
     }
     
-
+    // collect R*S1*G on root
     int pw_loc_int = 3*npw_k1_loc;
     mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, commK);
     if (my_rank == 0)
@@ -259,68 +163,13 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
             disp_tmp += counts[i];
         }
     }
-    // gather the k1 gvecs
-    MPI_Gatherv(S1G_crys,pw_loc_int,ELPH_MPI_float, \
-        S1Gvecs_all,counts,disp,ELPH_MPI_float,0,commK);
+    // gather 
+    MPI_Gatherv(G_RS1k1, pw_loc_int, ELPH_MPI_float, \
+        G_RS1k1_root_all, counts, disp, ELPH_MPI_float, 0, commK);
 
+    // collect S2*G on root
     pw_loc_int = 3*npw_k2_loc;
-    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, commK);
-    if (my_rank == 0)
-    {
-        int disp_tmp = 0;
-        for (int i = 0 ; i<Comm_size; ++i)
-        {
-            disp[i] = disp_tmp;
-            disp_tmp += counts[i];
-        }
-    }
-    
-    // gather the S1^-1@R^-1@S2*k2 gvecs
-    MPI_Gatherv(S123G_crys,pw_loc_int,ELPH_MPI_float, \
-        S123Gvecs_all,counts, disp, ELPH_MPI_float, 0, commK);
-    
-    // get the indices
-    if (my_rank == 0)
-    {   
-        find_gvecs_idxs(npw_k2_total, S123Gvecs_all, npw_k1_total, S1Gvecs_all, idx_arr);
-        // free some space
-        free(S123Gvecs_all);
-        free(S1Gvecs_all);
-    }
-    
-    // now we map the wavefunctions
-    // allocate memory for rearranged space
-    ELPH_cmplx * wfc_k2_root = NULL ; // gather ik2 wavefunctions on root for sorting
-    ELPH_cmplx * wfc_k2_sort_root = NULL ; // store sorted ik2 on root
-
-    if (my_rank == 0)
-    {   
-        wfc_k2_root = malloc(sizeof(ELPH_cmplx)*npw_k2_total);
-        wfc_k2_sort_root = malloc(sizeof(ELPH_cmplx)*npw_k1_total);
-    }
-    
-    // wfc_k2_sort_root is scatter to the local buffers
-    ELPH_cmplx *  wfc_k2_sorted = malloc(sizeof(ELPH_cmplx)*lattice->nspinor*npw_k1_loc); 
-    if (wfc_k2_sorted == NULL) error_msg("Allocation of sorted local buffer failed");
-
-    ND_int nsets = lattice->nspin*lattice->nbnds;
-
-    pw_loc_int = npw_k1_loc;
-    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, commK);
-
-    if (my_rank == 0)
-    {
-        int disp_tmp = 0;
-        for (int i = 0 ; i<Comm_size; ++i)
-        {
-            disp[i] = disp_tmp;
-            disp_tmp += counts[i];
-        }
-    }
-    
-    pw_loc_int = npw_k2_loc;
     mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts2, 1, MPI_INT, 0, commK);
-    
     if (my_rank == 0)
     {
         int disp_tmp = 0;
@@ -330,17 +179,74 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
             disp_tmp += counts2[i];
         }
     }
+    // gather 
+    MPI_Gatherv(G_S2k2, pw_loc_int, ELPH_MPI_float, \
+        G_S2k2_root_all, counts2, disp2, ELPH_MPI_float, 0, commK);
+    
+    // get the indices
+    if (my_rank == 0)
+    {   
+        find_gvecs_idxs(npw_k2_total, G_S2k2_root_all, npw_k1_total, G_RS1k1_root_all, idx_arr);
+        // free some space
+        free(G_S2k2_root_all);
+        free(G_RS1k1_root_all);
 
+        // divide mpi buffers by 3 so that we can use them for mpi commucation routines
+        for (int i = 0 ; i<Comm_size; ++i)
+        {
+            counts[i]   /= 3 ;
+            disp[i]     /= 3 ;     
+            counts2[i]  /= 3 ;  
+            disp2[i]    /= 3 ;  
+        }
+    }
+    
+    // now we map the wavefunctions
+    // allocate memory for rearranged space
+    ELPH_cmplx * wfc_k2_root = NULL ; // gather ik2 wavefunctions on root for sorting
+    ELPH_cmplx * wfc_k2_sort_root = NULL ; // store sorted ik2 on root
+
+    if (my_rank == 0)
+    {   
+        wfc_k2_root      = malloc(sizeof(ELPH_cmplx)*npw_k2_total);
+        wfc_k2_sort_root = malloc(sizeof(ELPH_cmplx)*npw_k1_total);
+    }
+    
+    ND_int nsets         = lattice->nspin*lattice->nbnds; // nbands * nspin
+    ND_int npw_spinor_k1 = lattice->nspinor*npw_k1_loc; // nspinor * npw
+
+    ELPH_cmplx *  wfc_RS1k = malloc(nsets*npw_spinor_k1*sizeof(ELPH_cmplx)); // R*Sym1*k1 wfc
+    if (wfc_RS1k == NULL) error_msg("Allocation of sorted local buffer RS1k failed");
+    ELPH_cmplx *  wfc_S2k2 = malloc(nsets*npw_spinor_k1*sizeof(ELPH_cmplx)); // Sym2*k2 wfc
+    if (wfc_S2k2 == NULL) error_msg("Allocation of sorted local buffer S2k2 failed");
+    
     // create a tmp buffer
-    ELPH_cmplx * Dkmn_rep_tmp = calloc(lattice->nbnds,sizeof(ELPH_cmplx));
+    ELPH_cmplx * Dkmn_rep_tmp = calloc(lattice->nbnds*lattice->nbnds,sizeof(ELPH_cmplx));
+    if (Dkmn_rep_tmp == NULL) error_msg("Allocation of local buffer Dkmn failed");
 
     // Now rearrage the wavefunctin, and compute the sandwitch
     for (ND_int iset =0; iset<nsets; ++iset)
     {   
-        ND_int ispin = iset/lattice->nbnds ;
-
         const ELPH_cmplx * wfc_k2_tmp = wfc_k2 + iset*lattice->nspinor*npw_k2_loc;
-    
+        ELPH_cmplx * wfc_S2k2_tmp  = wfc_S2k2 + iset*npw_spinor_k1;
+        ELPH_cmplx * wfc_RS1k1_tmp = wfc_RS1k + iset*npw_spinor_k1;
+
+        // copy k1 buffer to wfc_RS1k
+        memcpy(wfc_RS1k1_tmp, wfc_k1+iset*npw_spinor_k1, sizeof(ELPH_cmplx)*npw_spinor_k1);
+        // apply U(S1)
+        su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_S1, wfc_RS1k1_tmp);
+        if (tr1)
+        {   // conjugate if S1 is time reversal
+            for (ND_int ipw=0; ipw<npw_spinor_k1; ++ipw) wfc_RS1k1_tmp[ipw] = conj(wfc_RS1k1_tmp[ipw]);
+        }
+        // apply U(R)
+        su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_R, wfc_RS1k1_tmp);
+        if (tim_revR)
+        {   // conjugate if R is time reversal
+            for (ND_int ipw=0; ipw<npw_spinor_k1; ++ipw) wfc_RS1k1_tmp[ipw] = conj(wfc_RS1k1_tmp[ipw]);
+        }
+        
+        // now sort S2K2 wavefunction
         for (ND_int ispinor=0; ispinor<lattice->nspinor; ++ispinor)
         {
             // gather the wfc on root process
@@ -360,41 +266,41 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
             }
             // scatter back the wfc to each process
             mpi_error = MPI_Scatterv(wfc_k2_sort_root, counts, disp, ELPH_MPI_cmplx, \
-                        wfc_k2_sorted + ispinor*npw_k1_loc, npw_k1_loc, ELPH_MPI_cmplx, 0, commK);
-            
-            // complex conjugate the C_G due to time reversal
-            if (conj_123) 
-            {   
-                ELPH_cmplx * tmp_ptr = wfc_k2_sorted + ispinor*npw_k1_loc;
-                for (ND_int ig = 0; ig<npw_k1_loc; ++ig) tmp_ptr[ig] = conj(tmp_ptr[ig]);
-            }
+                        wfc_S2k2_tmp + ispinor*npw_k1_loc, npw_k1_loc, ELPH_MPI_cmplx, 0, commK);
         }
-        // rotate the spinors
-        su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_mat123, wfc_k2_sorted);
 
-        ND_int g_pw_tmp = lattice->nspinor*npw_k1_loc;
-        
-        // compute the sandwitch
-        ND_function(matmulX, Nd_cmplxS) ('N', 'C', wfc_k2_sorted, wfc_k1 + ispin*lattice->nbnds*g_pw_tmp, \
-                Dkmn_rep_tmp, 1.0, 0.0, g_pw_tmp, g_pw_tmp, lattice->nbnds, 1, lattice->nbnds, g_pw_tmp);
-        // (1,pw)@ (nbn,pw)^C
-
-        // Conjuge D_mat if one of Sym1 or R is time rev
-        if (conj_dmat)
-        {
-            for (ND_int ibnd=0; ibnd < lattice->nbnds; ++ibnd) Dkmn_rep_tmp[ibnd] = conj(Dkmn_rep_tmp[ibnd]);
+        // apply U(S2) on k2
+        su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_S2, wfc_S2k2_tmp);
+        // conjugate if Sym2 is time reversal
+        // also we need to conjugate for sandwich
+        // SO no conjugation if Sym2 time revesal and conj if not
+        if (!tr2)
+        {   
+            for (ND_int ipw=0; ipw<npw_spinor_k1; ++ipw) wfc_S2k2_tmp[ipw] = conj(wfc_S2k2_tmp[ipw]);
         }
-        // reduce to root node
-        ELPH_cmplx * Dkmn_ptr = NULL;
-        if (my_rank == 0) Dkmn_ptr = Dkmn_rep + iset*lattice->nbnds;
-        MPI_Reduce(Dkmn_rep_tmp, Dkmn_ptr, lattice->nbnds, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
-
     }
 
+    // compute the sandwitch
+    // <S2*k2 | RS1k1>
+    for (ND_int ispin = 0; ispin < lattice->nspin; ++ispin)
+    {
+        // compute the sandwitch
+        ND_function(matmulX, Nd_cmplxS) ('N', 'T', wfc_S2k2+ispin*lattice->nbnds*npw_spinor_k1, \
+                wfc_RS1k + ispin*lattice->nbnds*npw_spinor_k1, Dkmn_rep_tmp, 1.0, 0.0, npw_spinor_k1, npw_spinor_k1, \
+                lattice->nbnds, lattice->nbnds, lattice->nbnds, npw_spinor_k1);
+        // (nba,pw)@ (nbn,pw)^C
+        // reduce to root node
+        ELPH_cmplx * Dkmn_ptr = NULL;
+        if (my_rank == 0) Dkmn_ptr = Dkmn_rep + ispin*lattice->nbnds*lattice->nbnds;
+        MPI_Reduce(Dkmn_rep_tmp, Dkmn_ptr, lattice->nbnds*lattice->nbnds, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+    }
+
+    free(G_S1k1);
+    free(G_S2k2);
+    free(G_RS1k1);
+    free(wfc_RS1k);
+    free(wfc_S2k2);
     free(Dkmn_rep_tmp);
-    free(wfc_k2_sorted);
-    free(S1G_crys);
-    free(S123G_crys);
 
     if (my_rank == 0)
     {
@@ -405,6 +311,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     }
 
 }
+
+
 
 
 
