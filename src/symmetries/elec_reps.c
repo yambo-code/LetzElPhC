@@ -50,6 +50,13 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     where Rk = Sym_2*k_2  and k = Sym_1*k_1  (upto to a G-vector)
     */
 
+    /*
+    Suppose R belongs to the same set of symmetries used to expand kpoints then
+    ik1 = ik2. This is true if the point group is symmorphic. 
+    in case of non-symmorphic, yambo uses a lesser group, so in some cases (if phonon symmetries are non-symmorphic) 
+    it is possible ik1 != ik2. 
+    We code for the most general case i.e assuming the possibility of ik1 != ik2
+    */
     // First get the corresponding iBZ point and symmetry for k and Rk
     const int ik1      = *(lattice->kmap->data + ikBZ*2)      ;
     const int iSym1     = *(lattice->kmap->data + ikBZ*2 + 1)  ;
@@ -191,7 +198,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
         free(G_S2k2_root_all);
         free(G_RS1k1_root_all);
 
-        // divide mpi buffers by 3 so that we can use them for mpi commucation routines
+        // divide mpi buffers by 3 so that we can use them for mpi communication routines
         for (int i = 0 ; i<Comm_size; ++i)
         {
             counts[i]   /= 3 ;
@@ -284,7 +291,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     // <S2*k2 | RS1k1>
     for (ND_int ispin = 0; ispin < lattice->nspin; ++ispin)
     {
-        // compute the sandwitch
+        // compute the sandwitch. COnjugation of the left wfc is already done above
         ND_function(matmulX, Nd_cmplxS) ('N', 'T', wfc_S2k2+ispin*lattice->nbnds*npw_spinor_k1, \
                 wfc_RS1k + ispin*lattice->nbnds*npw_spinor_k1, Dkmn_rep_tmp, 1.0, 0.0, npw_spinor_k1, npw_spinor_k1, \
                 lattice->nbnds, lattice->nbnds, lattice->nbnds, npw_spinor_k1);
