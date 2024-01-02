@@ -5,7 +5,7 @@
 #include "../common/parallel.h"
 #include "../nonloc/fcoeff.h"
 #include "../symmetries/symmetries.h"
-
+#include "../common/string_func.h"
 
 /* This struct contains all the input file details */
 struct usr_input
