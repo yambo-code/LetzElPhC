@@ -5,6 +5,10 @@ File contains function to read dynamical matrix file (in the old format)
 and outputs phonon polarization vectors
 */
 
+void zheev_(char * jobz, char * uplo, int * n, double complex * a, int * lda, \
+        double * w, double complex * work, int * lwork, double * rwork, int * info );
+
+
 // only one cpu calls the routine
 
 #define DYN_READ_BUF_SIZE 10000
@@ -12,12 +16,13 @@ and outputs phonon polarization vectors
 
 
 ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
-    ELPH_float * restrict qpts, ELPH_cmplx * restrict eigs)
+    ELPH_float * restrict qpts, ELPH_float * restrict omega, \
+    ELPH_cmplx * restrict pol_vecs)
 {   
     /*
     // reads all the dynamical matrices in the file
     The function return value is number of dynmats found and read
-    the qpoints and eigs are updated according
+    the qpoints and pol_vecs are updated according
     */
 
     ND_int nq_found = 0; // function return value
@@ -43,7 +48,7 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
                             error_msg("Error reading line 3 in dyn file");
     ND_int ntype = rint(read_fbuf[0]);
     ND_int natom = rint(read_fbuf[1]);
-    ND_int nmodes = natom*3;
+    int nmodes = natom*3;
     if (natom != lattice->atomic_pos->dims[0]) \
                             error_msg("Wrong number of atoms in dyn file");
     ND_int ibrav = rint(read_fbuf[2]);
@@ -79,6 +84,23 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
         atm_mass[i] = atm_mass_type[itype-1];
     }
 
+    // allocate a tmp buffer for diagonalization
+    double complex * dyn_mat_tmp = malloc(sizeof(double complex)*nmodes*nmodes);
+
+    // allocate workspace for zheev
+    double * omega2 =  malloc(sizeof(double)*4*nmodes); // // (3N-2 + N) = 4N-2
+    double * rwork  =  omega2 + nmodes;
+    
+    int info_z, lwork;
+    double complex tmp_work_var;
+    lwork = -1; // set up a query request
+    zheev_("V", "U", &nmodes, dyn_mat_tmp, &nmodes, \
+        omega2, &tmp_work_var, &lwork, rwork, &info_z);
+    if (info_z !=0) error_msg("Error in query request for zheev, when diagonalizing dyn mat");
+    lwork = (int)rint(creal(tmp_work_var));
+    double complex * work_array = malloc(sizeof(double complex)*lwork);
+    
+    // start reading the dynamical matrices
     while(true)
     {
         fgets(read_buf, DYN_READ_BUF_SIZE, fp); // empty 
@@ -94,7 +116,8 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
 
         fgets(read_buf, DYN_READ_BUF_SIZE, fp); // empty 
 
-        ELPH_cmplx * restrict eig = eigs + nq_found*nmodes*nmodes;
+        ELPH_cmplx * restrict eig = pol_vecs + nq_found*nmodes*nmodes;
+        ELPH_float * restrict omega_q = omega + nq_found*nmodes;
         
         for (ND_int ia =0; ia < natom; ++ia)
         {
@@ -103,6 +126,7 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
                 fgets(read_buf, DYN_READ_BUF_SIZE, fp); // read ia and ib
                 int itmp, jtmp;
                 sscanf(read_buf, "%d  %d", &itmp, &jtmp);
+                --itmp; --jtmp;
                 if (itmp != ia || jtmp != ib) \
                         error_msg("error reading dynamical matrix from dynamat files");
                 
@@ -117,23 +141,49 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
                     if (parser_doubles_from_string(read_buf, read_fbuf) != 6) \
                         error_msg("error reading dynamical matrix from dynamat files");
                     for (int i =0 ; i<6; ++i) read_fbuf[i] *= inv_mass_sqtr;
-                    for (int iy = 0; iy < 3; ++iy) // // (ia,ix,ib,iy)
+                    for (int iy = 0; iy < 3; ++iy) // // (ib,iy,ia,ix)
                     {   
-                        eig[iy + ib*3 + ix*nmodes + ia*3*nmodes] = read_fbuf[2*iy] + I*read_fbuf[2*iy+1];
+                        // we store in column major format (this is because lapack routines are column major)
+                        dyn_mat_tmp[ix + ia*3 + iy*nmodes + ib*3*nmodes] = read_fbuf[2*iy] + I*read_fbuf[2*iy+1];
                     }
                 }
             }
         }
         
-        // diagonalize the dynamical matrix and divide with sqrt of masses
-        
+        // symmetrize the matrix
+        for (ND_int idim1 = 0; idim1 < nmodes; ++idim1)          
+        {
+            for (ND_int jdim1 = 0; jdim1 <= idim1; ++jdim1)
+            {
+                dyn_mat_tmp[idim1*nmodes + jdim1] = 0.5*(dyn_mat_tmp[idim1*nmodes + jdim1] \
+                                                + conj(dyn_mat_tmp[jdim1*nmodes + idim1]));
+            }
+        }
 
+        // diagonalize the dynamical matrix and divide with sqrt of masses
+        zheev_("V", "U", &nmodes, dyn_mat_tmp, &nmodes, omega2, work_array, &lwork, rwork, &info_z);
+        if (info_z !=0) error_msg("Error when diagonalizing dyn mat");
+        // now store them in eig and omega, (neig,natom,pol)
+        for (ND_int imode=0; imode<nmodes; ++imode)
+        {
+            omega_q[imode] = sqrt(fabs(omega2[imode]));
+            if (omega2[imode] < 0) omega_q[imode] = -omega_q[imode];
+
+            ELPH_cmplx * eig_tmp_ptr = eig + imode*nmodes;
+            double complex * dyn_tmp_ptr = dyn_mat_tmp + imode*nmodes;
+            for (ND_int jmode=0; jmode<nmodes; ++jmode)
+            {
+                ND_int ia = jmode/3;
+                eig_tmp_ptr[jmode] = dyn_tmp_ptr[jmode]/sqrt(atm_mass[ia]);
+            }
+        }
         // update the counter
         ++nq_found ; 
     }
 
-    
-
+    free(work_array);
+    free(omega2);
+    free(dyn_mat_tmp);
     free(atm_mass);
     free(read_fbuf);
     free(read_buf);
@@ -142,7 +192,7 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
 
     if (nq_found == 0) error_msg("No dynamical matrices found in the dyn file");
 
-    return  nq_found;
+    return nq_found;
 }
 
 
