@@ -43,7 +43,7 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
     // two comment lines
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-    fgets(read_buf, DYN_READ_BUF_SIZE, fp); // this line as 9 floats
+    fgets(read_buf, DYN_READ_BUF_SIZE, fp); // this line has 9 floats
     if (parser_doubles_from_string(read_buf, read_fbuf) != 9) \
                             error_msg("Error reading line 3 in dyn file");
     ND_int ntype = rint(read_fbuf[0]);

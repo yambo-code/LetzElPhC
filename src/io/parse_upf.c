@@ -16,49 +16,30 @@ void parse_upf2(const char * filename, ELPH_float * Zval, ND_array(Nd_floatS)* V
     This function initiates and allocates memory for Vloc, r_grid, rab_grid
     */
     ezxml_t upfFP = ezxml_parse_file(filename);
-    if (upfFP == NULL)
-    {
-        printf("Reading from pseudo potential file %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (upfFP == NULL) error_msg("Reading from pseudo potential file failed");
     
     /* Read header details */
     ezxml_t header = ezxml_get(upfFP,"PP_HEADER", -1);
-    if (header == NULL)
-    {
-        printf("Reading header from %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (header == NULL) error_msg("Reading header from pseudo potential file failed");
+
     *Zval = (ELPH_float)atof(ezxml_attr(header, "z_valence")) ;
     ND_int ngrid = atoi(ezxml_attr(header, "mesh_size")) ;
     
-    if (strcmp(ezxml_attr(header, "pseudo_type"), "NC"))
-    {
-        printf(" Pseudo potential in file %s is not NORM conserving. \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (strcmp(ezxml_attr(header, "pseudo_type"), "NC")) \
+            error_msg("Pseudo potential is not norm conserving");
+
 
     /* Parse mesh grid*/
     ezxml_t mesh    = ezxml_get(upfFP,"PP_MESH",0, "PP_R", -1) ;
-    if (mesh == NULL)
-    {
-        printf("Reading radial mesh from %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (mesh == NULL) error_msg("Reading radial mesh from pseudo potential file failed");
+
     /* parse rab */
     ezxml_t dmesh   = ezxml_get(upfFP,"PP_MESH",0, "PP_RAB", -1) ;
-    if (dmesh == NULL)
-    {
-        printf("Reading radial rab from %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (dmesh == NULL) error_msg("Reading radial rab from pseudo potential file failed");
+
     /* parse local potential */
     ezxml_t loc_pot = ezxml_get(upfFP,"PP_LOCAL", -1) ;
-    if (loc_pot == NULL)
-    {
-        printf("Reading radial local potential from %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (loc_pot == NULL) error_msg("Reading local part from pseudo potential file failed");
 
     ND_function(init,Nd_floatS) (Vloc,    1, nd_idx{ngrid}); 
     ND_function(init,Nd_floatS) (r_grid,  1, nd_idx{ngrid}); 
@@ -86,25 +67,18 @@ void get_upf_element(const char * filename, char* atomic_sym)
     atomic_sym must be atleast 3 bytes long
     */
     atomic_sym[2] = '\0';
-    //printf("%s \n",filename);
+
     ezxml_t upfFP = ezxml_parse_file(filename);
-    if (upfFP == NULL)
-    {
-        printf("Reading from pseudo potential file %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
+    if (upfFP == NULL) error_msg("Reading from pseudo potential file failed");
+
     
     /* Read header details */
-    //printf("Iam here \n");
+
     ezxml_t header = ezxml_get(upfFP,"PP_HEADER", -1);
-    if (header == NULL)
-    {
-        printf("Reading header from %s failed \n",filename);
-        exit(EXIT_FAILURE);
-    }
-    //if (header == NULL) printf("jfksnf \n");
+    if (header == NULL)  error_msg("Reading header from pseudo potential file failed");
+
     const char * temp_upf_ptr = ezxml_attr(header, "element");
-    //printf("%s \n",temp_upf_ptr);
+
     // get the element
     memcpy(atomic_sym,temp_upf_ptr, sizeof(char)*2);
     ezxml_free(upfFP);
@@ -129,9 +103,7 @@ static void parse_floats_from_string(char * str,  ND_int nparse, ELPH_float * ou
         ++ iparsed;
     }
 
-    if ( iparsed != nparse)
-    {
-        printf(" str to float Conversion failed \n");
-        exit(EXIT_FAILURE);
-    }
+    if ( iparsed != nparse) error_msg("str to float Conversion failed");
+
 }
+
