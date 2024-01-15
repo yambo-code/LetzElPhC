@@ -1,8 +1,7 @@
 /*
 This file contains function that parses pattern.xml files
 */
-#include "../ezxml/ezxml.h"
-#include "../io.h"
+#include "qe_io.h"
 
 
 void read_pattern_qe(const char * pat_file, struct Lattice * lattice, \

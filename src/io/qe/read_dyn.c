@@ -1,4 +1,4 @@
-#include "../io.h"
+#include "qe_io.h"
 
 /*
 File contains function to read dynamical matrix file (in the old format)
