@@ -94,13 +94,14 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     // which is done at sandwiching.
     
     /* scatter the wfc and gvecs */
-    int * gvecSGkq ;
-    int * gvecSGk ;
-    ELPH_cmplx * wfcSkq;
-    ELPH_cmplx * wfcSk;
+    int * gvecSGkq ; // gvecs after rearragement // k+q
+    int * gvecSGk ;  // k
+    ELPH_cmplx * wfcSkq; // wfc after rearragement // k+q
+    ELPH_cmplx * wfcSk; // k
 
     ND_int nGxySkq, nGxySk;
 
+    // npwkq and npwk are overwritten by number of gvecs in gvecSGkq and gvecSGk respectively.
     Sort_pw(npwkq_total, npwkq, lattice->fft_dims, gSkq_buf , wfc_kq->data, \
                 nspin*nspinor*nbndskq, &npwkq, &nGxySkq, &gvecSGkq, &wfcSkq, commK);
 

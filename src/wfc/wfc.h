@@ -18,6 +18,11 @@ void rotateGvecs(const ELPH_float * Gvecs, const ELPH_float * sym, const ND_int 
 void su2rotate(const int nspinor, const ND_int npw, const ND_int nsets, \
             const ELPH_cmplx * restrict su2mat, ELPH_cmplx * restrict wfc);
             
+
+void apply_trans_wfc(const ELPH_float * trans_vec, const ELPH_float * kvec, \
+                     const ND_int nsets, const ND_int npw, const ELPH_float * gvecs, \
+                     ELPH_cmplx * restrict wfc_G, const bool conjugate);
+
 /* su2mat.c */
 void SU2mat(const ELPH_float * sym_in, const ND_int nspinor, \
             const bool invert_sym, const bool time_rev, ELPH_cmplx * su2mat);

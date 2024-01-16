@@ -189,10 +189,31 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
     SU2mat(SymK,  nspinor,  false,  timerevK,  su2K);
     SU2mat(SymKp, nspinor,  false,  timerevKp, su2Kp);
     
-    /* Apply spinors to wfcs */
-    su2rotate(nspinor, npwK,  nspin*nbndK, su2K,  wfc_K->data);
-    su2rotate(nspinor, npwKp, nspin*nbndK, su2Kp, wfc_Kp->data);
+    ND_int nsets = nspin*nbndK;
+    ELPH_float kzero[3] = {0,0,0};
 
+    /* Apply spinors and fractional translation to wfcs */
+    for (ND_int iset = 0; iset < nsets ; ++iset)
+    {   
+        ELPH_cmplx * wfc_tmp = wfc_K->data + iset*nspinor*npwK;
+        // su2 rotate
+        su2rotate(nspinor, npwK,  1, su2K,  wfc_tmp);
+        // apply fractional translation
+        // note GvecK is k+G so we set kvec to 0
+        apply_trans_wfc(tauK, kzero, nspinor, npwK, GvecK->data, wfc_tmp, false);               
+    }
+
+    for (ND_int iset = 0; iset < nsets ; ++iset)
+    {   
+        ELPH_cmplx * wfc_tmp = wfc_Kp->data + iset*nspinor*npwKp;
+        // su2 rotate
+        su2rotate(nspinor, npwKp, 1, su2Kp, wfc_tmp);
+        // apply fractional translation
+        // note GvecK is k+G so we set kvec to 0
+        apply_trans_wfc(tauKp, kzero, nspinor, npwKp, GvecKp->data, wfc_tmp, false);               
+    }
+    ///
+    
     /* Buffer arrays */
     ND_int nltimesj = PP_table->dims[0];
 

@@ -231,7 +231,11 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     ND_function(init,Nd_floatS) (lattice->frac_trans,   2, nd_idx{sym_temp->dims[0],3} ); // (nsym,3)
     ND_function(malloc,Nd_floatS) (lattice->frac_trans);
     ND_function(set_all,Nd_floatS) (lattice->frac_trans,0.0);
-
+    /*
+     FIX ME: For time reversal symmetry, we set tau = -tau. This is just a convention 
+     used in the entire code. This is because, both gvecs and k vec already include a -ve sign
+     so to negate that we use -tau instead of tau for time reversal symmetry.
+     */
 
     /* Get kpoints to cart coordinates */
     for (ND_int i = 0 ; i<nibz ; ++i )
