@@ -21,7 +21,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     MatVec3f(Rsym_mat, lattice->kpt_fullBZ->data + 3*ikBZ, false, Rk_tmp);
     // convert to crystal coordinates
     MatVec3f(lattice->alat_vec->data,Rk_tmp, true, Rk_vec);
-
+    
     // now find the index of the rotated k point
     ND_int iRkBZ = -1;
     // find the index

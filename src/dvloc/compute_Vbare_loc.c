@@ -64,9 +64,17 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     ELPH_float ulmveckq[3]; // ulmveckq is shift that is applyed to k+q vector i.e -(Skq*kq - S*k - q)
     ELPH_float tempSkq[3] = {0,0,0}; //S2*k2
     ELPH_float tempSk[3] = {0,0,0};  // S1*k1
+    ELPH_float taukq_crys[3], tauk_crys[3]; // fractional translation in crystal coordinates
+    ELPH_float kvecSkq[3], kvecSk[3]; // Sk + q and Sk in crystal coordinates
+    
 
     MatVec3f(symkq, kqvec, false, tempSkq);
     MatVec3f(symk,  kvec,  false,  tempSk);
+
+    MatVec3f(lat_vec, tempSk, true, kvecSk); 
+    for (int xi = 0 ; xi<3 ; ++xi ) kvecSkq[xi] = kvecSk[xi] + qpt[xi];
+    // note that tempSkq = kvecSkq + G
+
     for (int xi = 0 ; xi<3 ; ++xi ) tempSkq[xi] -= tempSk[xi] ;
 
     // convert qpt to cartisian coord
@@ -74,11 +82,19 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     {
         ELPH_float blat[9];
         reciprocal_vecs(lat_vec, blat); // note this has 2*pi//
-        MatVec3f(blat,  qpt,  false,  tempSk);
+        MatVec3f(blat,  qpt,  false,  tempSk); // store qpt( in cart units ) in tempSk
         for (int xi = 0 ; xi<3 ; ++xi ) tempSk[xi] = tempSk[xi]/(2*ELPH_PI) ;
+
+        // convert tau to crystal coordinates
+        MatVec3f(blat,  taukq,  true,  taukq_crys);
+        for (int xi = 0 ; xi<3 ; ++xi ) taukq_crys[xi] = taukq_crys[xi]/(2*ELPH_PI);
+
+        MatVec3f(blat,  tauk,  true,   tauk_crys);
+        for (int xi = 0 ; xi<3 ; ++xi ) tauk_crys[xi] = tauk_crys[xi]/(2*ELPH_PI); 
     }
     // Skq+G = Sk + q => G = Sk+q-Skq
     for (int xi = 0 ; xi<3 ; ++xi )  ulmveckq[xi] = (tempSkq[xi]-tempSk[xi]);
+    // note in the above we store -G0 as we add -G0 to all gvectors
 
     rotateGvecs(Gkq->data, symkq, npwkq, lat_vec, false, true, ulmveckq, gSkq_buf);
     rotateGvecs(Gk->data, symk, npwk, lat_vec, false, true, NULL, gSk_buf);
@@ -107,12 +123,30 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
 
     Sort_pw(npwk_total, npwk, lattice->fft_dims, gSk_buf , wfc_k->data, \
                 nspin*nspinor*nbndsk, &npwk, &nGxySk, &gvecSGk, &wfcSk, commK);
-                
-    /* Apply spinors to wfcs */
-    su2rotate(nspinor, npwkq,  nspin*nbndskq, su2kq,  wfcSkq);
-
+    
     free(gSkq_buf);
     free(gSk_buf);
+
+    
+    ND_int max_npw = ((npwkq > npwk) ? npwkq : npwk) ; 
+    /* Gvecs are stored in ints but we need it in float type, so we 
+    allocate a gvec array to store gvecs in floats (needed for translation routine) */
+    ELPH_float * gvecs_float_tmp = malloc(sizeof(ELPH_float)*3*max_npw);
+
+
+    for (ND_int ipw = 0; ipw < (3*npwkq); ++ipw) gvecs_float_tmp[ipw] = gvecSGkq[ipw];
+
+    /* Apply spinors and fractional translation to k+q wfc */
+    for (ND_int iset = 0 ; iset < (nspin*nbndskq) ; ++iset )
+    {   
+        ELPH_cmplx * wfcSkq_tmp = wfcSkq + iset*nspinor*npwkq;
+        // apply su2 rotation
+        su2rotate(nspinor, npwkq,  1, su2kq,  wfcSkq_tmp);
+        // apply fractional translation 
+        apply_trans_wfc(taukq_crys, kvecSkq, nspinor, npwkq, gvecs_float_tmp, wfcSkq_tmp, false);
+    }
+
+
 
     ND_array(Nd_cmplxS) wfcSk_r[1];
     ND_array(Nd_cmplxS) dVpsiG[1];
@@ -127,15 +161,21 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     // create plan for Sk
     wfc_plan(&fft_plan, npwk, lattice->nfftz_loc, nGxySk, gvecSGk, lattice->fft_dims, FFTW_MEASURE, commK);
 
-    /* FFT Sk wave function in real space */
+    for (ND_int ipw = 0; ipw < (3*npwk); ++ipw) gvecs_float_tmp[ipw] = gvecSGk[ipw];
+
+    /* FFT Sk wave function to get it in real space */
     for (ND_int iset = 0 ; iset < (nspin*nbndsk) ; ++iset )
     {
         // rotate spinor wfc
         ELPH_cmplx * wfcSk_tmp = wfcSk + iset*nspinor*npwk;
         su2rotate(nspinor, npwk,  1, su2k, wfcSk_tmp);
 
+        // apply fractional translation 
+        apply_trans_wfc(tauk_crys, kvecSk, nspinor, npwk, gvecs_float_tmp, wfcSk_tmp, false);
+
         ELPH_cmplx * wfcSkr_tmp = wfcSk_r->data + iset*wfcSk_r->strides[1] ;
 
+        // perform invervse FFT
         invfft3D(&fft_plan, nspinor, wfcSk_tmp, wfcSkr_tmp, timerevk);
         
     }
@@ -144,7 +184,8 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     wfc_destroy_plan(&fft_plan);
     free(gvecSGk) ;
     free(wfcSk);
-
+    free(gvecs_float_tmp);
+    
 
     // create plan for dvSpi
     wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq, lattice->fft_dims, FFTW_MEASURE, commK);

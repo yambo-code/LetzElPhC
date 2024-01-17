@@ -5,7 +5,7 @@
 
 #include "wfc.h"
 
-#define dot3_macro(a,b) (a[0]*b[0] +  a[1]*b[1] + a[2]*b[2])
+#define dot3_macro(a,b) ((a)[0]*(b)[0] +  (a)[1]*(b)[1] + (a)[2]*(b)[2])
 
 void apply_trans_wfc(const ELPH_float * trans_vec, const ELPH_float * kvec, \
                      const ND_int nsets, const ND_int npw, const ELPH_float * gvecs, \
@@ -27,13 +27,15 @@ void apply_trans_wfc(const ELPH_float * trans_vec, const ELPH_float * kvec, \
     for (ND_int iset = 0; iset < nsets; ++iset)
     {   
         ELPH_cmplx * restrict wfc_G_tmp = wfc_G + iset*npw; 
+        
         for (ND_int ig = 0; ig < npw; ++ig)
         {   
             const ELPH_float * gvec_tmp = gvecs + 3*ig;
-            // note we need to create the gvec_tmp variable so that the dot3_macro below
-            // will expand correctly.
+
             ELPH_cmplx gphase = kphase*cexp(-I*2*ELPH_PI*dot3_macro(gvec_tmp,trans_vec)); 
+            
             wfc_G_tmp[ig] *= gphase;
+            
             if (conjugate)  wfc_G_tmp[ig] = conj(wfc_G_tmp[ig]) ;
         }
     }
