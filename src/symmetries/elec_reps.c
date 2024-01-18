@@ -3,7 +3,7 @@
 
 
 void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
-    const ELPH_float * Rsym_mat,  const ELPH_float * Rsym_v, \
+    const ELPH_float * Rsym_mat,  const ELPH_float * tauR, \
     const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, MPI_Comm commK)
 {
     /*
@@ -76,6 +76,25 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const ELPH_float * tau1  = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{iSym1,0});
     const ELPH_float * tau2  = ND_function(ele,Nd_floatS)(lattice->frac_trans, nd_idx{iSym2,0});
 
+    ELPH_float tau1_crys[3], tauR_crys[3], tau2_crys[3]; // tau1, tauR, tau2 in crystal coordinates 
+    ELPH_float kcrys[3], Rkcrys[3]; // k and R*k vectors in crystal coordinates
+
+
+    // compute S1*k1 in crystal coordinates
+    MatVec3f(Sym1, k1_vec, false, Rkcrys); // we used Rkcrys as tmp storage
+    MatVec3f(lattice->alat_vec->data, Rkcrys, true, kcrys);  // convert to crystal coordinates
+    // start of small scope 1
+    {
+        ELPH_float blat[9];
+        reciprocal_vecs(lattice->alat_vec->data, blat); // note this has 2*pi//
+        for (int xi = 0 ; xi<9 ; ++xi ) blat[xi] = blat[xi]/(2*ELPH_PI);
+        
+        // convert tau to crystal coordinates
+        MatVec3f(blat,  tau1,  true,  tau1_crys);
+        MatVec3f(blat,  tauR,  true,  tauR_crys);
+        MatVec3f(blat,  tau2,  true,  tau2_crys);
+    } // end of small scope 1
+
     // Get the wfcs in iBZ
     //
     const ELPH_cmplx * wfc_k1 = (wfcs+ik1)->wfc->data ;
@@ -116,6 +135,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     MatVec3f(Sym2, k2_vec, false, ulm_vec); // first compute and store S2K2 in ulm_vec
     // we store Rk = R*S1*k1 in Rk_vec (in cart)
     MatVec3f(SymRS1, k1_vec, false, Rk_vec);
+    MatVec3f(lattice->alat_vec->data, Rk_vec, true, Rkcrys); // R*S1*k1 in crystal units
+    
     for (int i = 0; i<3; ++i) ulm_vec[i] -= Rk_vec[i] ;
 
     // rotate G vectors and out put them in crystal coordinates
@@ -240,18 +261,17 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
 
         // copy k1 buffer to wfc_RS1k
         memcpy(wfc_RS1k1_tmp, wfc_k1+iset*npw_spinor_k1, sizeof(ELPH_cmplx)*npw_spinor_k1);
-        // apply U(S1)
+        // apply SU(S1)
         su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_S1, wfc_RS1k1_tmp);
-        if (tr1)
-        {   // conjugate if S1 is time reversal
-            for (ND_int ipw=0; ipw<npw_spinor_k1; ++ipw) wfc_RS1k1_tmp[ipw] = conj(wfc_RS1k1_tmp[ipw]);
-        }
-        // apply U(R)
+        // apply fractional translation and conjugate if symmetry is time reversal.
+        apply_trans_wfc(tau1_crys, kcrys, lattice->nspinor, npw_k1_loc, G_S1k1, wfc_RS1k1_tmp, tr1);
+        // note apply_trans_wfc can output conjugate if last parameter is set to true
+
+        // now apply SU(R)
         su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_R, wfc_RS1k1_tmp);
-        if (tim_revR)
-        {   // conjugate if R is time reversal
-            for (ND_int ipw=0; ipw<npw_spinor_k1; ++ipw) wfc_RS1k1_tmp[ipw] = conj(wfc_RS1k1_tmp[ipw]);
-        }
+        // apply fractional translation and conjugate if symmetry is time reversal.
+        apply_trans_wfc(tauR_crys, Rkcrys, lattice->nspinor, npw_k1_loc, G_RS1k1, wfc_RS1k1_tmp, tim_revR);
+        // note apply_trans_wfc can output conjugate if last parameter is set to true
         
         // now sort S2K2 wavefunction
         for (ND_int ispinor=0; ispinor<lattice->nspinor; ++ispinor)
@@ -276,15 +296,14 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
                         wfc_S2k2_tmp + ispinor*npw_k1_loc, npw_k1_loc, ELPH_MPI_cmplx, 0, commK);
         }
 
-        // apply U(S2) on k2
+        // apply SU(S2) on k2
         su2rotate(lattice->nspinor, npw_k1_loc, 1, SU2_S2, wfc_S2k2_tmp);
         // conjugate if Sym2 is time reversal
         // also we need to conjugate for sandwich
         // SO no conjugation if Sym2 time revesal and conj if not
-        if (!tr2)
-        {   
-            for (ND_int ipw=0; ipw<npw_spinor_k1; ++ipw) wfc_S2k2_tmp[ipw] = conj(wfc_S2k2_tmp[ipw]);
-        }
+        // translate and conjugate(if not time reversal)
+        apply_trans_wfc(tau2_crys, Rkcrys, lattice->nspinor, npw_k1_loc, G_RS1k1, wfc_S2k2_tmp, !tr2);
+        // note apply_trans_wfc can output conjugate if last parameter is set to true
     }
 
     // compute the sandwitch
