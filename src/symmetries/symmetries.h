@@ -21,6 +21,13 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, MPI_Comm commK);
 
 
+void elph_q_rotate(const ELPH_cmplx * elph_mat_q, const struct Lattice * lattice, \
+            const ELPH_cmplx * Dmats, const ELPH_float * symS, const bool tim_revS, \
+            const ELPH_float * qpt, ELPH_cmplx * restrict elph_mat_Sq);
+
+
+
+
 
 
 

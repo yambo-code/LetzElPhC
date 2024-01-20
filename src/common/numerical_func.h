@@ -14,6 +14,7 @@ void bz_expand(ND_array(Nd_floatS) * ibz_kpts, ND_array(Nd_floatS) * sym_mats, \
 void get_KplusQ_idxs(ND_array(Nd_floatS) * kpoints, int * KplusQidxs , \
                     ELPH_float * Q_pt, ND_array(Nd_floatS) * lat_vec, bool Qincrystal);
 
+ND_int find_kidx_in_list(ND_int nkpts, const ELPH_float * kpts_list, const ELPH_float * kpt);
 
 
 /* numerical_func.c */

@@ -23,27 +23,11 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     MatVec3f(lattice->alat_vec->data,Rk_tmp, true, Rk_vec);
     
     // now find the index of the rotated k point
-    ND_int iRkBZ = -1;
-    // find the index
-    for (ND_int ik = 0; ik < lattice->kpt_fullBZ_crys->dims[0]; ++ik)
-    {
-        ELPH_float * ik_vec_tmp = lattice->kpt_fullBZ_crys->data + 3*ik ;
-        ELPH_float sum = 0;
-        for (int i = 0; i < 3 ; ++i)
-        {   
-            ELPH_float diff_tmp = ik_vec_tmp[i]-Rk_vec[i];
-            diff_tmp = diff_tmp-rint(diff_tmp);
-            sum += diff_tmp*diff_tmp;
-        }
-        sum = sqrt(sum);
-        if (sum < ELPH_EPS)
-        {
-            iRkBZ = ik;
-            break;
-        }
-    }
-
-    if (iRkBZ < 0) error_msg("Rotated k point not found. Either Wrong Phonon symmetry or using non-uniform kgrid");
+    ND_int iRkBZ = find_kidx_in_list(lattice->kpt_fullBZ_crys->dims[0], \
+                    lattice->kpt_fullBZ_crys->data, Rk_vec);
+    
+    if (iRkBZ < 0) error_msg("Rotated k point not found. \
+    Either Wrong Phonon symmetry or using non-uniform kgrid");
 
     /*
     $\langle Rk,b |U(R) | k,a \rangle = \langle Sym_2*k_2,b | \big(U(R) U(Sym_1) | k_1,a\rangle\big) $
@@ -53,7 +37,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     /*
     Suppose R belongs to the same set of symmetries used to expand kpoints then
     ik1 = ik2. This is true if the point group is symmorphic. 
-    in case of non-symmorphic, yambo uses a lesser group, so in some cases (if phonon symmetries are non-symmorphic) 
+    in case of non-symmorphic, yambo uses a lesser group, so in some cases 
+    (if phonon symmetries are non-symmorphic) 
     it is possible ik1 != ik2. 
     We code for the most general case i.e assuming the possibility of ik1 != ik2
     */

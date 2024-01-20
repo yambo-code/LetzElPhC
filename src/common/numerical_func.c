@@ -373,3 +373,32 @@ int get_fft_idx(ELPH_float idx_in, int FFT_dimension)
 }
 
 
+ND_int find_kidx_in_list(ND_int nkpts, const ELPH_float * kpts_list, const ELPH_float * kpt)
+{   
+    /*
+    kpt and kpts_list must be in crystal coordinates
+    */
+    ND_int kidx = -1;
+    for (ND_int ik = 0; ik < nkpts; ++ik)
+    {
+        const ELPH_float * ik_vec_tmp = kpts_list + 3*ik ;
+        ELPH_float sum = 0;
+        for (int i = 0; i < 3 ; ++i)
+        {   
+            ELPH_float diff_tmp = ik_vec_tmp[i]-kpt[i];
+            diff_tmp = diff_tmp-rint(diff_tmp);
+            sum += diff_tmp*diff_tmp;
+        }
+        sum = sqrt(sum);
+        if (sum < ELPH_EPS)
+        {
+            kidx = ik;
+            break;
+        }
+    }
+    return kidx;
+}
+
+
+
+
