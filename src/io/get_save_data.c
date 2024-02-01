@@ -34,10 +34,10 @@ static bool check_ele_in_array(ND_int *arr_in, ND_int nelements, ND_int check_el
 }
 
 /* Function body */
-void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
-                ND_int start_band, ND_int end_band, struct WFC ** wfcs,char * pseudo_dir, \
-                char ** pseudo_pots, struct Lattice * lattice, struct Pseudo * pseudo, \
-                const ND_int * FFT_dims)
+void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm, \
+                ND_int start_band, ND_int end_band, struct WFC ** wfcs, \
+                char * pseudo_dir, char ** pseudo_pots, struct Lattice * lattice, \
+                struct Pseudo * pseudo, const ND_int * FFT_dims)
 {
     /* This function allocates and reads data from SAVE dir.
     The following data is read : wfcs(in iBZ), lattice and pseudo
@@ -57,36 +57,29 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     FFT_dims // only rank 0 has to pass this. 
     */
 
-    int my_rank, comm_size, mpi_error;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+    /*
+    pseudo_dir and pseudo_pots need to be defined only on 0-rank cpu of Comm->commW
+    */
+    int mpi_error;
 
-    int cpus_qpool, qcolor, qrank;
-
-    MPI_Comm_rank(commQ, &qrank);
-    MPI_Comm_size(commQ, &cpus_qpool);
-    qcolor = my_rank/cpus_qpool ;
-    int nqpools = comm_size/cpus_qpool;
-
-    int npw_cpus, krank;
-    MPI_Comm_rank(commK, &krank);
-    MPI_Comm_size(commK, &npw_cpus);
-    int kcolor = qrank/npw_cpus;
-
-    if (my_rank == 0) memcpy(lattice->fft_dims,FFT_dims,sizeof(ND_int)*3);
+    if (Comm->commW_rank == 0) memcpy(lattice->fft_dims,FFT_dims,sizeof(ND_int)*3);
     // Bcast fft_dims
-    mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW );
 
     ND_int nffts = lattice->fft_dims[0]*lattice->fft_dims[1]*lattice->fft_dims[2];
     
     lattice->nfftz_loc =  get_mpi_local_size_idx(lattice->fft_dims[2], \
-                                    &(lattice->nfftz_loc_shift), commK);
+                                    &(lattice->nfftz_loc_shift), Comm->commK);
     
     if (lattice->nfftz_loc <1) error_msg("Some cpus do not contain plane waves. Over parallelization !.");
 
     int dbid, ppid, tempid, retval; // file ids for ns.db1 , pp_pwscf*
 
-    char * temp_str = malloc(sizeof(char) * (strlen(pseudo_dir) + strlen(SAVEdir) + 100));
+    ND_int pseudo_dir_len = 0;
+    if (Comm->commW_rank == 0) pseudo_dir_len = strlen(pseudo_dir);
+    mpi_error = MPI_Bcast(&pseudo_dir_len, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+
+    char * temp_str = malloc(pseudo_dir_len + strlen(SAVEdir) + 100);
 
     int nkBZ ; // total kpoints in BZ
 
@@ -104,7 +97,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         memcpy(elements,temp,sizeof(char)*3*104); // printf(elements+3*Z) will give symbol for Z
     }
     /*****/
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         sprintf(temp_str, "%s/ndb.kindx", SAVEdir) ; 
         NC_open_file(temp_str, 'r', &tempid);
@@ -122,19 +115,19 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         NC_close_file(tempid);
     } 
     /* broad cast (int nkBZ) */
-    mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW );
     /*******/
 
     //printf("Debug-%d \n",1);
     ELPH_float dimensions[18];
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         sprintf(temp_str, "%s/ns.db1", SAVEdir) ; 
         NC_open_file(temp_str, 'r', &dbid);
         quick_read(dbid, "DIMENSIONS", dimensions);
     }
     /* bcast ELPH_float dimensions[18] */
-    mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, Comm->commW );
 
     lattice->nspinor = (int)rint(dimensions[11]);
     lattice->nspin   = (int)rint(dimensions[12]);
@@ -143,14 +136,14 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
 
     if (start_band < 1 || end_band<1)
     {
-        if (my_rank == 0) printf("Warning : invalid bands used in calculation. computing matrix elements for all bands, \
+        if (Comm->commW_rank == 0) printf("Warning : invalid bands used in calculation. computing matrix elements for all bands, \
                 Bands index belong to [1,nbnds] \n");
         start_band = 1;
         end_band = lattice->total_bands;
     }
     if (start_band>lattice->total_bands  || end_band>lattice->total_bands  || start_band>=end_band)
     {
-        if (my_rank == 0) printf("Warning : invalid bands used in calculation. computing matrix elements for all bands \n");
+        if (Comm->commW_rank == 0) printf("Warning : invalid bands used in calculation. computing matrix elements for all bands \n");
         start_band = 1;
         end_band = lattice->total_bands;
     }
@@ -179,7 +172,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     ND_array(Nd_floatS) * kibz_temp = lattice_data+8;
 
 
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         ND_function(init,Nd_floatS) (lattice->alat_vec,          0, NULL); // alat_vec 'r'
     }
@@ -198,30 +191,30 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
 
 
     ELPH_float lat_param[3];
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         quick_read(dbid, "LATTICE_PARAMETER", lat_param);
     }
     /*Bcast ELPH_float lat_param[3] */
-    mpi_error = MPI_Bcast(lat_param, 3, ELPH_MPI_float, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(lat_param, 3, ELPH_MPI_float, 0, Comm->commW );
 
 
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         ND_function(init,Nd_floatS) (sym_temp,  0, NULL); // symtemp 'r'
         ND_function(init,Nd_floatS) (kibz_temp, 0, NULL); // kpt_iredBZ.T 'r'
     }
     /* read */
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         ND_function(readVar, Nd_floatS) (dbid, "LATTICE_VECTORS", lattice->alat_vec  );
         ND_function(readVar, Nd_floatS) (dbid, "SYMMETRY", sym_temp);
         ND_function(readVar, Nd_floatS) (dbid, "K-POINTS", kibz_temp);
     }
     /* Bcast */
-    Bcast_ND_arrayFloat(lattice->alat_vec, true, 0, MPI_COMM_WORLD);
-    Bcast_ND_arrayFloat(sym_temp, true, 0, MPI_COMM_WORLD);
-    Bcast_ND_arrayFloat(kibz_temp, true, 0, MPI_COMM_WORLD);
+    Bcast_ND_arrayFloat(lattice->alat_vec, true, 0, Comm->commW);
+    Bcast_ND_arrayFloat(sym_temp, true, 0, Comm->commW);
+    Bcast_ND_arrayFloat(kibz_temp, true, 0, Comm->commW);
 
     /* allocate symmetric matrices*/
     ND_function(init,Nd_floatS) (lattice->sym_mat, *(sym_temp->rank), sym_temp->dims ); // ibZ kpts 'c'
@@ -274,12 +267,12 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
                 lattice->kpt_fullBZ->data, 1.0f/(2.0f*ELPH_PI) , 0.0, 3, 3, 3, nkBZ, 3, 3);
     
         ELPH_float ntype;
-        if (my_rank == 0)
+        if (Comm->commW_rank == 0)
         {
             quick_read(dbid, "number_of_atom_species", &ntype);
         }
         /* Bcast ELPH_float ntype */
-        mpi_error = MPI_Bcast(&ntype, 1, ELPH_MPI_float, 0, MPI_COMM_WORLD );
+        mpi_error = MPI_Bcast(&ntype, 1, ELPH_MPI_float, 0, Comm->commW );
 
         pseudo->ntype = (ND_int)rint(ntype) ;
     }
@@ -291,7 +284,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     ND_array(Nd_floatS) atomic_map, atom_pos_temp ;
 
     
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         ND_function(init,Nd_floatS) (&atomic_map,  0, NULL); // 'r'
         ND_function(init,Nd_floatS) (&atom_pos_temp, 0, NULL); //  'r'
@@ -301,7 +294,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     ELPH_float * atomic_numbers = natom_per_type + pseudo->ntype ;
     
     
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         quick_read(dbid, "N_ATOMS", natom_per_type);
         quick_read(dbid, "atomic_numbers", atomic_numbers);
@@ -309,11 +302,11 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         ND_function(readVar, Nd_floatS) (dbid, "ATOM_POS",  &atom_pos_temp);
     }
     /* Bcast atomic_map and atom_pos_temp */
-    Bcast_ND_arrayFloat(&atomic_map, true, 0, MPI_COMM_WORLD);
-    Bcast_ND_arrayFloat(&atom_pos_temp, true, 0, MPI_COMM_WORLD);
+    Bcast_ND_arrayFloat(&atomic_map, true, 0, Comm->commW);
+    Bcast_ND_arrayFloat(&atom_pos_temp, true, 0, Comm->commW);
     /* Bcast ELPH_float natom_per_type,  atomic_numbers */
-    mpi_error = MPI_Bcast(natom_per_type, pseudo->ntype, ELPH_MPI_float, 0, MPI_COMM_WORLD );
-    mpi_error = MPI_Bcast(atomic_numbers, pseudo->ntype, ELPH_MPI_float, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(natom_per_type, pseudo->ntype, ELPH_MPI_float, 0, Comm->commW );
+    mpi_error = MPI_Bcast(atomic_numbers, pseudo->ntype, ELPH_MPI_float, 0, Comm->commW );
 
 
     ND_int total_atoms =0 ;
@@ -355,13 +348,13 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     ND_array(Nd_floatS) * gvec_alloc_arrays = malloc(nibz*sizeof(ND_array(Nd_floatS))); // free me
     ND_array(Nd_floatS) * Fk_alloc_arrays   = malloc(nibz*sizeof(ND_array(Nd_floatS))); // free me
 
-    if (my_rank == 0) quick_read(dbid, "WFC_NG", nGmax);
+    if (Comm->commW_rank == 0) quick_read(dbid, "WFC_NG", nGmax);
     /* Bcast ELPH_float * nGmax */
-    mpi_error = MPI_Bcast(nGmax, nibz, ELPH_MPI_float, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(nGmax, nibz, ELPH_MPI_float, 0, Comm->commW );
 
     ND_array(Nd_floatS) totalGvecs, Gvecidxs ;
     
-    if (my_rank == 0) 
+    if (Comm->commW_rank == 0) 
     {
         ND_function(init,Nd_floatS) (&totalGvecs,  0, NULL); // all gvectors
         ND_function(init,Nd_floatS) (&Gvecidxs,    0, NULL); // gvector indices in the above gvectors
@@ -370,8 +363,8 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         ND_function(readVar, Nd_floatS) (dbid, "WFC_GRID",  &Gvecidxs);
         NC_close_file(dbid); // close ns.db1 file
     }
-    Bcast_ND_arrayFloat(&totalGvecs, true, 0, MPI_COMM_WORLD);
-    Bcast_ND_arrayFloat(&Gvecidxs, true, 0, MPI_COMM_WORLD);
+    Bcast_ND_arrayFloat(&totalGvecs, true, 0, Comm->commW);
+    Bcast_ND_arrayFloat(&Gvecidxs, true, 0, Comm->commW);
 
     // ! Warning, Only read only mode for opening files
     for (ND_int ik = 0 ; ik <nibz ; ++ik)
@@ -380,7 +373,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         (wfc_temp+ik)->npw_total = rint(nGmax[ik]);
 
         ND_int G_shift, pw_this_cpu;
-        pw_this_cpu =  get_mpi_local_size_idx((wfc_temp+ik)->npw_total, &G_shift,  commK);
+        pw_this_cpu =  get_mpi_local_size_idx((wfc_temp+ik)->npw_total, &G_shift,  Comm->commK);
         
         /* set the local number of pw's */
         (wfc_temp+ik)->npw_loc = pw_this_cpu;
@@ -399,14 +392,14 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         get_wfc_from_save((wfc_temp+ik)->wfc->strides[0], ik, nibz, \
         lattice->nspin, lattice->nspinor, lattice->start_band, \
         lattice->nbnds, pw_this_cpu,G_shift, SAVEdir, temp_str, \
-        (wfc_temp+ik)->wfc->data, commK);
+        (wfc_temp+ik)->wfc->data, Comm->commK);
 
         /* initiate, allocate and load Fk (Kleinbylander Coefficients)*/
         (wfc_temp+ik)->Fk = Fk_alloc_arrays+ik ;
         ND_function(init,Nd_floatS)((wfc_temp+ik)->Fk, 0, NULL); 
         sprintf(temp_str, "%s/ns.kb_pp_pwscf_fragment_%d", SAVEdir, (int)(ik+1) ) ;  // fix it for abinit 
         /* Abinit has a aditional spin dimension instead of 2*n projectors */
-        if ((retval = nc_open_par(temp_str, NC_NOWRITE, commK, MPI_INFO_NULL, &ppid))) ERR(retval);
+        if ((retval = nc_open_par(temp_str, NC_NOWRITE, Comm->commK, MPI_INFO_NULL, &ppid))) ERR(retval);
         sprintf(temp_str, "PP_KB_K%d", (int)(ik+1)) ;  // fix be for abinit
         int varid_temp;
         if ((retval = nc_inq_varid(ppid, temp_str, &varid_temp))) ERR(retval); // get the varible id of the file
@@ -417,7 +410,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         
         NC_close_file(ppid);
     }
-    // MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(Comm->commW);
     /* Free temp gvec arrays */
     ND_function(destroy, Nd_floatS)(&totalGvecs);
     ND_function(destroy, Nd_floatS)(&Gvecidxs);
@@ -434,7 +427,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     pseudo->PP_table    = kb_arrays + (3*pseudo->ntype);
     pseudo->Fsign       = kb_arrays + (3*pseudo->ntype) + 1 ;
     
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         ND_function(init,Nd_floatS) (pseudo->PP_table,  0, NULL); 
         ND_function(init,Nd_floatS) (pseudo->Fsign,    0, NULL); 
@@ -454,10 +447,10 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         NC_close_file(ppid); 
     }
     /* Bcast PP_table and Fsign */
-    Bcast_ND_arrayFloat(pseudo->PP_table, true, 0, MPI_COMM_WORLD);
-    Bcast_ND_arrayFloat(pseudo->Fsign, true, 0, MPI_COMM_WORLD);
+    Bcast_ND_arrayFloat(pseudo->PP_table, true, 0, Comm->commW);
+    Bcast_ND_arrayFloat(pseudo->Fsign, true, 0, Comm->commW);
     // Bcast int pseudo->lmax
-    mpi_error = MPI_Bcast(&(pseudo->lmax), 1, MPI_INT, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(&(pseudo->lmax), 1, MPI_INT, 0, Comm->commW );
 
     // compute f-coeffs
     alloc_and_Compute_f_Coeff(lattice, pseudo); 
@@ -467,7 +460,7 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     ND_int * pseudo_order = malloc(sizeof(ND_int)*pseudo->ntype);
     for (ND_int ipot1 = 0 ; ipot1<pseudo->ntype ; ++ipot1) pseudo_order[ipot1] = -1;
 
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         for (ND_int ipot1 = 0 ; ipot1<pseudo->ntype ; ++ipot1)
         {
@@ -495,10 +488,10 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
         }
     }
     // Bcast pseudo_order[pseudo->ntype]
-    mpi_error = MPI_Bcast(pseudo_order, pseudo->ntype, ELPH_MPI_ND_INT, 0, MPI_COMM_WORLD);
+    mpi_error = MPI_Bcast(pseudo_order, pseudo->ntype, ELPH_MPI_ND_INT, 0, Comm->commW);
     
     /* Get data from upfs */
-    if (my_rank == 0)
+    if (Comm->commW_rank == 0)
     {
         for (ND_int ipot = 0 ; ipot<pseudo->ntype ; ++ipot)
         {   
@@ -510,12 +503,12 @@ void read_and_alloc_save_data(char * SAVEdir, MPI_Comm commQ, MPI_Comm commK,  \
     }
 
     // Bcast all the pseudo information
-    mpi_error = MPI_Bcast(Zval, pseudo->ntype, ELPH_MPI_float, 0, MPI_COMM_WORLD );
+    mpi_error = MPI_Bcast(Zval, pseudo->ntype, ELPH_MPI_float, 0, Comm->commW );
     for (ND_int itype = 0; itype<pseudo->ntype; ++itype)
     {
-        Bcast_ND_arrayFloat(pseudo->Vloc_atomic + itype, true, 0, MPI_COMM_WORLD);
-        Bcast_ND_arrayFloat(pseudo->r_grid + itype, true, 0, MPI_COMM_WORLD);
-        Bcast_ND_arrayFloat(pseudo->rab_grid + itype, true, 0, MPI_COMM_WORLD);
+        Bcast_ND_arrayFloat(pseudo->Vloc_atomic + itype, true, 0, Comm->commW);
+        Bcast_ND_arrayFloat(pseudo->r_grid + itype, true, 0, Comm->commW);
+        Bcast_ND_arrayFloat(pseudo->rab_grid + itype, true, 0, Comm->commW);
     }
 
     // reuse pseudo_order buffer to find the ngrid max

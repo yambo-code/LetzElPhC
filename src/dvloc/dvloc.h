@@ -10,7 +10,7 @@ ELPH_float Vloc_Gspace(ELPH_float * work_arr, const char cutoff, const ELPH_floa
 
 void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * lattice, \
                 int ikq, int ik, int kqsym, int ksym, ND_array(Nd_cmplxS) * dVlocr, \
-                MPI_Comm commK, ELPH_cmplx * elph_kq);
+                const struct ELPH_MPI_Comms * Comm, ELPH_cmplx * elph_kq);
 
 void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc);
 
@@ -18,13 +18,12 @@ void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc);
 void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \
             ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * Vlocr, MPI_Comm commK);
 
+void create_vlocg_table(const struct Lattice * lattice, \
+        struct Pseudo * pseudo, const struct ELPH_MPI_Comms * Comm);
 
-void dvpsi(const ND_int nbnd, const ND_int nmag, const ND_int nspinor, const ND_int nFFT, 
-            const ELPH_cmplx * restrict dV_r, const ELPH_cmplx * restrict psi_r, \
-            ELPH_cmplx * restrict dVpsi_out);
+void free_vlocg_table(struct Vloc_table * vloc_table);
 
-void vlocg_table(const struct Lattice * lattice, const struct Pseudo * pseudo, 
-                ND_int * npts_co, ELPH_float ** g_co, ELPH_float ** vlocg, \
-                ELPH_float ** vploc_co, MPI_Comm commK);
+
+
 
 

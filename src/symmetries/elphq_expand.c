@@ -7,7 +7,7 @@
 
 void elph_q_rotate(const ELPH_cmplx * elph_mat_q, const struct Lattice * lattice, \
             const ELPH_cmplx * Dmats, const ELPH_float * symS, const bool tim_revS, \
-            const ELPH_float * qpt, ELPH_cmplx * restrict elph_mat_Sq)
+            const ELPH_cmplx fac, const ELPH_float * qpt, ELPH_cmplx * restrict elph_mat_Sq)
 {
     /*
     WARNING !! : Dmats must be for S^-1 symmetry and not for S
@@ -16,6 +16,7 @@ void elph_q_rotate(const ELPH_cmplx * elph_mat_q, const struct Lattice * lattice
     in einsum notation 
     'sij, sxy, six->sjy' Dmats(k), conj(Dmats(k + S*q)), elph_mat_q
 
+    "fac" is any factor that is multiplies to output
 
     elph_mat_Sq and elph_mat_q : ((k, nmodes, nspin, nbands, nbands))
     Dmats = (k, nspin, nbands, nbands)
@@ -100,13 +101,13 @@ void elph_q_rotate(const ELPH_cmplx * elph_mat_q, const struct Lattice * lattice
                 
                 //Dmats^T@D_tmp^T -> ji,iy->jy
                 ND_function(matmulX, Nd_cmplxS) ('T', 'T', D_k_spin, D_tmp, elph_Sq_tmp, \
-                                    1.0, 0.0, nbnds, nbnds, nbnds, nbnds, nbnds, nbnds);
+                                    fac, 0.0, nbnds, nbnds, nbnds, nbnds, nbnds, nbnds);
                 /*
                     if symmetry is time reversal we need to conjugate. This is because
                     we change the application of U from right to left thereby picking up 
                     a conjugation (due to anti-linearity) i.e 
                     <k + Sq| (U dV U^\dagger | k> ) = {(<k + Sq|U) (dV U^\dagger | k>)}^*
-                    where U is time reversal 
+                    where U is time reversal. 
                 */
                 if (tim_revS)
                 {

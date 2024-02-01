@@ -16,7 +16,7 @@ bare electron-phonon mat elements.
 
 void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, \
                     int ikq, int ik, int kqsym, int ksym,  ND_array(Nd_cmplxS) * eigVec, \
-                    ELPH_cmplx * elph_kq_mn, MPI_Comm commK)
+                    ELPH_cmplx * elph_kq_mn, const struct ELPH_MPI_Comms * Comm)
 {
     /*
     Compute <psi_K| dV_nl/dtau |psi_K'> 
@@ -48,8 +48,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         matrix elements on fly.
     */
     int mpi_error;
-    int krank;
-    mpi_error = MPI_Comm_rank(commK, &krank);
+
     /*
     First we get the wfcs.
     */
@@ -232,11 +231,11 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
     /* buffer to store elph mat elements in cart coordinates */
     ND_int elph_buffer_len = natom * 3 * nbndK * nbndK * nspin ;
     ELPH_cmplx * elph_buffer;
-    if (krank == 0) elph_buffer  = malloc(elph_buffer_len * sizeof(ELPH_cmplx)); 
+    if (Comm->commK_rank == 0) elph_buffer  = malloc(elph_buffer_len * sizeof(ELPH_cmplx)); 
     ND_int elph_buffer_stride = 3*nbndK * nbndK * nspin;
     // FIXED TILL HERE
     // zero the buffers
-    if (krank == 0)
+    if (Comm->commK_rank == 0)
     {
         for (ND_int i = 0 ; i<elph_buffer_len ; ++i) elph_buffer[i] = 0.0 ;
     }
@@ -338,18 +337,18 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         // this generally doesn't overflow. but better to check
         if (reduce_count > max_int_val) error_msg("int overflow in MPI_reduce function");
         
-        if (krank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
-        else mpi_error = MPI_Reduce(bandbufferKp, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+        if (Comm->commK_rank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
+        else mpi_error = MPI_Reduce(bandbufferKp, bandbufferKp, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
 
-        if (krank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
-        else mpi_error = MPI_Reduce(bandbufferK, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+        if (Comm->commK_rank == 0) mpi_error = MPI_Reduce(MPI_IN_PLACE, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
+        else mpi_error = MPI_Reduce(bandbufferK, bandbufferK, reduce_count, ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
 
         
         // now reduce bandbufferK and bandbufferKp i.e perform the sum
-        //commK
+        //Comm->commK
 
         /* The below section will be run only by master core of each Kpool */
-        if (krank == 0)
+        if (Comm->commK_rank == 0)
         {
             /* Now compute non local contribution to elph matrix  elements*/
             ELPH_cmplx * elph_buffer_temp = elph_buffer + ia*elph_buffer_stride;
@@ -392,9 +391,9 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
                 il_counter = il_counter + 2*l+1;
             }
         }
-        mpi_error = MPI_Barrier(commK);
+        mpi_error = MPI_Barrier(Comm->commK);
     }
-    if (krank == 0) 
+    if (Comm->commK_rank == 0) 
     {
         /* Convert to mode basis */
         ND_int nmodes = eigVec->dims[0];
@@ -411,7 +410,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
         free(elph_buffer);
     }
 
-    mpi_error = MPI_Barrier(commK);
+    mpi_error = MPI_Barrier(Comm->commK);
 
     free(bandbufferK);
     free(bandbufferKp);

@@ -196,7 +196,57 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
 }
 
 
+void read_qpts_qe(const char * dyn0_file, ND_int * nqpt_iBZ, \
+                ND_int * nqpt_fullBZ, ELPH_float ** qpts)
+{
+    /* 
+    Reads q-points from dyn0 file. (in 2*pi/alat units)
+    also gives number of qpoints in iBZ and full BZ
+    memory for qpts is allocated inside and must be freed outside
+    */
+    FILE * fp = fopen(dyn0_file, "r");
+    if (fp == NULL)
+    {
+        fprintf(stderr, "Opening file %s failed \n",dyn0_file);
+        error_msg("Unable to open the dyn0 file");
+    }
+    
+    char * read_buf = malloc(sizeof(char)*DYN_READ_BUF_SIZE);
+    
+    int qgrid[3];
+    fgets(read_buf, DYN_READ_BUF_SIZE, fp);
+    if (sscanf(read_buf, "%d %d %d",qgrid,qgrid+1,qgrid+2) != 3) 
+        error_msg("Error reading qgrid from dyn0 file");
+    
+    int nq_iBZ_tmp;
+    fgets(read_buf, DYN_READ_BUF_SIZE, fp);
+    if (sscanf(read_buf, "%d",&nq_iBZ_tmp) != 1) 
+        error_msg("Error reading 2nd line from dyn0 file");          
+    
+    *nqpt_iBZ = nq_iBZ_tmp;
+    *nqpt_fullBZ = qgrid[0]*qgrid[1]*qgrid[2];
+    
+    ELPH_float * iBZ_qpts = malloc(sizeof(ELPH_float)*3*nq_iBZ_tmp);
+    *qpts = iBZ_qpts;
 
+    // now read list of qpoints
+    for (ND_int i = 0; i < *nqpt_iBZ ; ++i)
+    {
+        float qpt_tmp[3];
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);
+        if (sscanf(read_buf, "%f %f %f",qpt_tmp,qpt_tmp+1,qpt_tmp+2) != 3) 
+            error_msg("Error reading qpoint from dyn0 file");
+
+        iBZ_qpts[3*i]   = qpt_tmp[0];
+        iBZ_qpts[3*i+1] = qpt_tmp[1];
+        iBZ_qpts[3*i+2] = qpt_tmp[2];
+    }
+
+    free(read_buf);
+    fclose(fp);
+
+
+}
 
 
 

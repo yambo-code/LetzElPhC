@@ -3,7 +3,7 @@
 /* Compute the electron phonon matrix elements i.e sandwich for Local part of KS potential */
 void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * lattice, \
                 int ikq, int ik, int kqsym, int ksym, ND_array(Nd_cmplxS) * dVlocr, \
-                MPI_Comm commK, ELPH_cmplx * elph_kq)
+                const struct ELPH_MPI_Comms * Comm, ELPH_cmplx * elph_kq)
 {
     /* Computes <S2*k2 | dV_{q}local | S1*k1>
     Note that the inputs kvectors must full the following condition S2*k2 = S1*k1 + q + ulmveckq
@@ -21,8 +21,6 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     */
     
     int mpi_error;
-    int krank;
-    mpi_error = MPI_Comm_rank(commK, &krank);
     /*
     First we get the wfcs. */
 
@@ -119,10 +117,10 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
 
     // npwkq and npwk are overwritten by number of gvecs in gvecSGkq and gvecSGk respectively.
     Sort_pw(npwkq_total, npwkq, lattice->fft_dims, gSkq_buf , wfc_kq->data, \
-                nspin*nspinor*nbndskq, &npwkq, &nGxySkq, &gvecSGkq, &wfcSkq, commK);
+                nspin*nspinor*nbndskq, &npwkq, &nGxySkq, &gvecSGkq, &wfcSkq, Comm->commK);
 
     Sort_pw(npwk_total, npwk, lattice->fft_dims, gSk_buf , wfc_k->data, \
-                nspin*nspinor*nbndsk, &npwk, &nGxySk, &gvecSGk, &wfcSk, commK);
+                nspin*nspinor*nbndsk, &npwk, &nGxySk, &gvecSGk, &wfcSk, Comm->commK);
     
     free(gSkq_buf);
     free(gSk_buf);
@@ -159,7 +157,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     struct ELPH_fft_plan fft_plan; 
 
     // create plan for Sk
-    wfc_plan(&fft_plan, npwk, lattice->nfftz_loc, nGxySk, gvecSGk, lattice->fft_dims, FFTW_MEASURE, commK);
+    wfc_plan(&fft_plan, npwk, lattice->nfftz_loc, nGxySk, gvecSGk, lattice->fft_dims, FFTW_MEASURE, Comm->commK);
 
     for (ND_int ipw = 0; ipw < (3*npwk); ++ipw) gvecs_float_tmp[ipw] = gvecSGk[ipw];
 
@@ -188,13 +186,13 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     
 
     // create plan for dvSpi
-    wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq, lattice->fft_dims, FFTW_MEASURE, commK);
+    wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq, lattice->fft_dims, FFTW_MEASURE, Comm->commK);
 
     ND_function(init, Nd_cmplxS) (dVpsiG, 4, nd_idx{nspin,nbndsk,nspinor, npwkq});
     ND_function(malloc, Nd_cmplxS) (dVpsiG);
 
     ND_int elph_buffer_len = nbndsk*nbndskq*nspin ; 
-    if (krank ==0)
+    if (Comm->commK_rank ==0)
     {   
         ELPH_OMP_PAR_FOR_SIMD // FIX ME, only master node?
         for (ND_int i =0 ; i<elph_buffer_len; ++i) elph_kq[i] = 0.0 ;
@@ -245,9 +243,9 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
             // reduce the electron phonon matrix elements
             ELPH_cmplx * elph_sum_buf ;
             ELPH_cmplx temp_sum = 0 ; // dummy
-            if (krank ==0) elph_sum_buf = elph_kq + (iv*nspin+is)*nbndsk*nbndskq;
+            if (Comm->commK_rank ==0) elph_sum_buf = elph_kq + (iv*nspin+is)*nbndsk*nbndskq;
             else elph_sum_buf = &temp_sum;
-            MPI_Reduce(elph_kq_mn, elph_sum_buf , nbndsk*nbndskq, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+            MPI_Reduce(elph_kq_mn, elph_sum_buf , nbndsk*nbndskq, ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
         }
     }
     // Free stuff

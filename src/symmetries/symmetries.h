@@ -17,13 +17,17 @@ bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  \
 
 
 void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
-    const ELPH_float * Rsym_mat,  const ELPH_float * Rsym_v, \
-    const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, MPI_Comm commK);
+    const ELPH_float * Rsym_mat,  const ELPH_float * tauR, \
+    const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, \
+    const struct ELPH_MPI_Comms * Comm);
 
 
 void elph_q_rotate(const ELPH_cmplx * elph_mat_q, const struct Lattice * lattice, \
             const ELPH_cmplx * Dmats, const ELPH_float * symS, const bool tim_revS, \
-            const ELPH_float * qpt, ELPH_cmplx * restrict elph_mat_Sq);
+            const ELPH_cmplx fac, const ELPH_float * qpt, ELPH_cmplx * restrict elph_mat_Sq);
+
+
+
 
 
 

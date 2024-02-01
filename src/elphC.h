@@ -34,6 +34,7 @@
     #define Nd_floatS d
     #define Nd_cmplxS z
 
+    #define NetCDF_IO_FTYPE NC_DOUBLE
 
     #define ELPH_PI 3.1415927
     #define ELPH_SQRT2 1.4142136
@@ -56,6 +57,7 @@
     #define Nd_floatS s
     #define Nd_cmplxS c
 
+    #define NetCDF_IO_FTYPE NC_FLOAT
 
     #define ELPH_PI 3.1415927f
     #define ELPH_SQRT2 1.4142136f

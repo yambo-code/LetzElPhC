@@ -4,16 +4,15 @@
 
 void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     const ELPH_float * Rsym_mat,  const ELPH_float * tauR, \
-    const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, MPI_Comm commK)
+    const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, \
+    const struct ELPH_MPI_Comms * Comm)
 {
     /*
     This is a function to compute representation matrices for the given symmetry and k point
     Dkmn_rep (<b Rk |U(R) | k,a>): (nspin, b_{bnd} , a_{bnd}) 
     */
 
-    int my_rank, Comm_size, mpi_error;
-    mpi_error = MPI_Comm_size(commK, &Comm_size);
-    mpi_error = MPI_Comm_rank(commK, &my_rank);
+    int mpi_error;
 
     // compute the Rk vector and find it in the list of k-points
     ELPH_float Rk_vec[3] = {0,0,0};
@@ -147,15 +146,15 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     int * counts2 = NULL; 
     int * disp2 = NULL;
 
-    if (my_rank == 0)
+    if (Comm->commK_rank == 0)
     {   
         G_RS1k1_root_all = malloc(sizeof(ELPH_float)*npw_k1_total*3);
         G_S2k2_root_all  = malloc(sizeof(ELPH_float)*npw_k2_total*3);
         idx_arr          = malloc(sizeof(ND_int)*npw_k2_total);
-        counts           = malloc(4*sizeof(int)*Comm_size);
-        disp             = counts +   Comm_size ;
-        counts2          = counts + 2*Comm_size ;
-        disp2            = counts + 3*Comm_size ;
+        counts           = malloc(4*sizeof(int)*Comm->commK_size);
+        disp             = counts +   Comm->commK_size ;
+        counts2          = counts + 2*Comm->commK_size ;
+        disp2            = counts + 3*Comm->commK_size ;
         
 
         if (counts   == NULL) error_msg("Failed to allocate comm array");
@@ -166,11 +165,11 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     
     // collect R*S1*G on root
     int pw_loc_int = 3*npw_k1_loc;
-    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, commK);
-    if (my_rank == 0)
+    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, Comm->commK);
+    if (Comm->commK_rank == 0)
     {
         int disp_tmp = 0;
-        for (int i = 0 ; i<Comm_size; ++i)
+        for (int i = 0 ; i<Comm->commK_size; ++i)
         {
             disp[i] = disp_tmp;
             disp_tmp += counts[i];
@@ -178,15 +177,15 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     }
     // gather 
     MPI_Gatherv(G_RS1k1, pw_loc_int, ELPH_MPI_float, \
-        G_RS1k1_root_all, counts, disp, ELPH_MPI_float, 0, commK);
+        G_RS1k1_root_all, counts, disp, ELPH_MPI_float, 0, Comm->commK);
 
     // collect S2*G on root
     pw_loc_int = 3*npw_k2_loc;
-    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts2, 1, MPI_INT, 0, commK);
-    if (my_rank == 0)
+    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts2, 1, MPI_INT, 0, Comm->commK);
+    if (Comm->commK_rank == 0)
     {
         int disp_tmp = 0;
-        for (int i = 0 ; i<Comm_size; ++i)
+        for (int i = 0 ; i<Comm->commK_size; ++i)
         {
             disp2[i] = disp_tmp;
             disp_tmp += counts2[i];
@@ -194,10 +193,10 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     }
     // gather 
     MPI_Gatherv(G_S2k2, pw_loc_int, ELPH_MPI_float, \
-        G_S2k2_root_all, counts2, disp2, ELPH_MPI_float, 0, commK);
+        G_S2k2_root_all, counts2, disp2, ELPH_MPI_float, 0, Comm->commK);
     
     // get the indices
-    if (my_rank == 0)
+    if (Comm->commK_rank == 0)
     {   
         find_gvecs_idxs(npw_k2_total, G_S2k2_root_all, npw_k1_total, G_RS1k1_root_all, idx_arr);
         // free some space
@@ -205,7 +204,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
         free(G_RS1k1_root_all);
 
         // divide mpi buffers by 3 so that we can use them for mpi communication routines
-        for (int i = 0 ; i<Comm_size; ++i)
+        for (int i = 0 ; i<Comm->commK_size; ++i)
         {
             counts[i]   /= 3 ;
             disp[i]     /= 3 ;     
@@ -219,7 +218,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     ELPH_cmplx * wfc_k2_root = NULL ; // gather ik2 wavefunctions on root for sorting
     ELPH_cmplx * wfc_k2_sort_root = NULL ; // store sorted ik2 on root
 
-    if (my_rank == 0)
+    if (Comm->commK_rank == 0)
     {   
         wfc_k2_root      = malloc(sizeof(ELPH_cmplx)*npw_k2_total);
         wfc_k2_sort_root = malloc(sizeof(ELPH_cmplx)*npw_k1_total);
@@ -263,8 +262,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
         {
             // gather the wfc on root process
             mpi_error = MPI_Gatherv(wfc_k2_tmp + ispinor*npw_k2_loc, npw_k2_loc, ELPH_MPI_cmplx, \
-                            wfc_k2_root, counts2, disp2, ELPH_MPI_cmplx, 0, commK);
-            if(my_rank == 0)
+                            wfc_k2_root, counts2, disp2, ELPH_MPI_cmplx, 0, Comm->commK);
+            if(Comm->commK_rank == 0)
             {
                 //rearrange
                 // 
@@ -278,7 +277,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
             }
             // scatter back the wfc to each process
             mpi_error = MPI_Scatterv(wfc_k2_sort_root, counts, disp, ELPH_MPI_cmplx, \
-                        wfc_S2k2_tmp + ispinor*npw_k1_loc, npw_k1_loc, ELPH_MPI_cmplx, 0, commK);
+                        wfc_S2k2_tmp + ispinor*npw_k1_loc, npw_k1_loc, ELPH_MPI_cmplx, 0, Comm->commK);
         }
 
         // apply SU(S2) on k2
@@ -302,8 +301,8 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
         // (nba,pw)@ (nbn,pw)^C
         // reduce to root node
         ELPH_cmplx * Dkmn_ptr = NULL;
-        if (my_rank == 0) Dkmn_ptr = Dkmn_rep + ispin*lattice->nbnds*lattice->nbnds;
-        MPI_Reduce(Dkmn_rep_tmp, Dkmn_ptr, lattice->nbnds*lattice->nbnds, ELPH_MPI_cmplx, MPI_SUM, 0, commK);
+        if (Comm->commK_rank == 0) Dkmn_ptr = Dkmn_rep + ispin*lattice->nbnds*lattice->nbnds;
+        MPI_Reduce(Dkmn_rep_tmp, Dkmn_ptr, lattice->nbnds*lattice->nbnds, ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
     }
 
     free(G_S1k1);
@@ -313,7 +312,7 @@ void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
     free(wfc_S2k2);
     free(Dkmn_rep_tmp);
 
-    if (my_rank == 0)
+    if (Comm->commK_rank == 0)
     {
         free(wfc_k2_root);
         free(wfc_k2_sort_root);
