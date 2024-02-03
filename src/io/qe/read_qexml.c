@@ -8,10 +8,10 @@ This file contains function that parses data-file-schema.xml file
 
 #define ELPH_XML_READ_LINE_SIZE 1000
 
-void parse_qexml(const char * xml_file, ELPH_float * alat, char * dim, \
-        bool * is_soc_present, ND_int * nmag, ND_int * fft_dims, ND_int * nph_sym, \
-        ELPH_float ** ph_sym_mats, ELPH_float ** ph_sym_tau, bool * ph_tim_rev, \
-        char ** pseudo_dir, char *** pseudo_pots)
+void parse_qexml(const char * xml_file, ELPH_float * lat_vec, ELPH_float * alat, \
+        char * dim, bool * is_soc_present, ND_int * nmag, ND_int * fft_dims, \
+        ND_int * nph_sym, ELPH_float ** ph_sym_mats, ELPH_float ** ph_sym_tau, \
+        bool * ph_tim_rev, char ** pseudo_dir, char *** pseudo_pots)
 {
     /*
     get pseudo potential information, fft information from xml file
@@ -83,6 +83,24 @@ void parse_qexml(const char * xml_file, ELPH_float * alat, char * dim, \
     fft_dims[0] = atoll(ezxml_attr(ezxml_get(qexml, "output", 0, "basis_set", 0, "fft_grid", -1), "nr1"));
     fft_dims[1] = atoll(ezxml_attr(ezxml_get(qexml, "output", 0, "basis_set", 0, "fft_grid", -1), "nr2"));
     fft_dims[2] = atoll(ezxml_attr(ezxml_get(qexml, "output", 0, "basis_set", 0, "fft_grid", -1), "nr3"));
+
+    // get lattice vectors
+    ELPH_float a_tmp_read[3];
+    
+    tmp_str = ezxml_get(qexml,"output", 0, "atomic_structure", 0, "cell", 0, "a1", -1)->txt ;
+    if (parser_doubles_from_string(tmp_str, a_tmp_read) != 3) 
+            error_msg("Error parsing a1 vec from data-file-schema.xml");
+    for (int ix = 0; ix < 3; ++ix) lat_vec[3*ix+0] = a_tmp_read[ix]; // a[:,i]
+    
+    tmp_str = ezxml_get(qexml,"output", 0, "atomic_structure", 0, "cell", 0, "a2", -1)->txt ;
+    if (parser_doubles_from_string(tmp_str, a_tmp_read) != 3) 
+            error_msg("Error parsing a2 vec from data-file-schema.xml");
+    for (int ix = 0; ix < 3; ++ix) lat_vec[3*ix+1] = a_tmp_read[ix];
+
+    tmp_str = ezxml_get(qexml,"output", 0, "atomic_structure", 0, "cell", 0, "a3", -1)->txt ;
+    if (parser_doubles_from_string(tmp_str, a_tmp_read) != 3) 
+            error_msg("Error parsing a3 vec from data-file-schema.xml");
+    for (int ix = 0; ix < 3; ++ix) lat_vec[3*ix+2] = a_tmp_read[ix];
 
     // check if soc is present
     tmp_str = ezxml_get(qexml,"output", 0, "magnetization",0, "spinorbit",-1)->txt ;

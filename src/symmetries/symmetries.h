@@ -1,7 +1,7 @@
 #pragma once 
 #include "../elphC.h"
 #include "../common/numerical_func.h"
-
+#include "../common/parallel.h"
 
 #define Function(FUN_NAME, TYPE_SMALL)                  Function_HIDDEN(FUN_NAME, TYPE_SMALL)
 #define Function_HIDDEN(FUN_NAME, TYPE_SMALL)           ELPH_ ## TYPE_SMALL ## FUN_NAME

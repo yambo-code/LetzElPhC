@@ -73,10 +73,8 @@ struct Lattice
 
 struct Phonon
 {   
-    //      Struct to store all phonon related data
+    //      Struct to store some phonon related data
     // ------------------------------------------------------- 
-    ND_int nmodes;   
-    // number of modes
     ND_int nq_iBZ;  
     // number of points in iBZ
     ND_int nq_BZ;   
@@ -98,16 +96,10 @@ struct Phonon
     // Corresponding frac. trac. vecs
     bool       * time_rev_array ; 
     // (nsym) bool array. True if the sym operation is Time rev
-    ELPH_cmplx * eig_vecs_iBZ;    
-    // (nq_iBZ,nmodes,nmodes) eigen vectors for iBZ qpoints
     int * qmap ;
     // (nq_BZ,2), (qpt_iBZ,nph_sym)
     ND_int * nqstar; 
     // number of elements in each qstar of iBZ qpoints
-    bool  dfpt; 
-    // if true screening is at dfpt level in el-ph
-    bool non_loc; 
-    // if true include non-local contribution to el-ph matrix elements
     // ------------------------------------------------------- 
 };
 

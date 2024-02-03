@@ -101,7 +101,7 @@ ND_int read_dyn_qe(const char * dyn_file, struct Lattice * lattice, \
     double complex * work_array = malloc(sizeof(double complex)*lwork);
     
     // start reading the dynamical matrices
-    while(true)
+    while(!nq_found)//while(true) // put while(true) to read all the dynamical matrices from file.
     {
         fgets(read_buf, DYN_READ_BUF_SIZE, fp); // empty 
         fgets(read_buf, DYN_READ_BUF_SIZE, fp); // content strong

@@ -114,6 +114,13 @@ void free_vlocg_table(struct Vloc_table * vloc_table)
     free(vloc_table->g_co);
     free(vloc_table->vlocg);
     free(vloc_table->vploc_co);
+    vloc_table->g_co = NULL;
+    vloc_table->vlocg = NULL;
+    vloc_table->vploc_co = NULL;
 }
+
+
+
+
 
 

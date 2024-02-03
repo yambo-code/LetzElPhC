@@ -37,7 +37,7 @@ static bool check_ele_in_array(ND_int *arr_in, ND_int nelements, ND_int check_el
 void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm, \
                 ND_int start_band, ND_int end_band, struct WFC ** wfcs, \
                 char * pseudo_dir, char ** pseudo_pots, struct Lattice * lattice, \
-                struct Pseudo * pseudo, const ND_int * FFT_dims)
+                struct Pseudo * pseudo, struct Phonon * phonon, char * dft_code)
 {
     /* This function allocates and reads data from SAVE dir.
     The following data is read : wfcs(in iBZ), lattice and pseudo
@@ -54,22 +54,20 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     /*
     Expect wfcs, all are read by the single IO and broadcasted 
 
-    FFT_dims // only rank 0 has to pass this. 
     */
 
     /*
     pseudo_dir and pseudo_pots need to be defined only on 0-rank cpu of Comm->commW
     */
     int mpi_error;
-
-    if (Comm->commW_rank == 0) memcpy(lattice->fft_dims,FFT_dims,sizeof(ND_int)*3);
-    // Bcast fft_dims
-    mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW );
-
-    ND_int nffts = lattice->fft_dims[0]*lattice->fft_dims[1]*lattice->fft_dims[2];
     
+    if (Comm->commW_rank == 0) 
+    {
+        if(!strstr(dft_code,"qe") ) error_msg("Only QE supported");
+    }
+
     lattice->nfftz_loc =  get_mpi_local_size_idx(lattice->fft_dims[2], \
-                                    &(lattice->nfftz_loc_shift), Comm->commK);
+                            &(lattice->nfftz_loc_shift), Comm->commK);
     
     if (lattice->nfftz_loc <1) error_msg("Some cpus do not contain plane waves. Over parallelization !.");
 
@@ -520,6 +518,18 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     pseudo->ngrid_max = find_maxint(pseudo_order,pseudo->ntype );
     lattice->npw_max  = find_maxfloat(nGmax, nibz) ; // find the max number of pws i.e max(nGmax)
 
+    // in the end compute the Vlocg table
+    //// first find the qmax for vloc table
+    ELPH_float qmax_val = fabs(phonon->qpts_iBZ[0]);
+    for (ND_int imax = 0; imax <(phonon->nq_iBZ*3) ; ++imax)
+    {
+        if (fabs(phonon->qpts_iBZ[imax])>qmax_val) qmax_val = fabs(phonon->qpts_iBZ[imax]);
+    }
+    // Note this needs to be set before compute the Vlocg table
+    pseudo->vloc_table->qmax_abs = ceil(fabs(qmax_val))+1;
+    // Note this must be called in the last else U.B
+    create_vlocg_table(lattice, pseudo, Comm);
+    
     // free all buffers
     free(pseudo_order);
     free(atom_symbols);
@@ -528,12 +538,22 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     free(temp_str);
 }
 
+void free_phonon_data(struct Phonon * phonon)
+{
+    free(phonon->qpts_iBZ);
+    free(phonon->qpts_BZ);
+    free(phonon->ph_sym_mats);
+    free(phonon->ph_sym_tau);
+    free(phonon->time_rev_array);
+    free(phonon->qmap);
+    free(phonon->nqstar);
+}
 
 void free_save_data(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo)
 {   
     /* free fCoeff*/
     free_f_Coeff(lattice, pseudo); // NOTE this function must be called before freeing PP_table
-
+    free_vlocg_table(pseudo->vloc_table); // free the local interpolation interpolation table
     ND_int nkiBZ = lattice->kpt_iredBZ->dims[0];
     /* Free wavefunctions */
     for (ND_int ik =0 ; ik<nkiBZ; ++ik)

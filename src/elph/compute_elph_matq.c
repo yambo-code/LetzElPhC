@@ -5,7 +5,7 @@ void compute_elphq(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * 
             ELPH_float * qpt, ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * dVscfq, 
             ELPH_cmplx * elph_kq, const struct ELPH_MPI_Comms * Comm)
 {   
-
+    
     /*
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
     ((k, nmodes, nspin, nbands, nbands))

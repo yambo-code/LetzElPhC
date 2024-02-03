@@ -4,9 +4,8 @@
 This file contains routines to read dvscf/drho from qe output files
 */
 
-
 void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
-            const ND_int nmag, const ELPH_cmplx * eig, const ELPH_cmplx * pats, \
+            const ELPH_cmplx * eig, const ELPH_cmplx * pats, \
             ELPH_cmplx * restrict dvscf_out, MPI_Comm commK)
 {
     /*
@@ -17,7 +16,7 @@ void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
     pattern : (nmodes, natom, pol)
     */
     // double complex // nmag
-
+    
     
     // allocate a temporary buffer to read
     // qe store stuff in doubles as an array of shape (nmodes, nmag, FFTz, FFTy, FFTx)
@@ -45,7 +44,7 @@ void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
     }
 
     // now read stuff
-    ND_int nsets = nmodes*nmag;
+    ND_int nsets = nmodes*lattice->nmag;
     for (ND_int iset = 0; iset < nsets; ++iset)
     {   
         ELPH_cmplx * dvscf_tmp = dvscf_out + iset*read_buffer_count;
@@ -104,7 +103,7 @@ void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
     // (nmodes, FFTy, FFTz_loc)
     ELPH_cmplx * dvscf_mode = calloc(nmodes*fft_dims[1]*lattice->nfftz_loc,sizeof(ELPH_cmplx)); 
 
-    ND_int niter = nmag*fft_dims[0]; // FFTx*nmag
+    ND_int niter = lattice->nmag*fft_dims[0]; // FFTx*nmag
     ND_int ld_mode = niter*fft_dims[1]*lattice->nfftz_loc; // nmag*FFTx*FFTy*FFTz_loc
     for (ND_int iter = 0 ; iter<niter; ++iter)
     {   

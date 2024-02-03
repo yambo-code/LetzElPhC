@@ -7,7 +7,6 @@ This is the header for functions related to wfcs
 #include "../common/numerical_func.h"
 #include "../common/data_structs.h"
 #include "../common/parallel.h"
-#include "../io/io.h"
 #include "../fft/fft.h"
 #include "gsort.h"
 

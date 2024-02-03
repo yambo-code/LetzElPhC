@@ -6,6 +6,8 @@
 #include "../nonloc/fcoeff.h"
 #include "../symmetries/symmetries.h"
 #include "../common/string_func.h"
+#include "../dvloc/dvloc.h"
+#include "qe/qe_io.h"
 
 /* This struct contains all the input file details */
 struct usr_input
@@ -28,10 +30,10 @@ struct usr_input
 void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm, \
                 ND_int start_band, ND_int end_band, struct WFC ** wfcs, \
                 char * pseudo_dir, char ** pseudo_pots, struct Lattice * lattice, \
-                struct Pseudo * pseudo, const ND_int * FFT_dims);
+                struct Pseudo * pseudo, struct Phonon * phonon, char * dft_code);
 
 void free_save_data(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo);
-
+void free_phonon_data(struct Phonon * phonon);
 
 void Bcast_ND_arrayFloat(ND_array(Nd_floatS) * array_in, bool alloc_mem, int root, MPI_Comm comm);
 void Bcast_ND_arrayCmplx(ND_array(Nd_cmplxS) * array_in, bool alloc_mem, int root, MPI_Comm comm);

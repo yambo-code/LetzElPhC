@@ -87,12 +87,18 @@ void create_parallel_comms(const int nqpools, const int nkpools, \
     MPI_Comm_split(Comm->commW, Comm->commK_rank, Comm->commW_rank, &Comm->commR);
     MPI_Comm_rank(Comm->commR, &Comm->commR_rank);
     MPI_Comm_size(Comm->commR, &Comm->commR_size);
+    // commRq
+    MPI_Comm_split(Comm->commQ, Comm->commK_rank, Comm->commW_rank, &Comm->commRq);
+    MPI_Comm_rank(Comm->commRq, &Comm->commRq_rank);
+    MPI_Comm_size(Comm->commRq, &Comm->commRq_size);
 
     // Sanity check
     if (Comm->commK_rank != Comm->commW_rank%Comm->commK_size) 
         error_msg("MPI Comm 1 creation failed.");
     if (Comm->commR_size != (nqpools*nkpools) )
         error_msg("MPI Comm 2 creation failed.");
+    if (Comm->commRq_size != nkpools)
+        error_msg("MPI Comm 3 creation failed.");
 }
 
 
@@ -102,6 +108,7 @@ void free_parallel_comms(struct ELPH_MPI_Comms * Comm)
     MPI_Comm_free(&Comm->commQ);
     MPI_Comm_free(&Comm->commK);
     MPI_Comm_free(&Comm->commR);
+    MPI_Comm_free(&Comm->commRq);
 }
 
 

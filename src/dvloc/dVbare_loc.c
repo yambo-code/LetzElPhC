@@ -23,7 +23,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
             Vlocr
             d Vloc/dtau (in cart) (nmode,nffts_this_cpu), 
     */
-
+    
     int mpi_error;
     // get the total cpus in comm and rank of each cpu
     int my_rank, Comm_size;
@@ -52,7 +52,6 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
 
     ELPH_cmplx *  VlocG      = malloc(size_VG*sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
     
-
     int * gvecs = malloc(3*size_G_vecs*sizeof(int));
     
     ELPH_float volume = fabs(det3x3(latvec->data));
@@ -68,18 +67,15 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
     FFTy = lattice->fft_dims[1];
     FFTz = lattice->fft_dims[2];
 
-    ND_int npts_co; 
-    ELPH_float * g_co;
-    ELPH_float * vlocg;
-    ELPH_float * vploc_co;
-    // 1st compute the interpolation table
-    vlocg_table(lattice, pseudo, &npts_co, &g_co, &vlocg, &vploc_co, commK);
+    ND_int npts_co          = pseudo->vloc_table->npts_co; 
+    ELPH_float * g_co       = pseudo->vloc_table->g_co;
+    ELPH_float * vlocg      = pseudo->vloc_table->vlocg;
+    ELPH_float * vploc_co   = pseudo->vloc_table->vploc_co;
 
-    ELPH_float dg = g_co[1]-g_co[0]; // spacing between two g points in g_co
+    ELPH_float dg = pseudo->vloc_table->dg; // spacing between two g points in g_co
 
-    ELPH_float * work_array = malloc(sizeof(ELPH_float)*(ntype+ngrid_max));
+    ELPH_float * VlocGtype = malloc(sizeof(ELPH_float)*(ntype));
     
-    ELPH_float * VlocGtype = work_array+ngrid_max;
     
     for (ND_int ig = 0 ; ig < G_vecs_xy; ++ig)
     {   
@@ -142,10 +138,7 @@ void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * ps
         }
     }
 
-    free(g_co);
-    free(vlocg);
-    free(vploc_co);
-    free(work_array);
+    free(VlocGtype);
 
     ELPH_cmplx *  VlocG_mode = calloc(size_VG, sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
 
