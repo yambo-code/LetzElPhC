@@ -20,7 +20,7 @@ void get_dvscf_dyn_qe(const char * ph_save_dir, struct Lattice * lattice, \
         sprintf(tmp_char_buf,"%s/patterns.%d.xml",ph_save_dir, (int)(iq_BZ+1));
         read_pattern_qe(tmp_char_buf, lattice, pat_vecs);
         ELPH_float qpts[3];
-        sprintf(tmp_char_buf,"%s/dyn%d.xml",ph_save_dir, (int)(iq_BZ+1));
+        sprintf(tmp_char_buf,"%s/dyn%d",ph_save_dir, (int)(iq_BZ+1));
         ND_int ndyn_read = read_dyn_qe(tmp_char_buf, lattice, qpts, omega_ph, eig);
         if(ndyn_read != 1) error_msg("Wrong number of dynmats read from dynamical matrix file");
     }
@@ -30,7 +30,7 @@ void get_dvscf_dyn_qe(const char * ph_save_dir, struct Lattice * lattice, \
     MPI_Bcast(eig,nmodes*nmodes,ELPH_MPI_cmplx,0,Comm->commQ);
     MPI_Bcast(omega_ph,nmodes*nmodes,ELPH_MPI_cmplx,0,Comm->commQ);
 
-    sprintf(tmp_char_buf,"%s/dvscf%d.xml",ph_save_dir, (int)(iq_BZ+1));
+    sprintf(tmp_char_buf,"%s/dvscf%d",ph_save_dir, (int)(iq_BZ+1));
     if (Comm->commRq_rank == 0)
     {
         read_dvscf_qe(tmp_char_buf, lattice, eig, pat_vecs, dvscf, Comm->commK);

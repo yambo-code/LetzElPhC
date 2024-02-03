@@ -57,7 +57,7 @@ void parse_qexml(const char * xml_file, ELPH_float * lat_vec, ELPH_float * alat,
                         "pseudo_dir",-1)->txt;
     *pseudo_dir = malloc(strlen(tmp_str)+1); // we need to free this outside of this function
     strcpy(*pseudo_dir,tmp_str);
-    printf("pseudo dir : %s",*pseudo_dir);
+    //printf("pseudo dir : %s",*pseudo_dir);
     // get ntypes
     ezxml_t atom_specs = ezxml_get(qexml, "input", 0, "atomic_species", -1);
     if (atom_specs == NULL) error_msg("error reading atomic spices from data-file-schema.xml file");
@@ -70,7 +70,7 @@ void parse_qexml(const char * xml_file, ELPH_float * lat_vec, ELPH_float * alat,
     for (ND_int itype = 0; itype < ntype; ++itype)
     {
         tmp_str = ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
-        printf("%d : %s \n",(int)itype, tmp_str);
+        //printf("%d : %s \n",(int)itype, tmp_str);
         pot_tmp[itype] = malloc(1+strlen(tmp_str));
         strcpy(pot_tmp[itype],tmp_str);
     }

@@ -66,6 +66,9 @@ int main(int argc, char* argv[])
     {   
         compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym, phonon->ph_sym_mats, \
                                     phonon->ph_sym_tau, phonon->time_rev_array, mpi_comms);
+        // Debug
+        //compute_and_write_dmats("ndb.Dmats", wfcs, lattice, lattice->sym_mat->dims[0], \
+        lattice->sym_mat->data, lattice->frac_trans->data, lattice->time_rev_array, mpi_comms);
     }       
     // b) Compute elph 
     // ============= ELPH iBZ computation =============
@@ -93,7 +96,7 @@ int main(int argc, char* argv[])
         //compute_elphq(wfcs, &lattice, &pseudo, qpt,  &eigVec, &dVscf, elph_kq, mpi_comms);
     }
     // ELPH_cmplx Ry2Ha = pow(2,-1.5);
-
+    
     free(omega_ph);
     ND_function(destroy,Nd_cmplxS)(eigVec);
     ND_function(destroy,Nd_cmplxS)(dVscf);

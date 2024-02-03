@@ -529,7 +529,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     pseudo->vloc_table->qmax_abs = ceil(fabs(qmax_val))+1;
     // Note this must be called in the last else U.B
     create_vlocg_table(lattice, pseudo, Comm);
-    
+
     // free all buffers
     free(pseudo_order);
     free(atom_symbols);

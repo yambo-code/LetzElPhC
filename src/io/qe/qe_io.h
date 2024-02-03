@@ -2,7 +2,7 @@
 #include "../ezxml/ezxml.h"
 #include "../../elphC.h"
 #include "../../common/numerical_func.h"
-#include "../../common/data_structs.h"
+#include "../../common/dtypes.h"
 #include "../../common/parallel.h"
 #include "../../symmetries/symmetries.h"
 #include "../../common/string_func.h"

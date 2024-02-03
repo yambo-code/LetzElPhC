@@ -1,7 +1,7 @@
 #pragma once
 #include "../elphC.h"
 #include "../common/numerical_func.h"
-#include "../common/data_structs.h"
+#include "../common/dtypes.h"
 #include "../common/parallel.h"
 #include "../nonloc/fcoeff.h"
 #include "../symmetries/symmetries.h"
@@ -25,7 +25,7 @@ struct usr_input
 
 
 
-#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);}
+#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); error_msg("netcdf_error");}
 
 void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm, \
                 ND_int start_band, ND_int end_band, struct WFC ** wfcs, \

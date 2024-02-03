@@ -8,9 +8,9 @@ This file contains function which distributes cpus
 ND_int get_mpi_local_size_idx(const ND_int n, ND_int * start_idx,  MPI_Comm Comm)
 {   
     int my_rank, total_size;
-
-    MPI_Comm_rank(Comm, &my_rank);
-    MPI_Comm_size(Comm, &total_size);
+    int mpi_error;
+    mpi_error = MPI_Comm_rank(Comm, &my_rank);
+    mpi_error = MPI_Comm_size(Comm, &total_size);
 
     ND_int n_q = n/total_size ;
     ND_int n_r = n%total_size ;
@@ -58,14 +58,14 @@ void create_parallel_comms(const int nqpools, const int nkpools, \
     !! Warning : Order of arrangement of cpus is very important. the key given to 
     comm_split must be the rank of world comm
     */
-
+    int mpi_error;
     // first set the basic things
     Comm->commW   = MPI_world_comm;
     Comm->nqpools = nqpools;
     Comm->nkpools = nkpools;
     
-    MPI_Comm_rank(Comm->commW, &Comm->commW_rank);
-    MPI_Comm_size(Comm->commW, &Comm->commW_size);
+    mpi_error = MPI_Comm_rank(Comm->commW, &Comm->commW_rank);
+    mpi_error = MPI_Comm_size(Comm->commW, &Comm->commW_size);
 
     // check Comm->commW_size is divisible by nqpools*nkpools
     if (nqpools  < 1 || nkpools < 1) 
@@ -78,19 +78,19 @@ void create_parallel_comms(const int nqpools, const int nkpools, \
 
     /* create comms */
     // commQ
-    MPI_Comm_split(Comm->commW, Comm->commW_rank/Comm->commQ_size, Comm->commW_rank, &Comm->commQ);
-    MPI_Comm_rank(Comm->commQ, &Comm->commQ_rank);
+    mpi_error = MPI_Comm_split(Comm->commW, Comm->commW_rank/Comm->commQ_size, Comm->commW_rank, &Comm->commQ);
+    mpi_error = MPI_Comm_rank(Comm->commQ, &Comm->commQ_rank);
     // commK
-    MPI_Comm_split(Comm->commQ, Comm->commQ_rank/Comm->commK_size, Comm->commW_rank, &Comm->commK);
-    MPI_Comm_rank(Comm->commK, &Comm->commK_rank);
+    mpi_error = MPI_Comm_split(Comm->commQ, Comm->commQ_rank/Comm->commK_size, Comm->commW_rank, &Comm->commK);
+    mpi_error = MPI_Comm_rank(Comm->commK, &Comm->commK_rank);
     // commR
-    MPI_Comm_split(Comm->commW, Comm->commK_rank, Comm->commW_rank, &Comm->commR);
-    MPI_Comm_rank(Comm->commR, &Comm->commR_rank);
-    MPI_Comm_size(Comm->commR, &Comm->commR_size);
+    mpi_error = MPI_Comm_split(Comm->commW, Comm->commK_rank, Comm->commW_rank, &Comm->commR);
+    mpi_error = MPI_Comm_rank(Comm->commR, &Comm->commR_rank);
+    mpi_error = MPI_Comm_size(Comm->commR, &Comm->commR_size);
     // commRq
-    MPI_Comm_split(Comm->commQ, Comm->commK_rank, Comm->commW_rank, &Comm->commRq);
-    MPI_Comm_rank(Comm->commRq, &Comm->commRq_rank);
-    MPI_Comm_size(Comm->commRq, &Comm->commRq_size);
+    mpi_error = MPI_Comm_split(Comm->commQ, Comm->commK_rank, Comm->commW_rank, &Comm->commRq);
+    mpi_error = MPI_Comm_rank(Comm->commRq, &Comm->commRq_rank);
+    mpi_error = MPI_Comm_size(Comm->commRq, &Comm->commRq_size);
 
     // Sanity check
     if (Comm->commK_rank != Comm->commW_rank%Comm->commK_size) 
@@ -105,10 +105,11 @@ void create_parallel_comms(const int nqpools, const int nkpools, \
 /* free allocated comms */
 void free_parallel_comms(struct ELPH_MPI_Comms * Comm)
 {   
-    MPI_Comm_free(&Comm->commQ);
-    MPI_Comm_free(&Comm->commK);
-    MPI_Comm_free(&Comm->commR);
-    MPI_Comm_free(&Comm->commRq);
+    int mpi_error;
+    mpi_error = MPI_Comm_free(&Comm->commQ);
+    mpi_error = MPI_Comm_free(&Comm->commK);
+    mpi_error = MPI_Comm_free(&Comm->commR);
+    mpi_error = MPI_Comm_free(&Comm->commRq);
 }
 
 

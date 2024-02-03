@@ -5,7 +5,7 @@ This is the header for functions related to wfcs
 #pragma once
 #include "../elphC.h"
 #include "../common/numerical_func.h"
-#include "../common/data_structs.h"
+#include "../common/dtypes.h"
 #include "../common/parallel.h"
 #include "../fft/fft.h"
 #include "gsort.h"

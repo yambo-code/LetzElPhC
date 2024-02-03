@@ -1,6 +1,6 @@
 #pragma once
 #include "../elphC.h"
-#include "../common/data_structs.h"
+#include "../common/dtypes.h"
 
 
 void alloc_and_Compute_f_Coeff(struct Lattice * lattice, struct Pseudo * pseudo);

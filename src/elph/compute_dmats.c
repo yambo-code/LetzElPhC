@@ -34,7 +34,7 @@ void compute_and_write_dmats(const char * file_name, const struct WFC * wfcs, \
         // Make the access INDEPENDENT as not all can call the put_var function simultaneously
         if((nc_err = nc_var_par_access(ncid, varid, NC_INDEPENDENT))) ERR(nc_err);
 
-        ELPH_cmplx * Dkmn_rep_ptr = calloc(lattice->nspin*lattice->nbnds*lattice->nbnds,sizeof(ELPH_cmplx));
+        Dkmn_rep_ptr = calloc(lattice->nspin*lattice->nbnds*lattice->nbnds,sizeof(ELPH_cmplx));
     }
 
     // for computation of Dmats, we use all the nodes

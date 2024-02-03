@@ -104,9 +104,9 @@ void get_data_from_qe(struct Lattice * lattice, \
             ELPH_float * vec_tmp      = phonon->ph_sym_tau +  isym*3;
             ELPH_float * vec_tmp_trev = phonon->ph_sym_tau +  (isym + phonon->nph_sym)*3;
             
-            // compute lat_vec@S^T@b^T
-            // first  S^T and b^T
-            Gemm3x3f(sym_tmp, 'T', blat,'T', sym_tmp_trev); //sym_tmp_trev is used as tmp buffer
+            // compute lat_vec@S@b^T
+            // first  S and b^T
+            Gemm3x3f(sym_tmp, 'N', blat,'T', sym_tmp_trev); //sym_tmp_trev is used as tmp buffer
             Gemm3x3f(lat_vec,'N', sym_tmp_trev,'N', sym_tmp);
             
             for (int ix = 0; ix < 9; ++ix) sym_tmp_trev[ix] = -sym_tmp[ix];
@@ -118,7 +118,6 @@ void get_data_from_qe(struct Lattice * lattice, \
                 vec_tmp[ix]      =  vec_tmp_trev[ix];
                 vec_tmp_trev[ix] = -vec_tmp_trev[ix];
             }
-
         }
     }
     
