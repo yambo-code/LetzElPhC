@@ -1,14 +1,11 @@
 [input] ### This is a mandatory line
 
-nkpool  = 1                                    # k point parallelization
-nqpool  = 1                                    # q point parallelization
-start_bnd = 1                                  # starting band
-end_bnd   = 40                                 # last band
-save_dir    = /Users/murali/phd/one_phonon_raman/wse2/SAVE                           # save dir
-pseudo_dir  = /Users/murali/phd/one_phonon_raman/wse2                           # pseudo pot dir
-dvscf_file  = /Users/murali/phd/one_phonon_raman/wse2/nc.dVscf                            # dvscf directory
-pseudos = W_PBE_nof_FR.SG15v1.2.UPF, Se_PBE_FR.SG15v1.2.UPF                  # pseudo separated by comma a.upf,b.upf
-dimension = 2                                  # system dimension 3/2/1 for 3D/2D/1D. Currently only 2/3 are supported
-
+nkpool          = 1                                    # k point parallelization
+nqpool          = 1                                    # q point parallelization
+start_bnd       = 1                                  # starting band
+end_bnd         = 40                                 # last band
+save_dir        = /Users/murali/phd/one_phonon_raman/wse2/SAVE                           # save dir
+ph_save_dir     = /Users/murali/phd/one_phonon_raman/wse2/ph_save  
+kernel          = dfpt
 
 ###  ##, !, ; are considered as comments

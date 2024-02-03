@@ -28,7 +28,7 @@ void get_dvscf_dyn_qe(const char * ph_save_dir, struct Lattice * lattice, \
     // Bcast variables
     MPI_Bcast(pat_vecs,nmodes*nmodes,ELPH_MPI_cmplx,0,Comm->commQ);
     MPI_Bcast(eig,nmodes*nmodes,ELPH_MPI_cmplx,0,Comm->commQ);
-    MPI_Bcast(omega_ph,nmodes*nmodes,ELPH_MPI_cmplx,0,Comm->commQ);
+    MPI_Bcast(omega_ph,nmodes,ELPH_MPI_float,0,Comm->commQ);
 
     sprintf(tmp_char_buf,"%s/dvscf%d",ph_save_dir, (int)(iq_BZ+1));
     if (Comm->commRq_rank == 0)
