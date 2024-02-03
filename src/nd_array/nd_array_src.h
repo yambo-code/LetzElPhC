@@ -144,19 +144,6 @@ void ND_function(copy, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, ND_array(TYP
 /**************************************************** netcdf_io.c ND_functions ******************************************************/
 /*********************************************************************************************************************************/
 
-
-void ND_function(read, TYPE_S) (const char* file_name, const char* var_name, ND_array(TYPE_S) * nd_arr_in);
-
-void ND_function(read_sub, TYPE_S) (const char* file_name, const char* var_name, ND_array(TYPE_S) * nd_arr_in, ...);
-
-void ND_function(write, TYPE_S) (const char* file_name, const char* var_name, const ND_array(TYPE_S) * nd_arr_in, char ** dim_names, size_t * chunksize);
-
-#if defined(COMPILE_ONCE)
-void NC_open_file(const char* file_name, char mode, int * ncid);
-
-void NC_close_file(const int ncid); 
-#endif
-
 void ND_function(readVar, TYPE_S) (const int ncid, const char* var_name, ND_array(TYPE_S) * nd_arr_in);
 void ND_function(readVar_sub, TYPE_S) (const int ncid, const char* var_name, ND_array(TYPE_S) * nd_arr_in, ...);
 void ND_function(writeVar, TYPE_S) (const int ncid, const char* var_name, const ND_array(TYPE_S) * nd_arr_in, char ** dim_names, size_t * chunksize);

@@ -98,7 +98,8 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     if (Comm->commW_rank == 0)
     {
         sprintf(temp_str, "%s/ndb.kindx", SAVEdir) ; 
-        NC_open_file(temp_str, 'r', &tempid);
+        
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &tempid))) ERR(retval);
 
         #if defined(YAMBO_LT_5_1)
         ELPH_float kindx_pars[7];
@@ -110,7 +111,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         nkBZ = nkBZ_read;
         #endif
 
-        NC_close_file(tempid);
+        if ((retval = nc_close(tempid))) ERR(retval);
     } 
     /* broad cast (int nkBZ) */
     mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW );
@@ -121,7 +122,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     if (Comm->commW_rank == 0)
     {
         sprintf(temp_str, "%s/ns.db1", SAVEdir) ; 
-        NC_open_file(temp_str, 'r', &dbid);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &dbid))) ERR(retval);
         quick_read(dbid, "DIMENSIONS", dimensions);
     }
     /* bcast ELPH_float dimensions[18] */
@@ -359,7 +360,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
 
         ND_function(readVar, Nd_floatS) (dbid, "G-VECTORS", &totalGvecs);
         ND_function(readVar, Nd_floatS) (dbid, "WFC_GRID",  &Gvecidxs);
-        NC_close_file(dbid); // close ns.db1 file
+        if ((retval = nc_close(dbid))) ERR(retval);
     }
     Bcast_ND_arrayFloat(&totalGvecs, true, 0, Comm->commW);
     Bcast_ND_arrayFloat(&Gvecidxs, true, 0, Comm->commW);
@@ -405,8 +406,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         if ((retval = nc_var_par_access(ppid, varid_temp, NC_COLLECTIVE))) ERR(retval); // NC_COLLECTIVE or NC_INDEPENDENT
 
         ND_function(readVar_sub, Nd_floatS)(ppid, temp_str, (wfc_temp+ik)->Fk, ND_ALL,ND_ALL,nd_idx{G_shift,G_shift+pw_this_cpu,1} );
-        
-        NC_close_file(ppid);
+        if ((retval = nc_close(ppid))) ERR(retval);
     }
     // MPI_Barrier(Comm->commW);
     /* Free temp gvec arrays */
@@ -431,7 +431,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         ND_function(init,Nd_floatS) (pseudo->Fsign,    0, NULL); 
 
         sprintf(temp_str, "%s/ns.kb_pp_pwscf", SAVEdir) ;  // fix be for abinit 
-        NC_open_file(temp_str, 'r', &ppid);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &ppid))) ERR(retval);
     
         {
             ELPH_float kb_pars[4];
@@ -442,7 +442,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         ND_function(readVar, Nd_floatS) (ppid, "PP_TABLE", pseudo->PP_table);
         ND_function(readVar, Nd_floatS) (ppid, "PP_KBS",   pseudo->Fsign);
 
-        NC_close_file(ppid); 
+        if ((retval = nc_close(ppid))) ERR(retval);
     }
     /* Bcast PP_table and Fsign */
     Bcast_ND_arrayFloat(pseudo->PP_table, true, 0, Comm->commW);
@@ -632,7 +632,6 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
     {   
         sprintf(work_array, "%s/ns.wf_fragments_%d_1", save_dir, (int)( is*nkiBZ + (ik+1) ) ) ;
 
-        //NC_open_file(work_array, 'r', &wfID);
         if ((retval = nc_open_par(work_array, NC_NOWRITE, comm, MPI_INFO_NULL, &wfID))) ERR(retval);
 
         sprintf(work_array, "WF_COMPONENTS_@_SP_POL%d_K%d_BAND_GRP_1", (int)(is+1) , (int)(ik+1) ) ;
@@ -642,7 +641,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
         size_t countp[4] = {nbnds       , nspinor, nG      , 2};
         quick_read_sub(wfID, work_array, startp, countp, out_wfc + is*spin_stride_len);
 
-        NC_close_file(wfID); 
+        if ((retval = nc_close(wfID))) ERR(retval);
     }
 }
 

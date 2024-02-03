@@ -63,7 +63,8 @@ void compute_and_write_dmats(const char * file_name, const struct WFC * wfcs, \
     if (Comm->commK_rank == 0)
     {
         free(Dkmn_rep_ptr);
-        NC_close_file(ncid);
+
+        if ((nc_err = nc_close(ncid))) ERR(nc_err);
     }
 } 
 
