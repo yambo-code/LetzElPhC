@@ -35,31 +35,11 @@
 //
 #include "common_def.h" 
 
-#ifdef ND_MKL_BLAS
-    //
-    #define lapack_complex_float    float _Complex
-    #define lapack_complex_double   double _Complex
-    #include <mkl.h>
-    typedef MKL_INT BLAS_INT;
-    #define CBLAS_INT BLAS_INT
-    //
-#else
-    #ifdef USE64BITINT
-        typedef int64_t BLAS_INT;
-    #else
-        typedef int BLAS_INT; /* Internal type used for blas indices. set this according to the blas library (32 or 64 bit) */   
-    #endif
-    
-    #define CBLAS_INT BLAS_INT
-    #define LAPACK_COMPLEX_C99
-
-    #ifdef ND_DEFAULT_BLAS_HEADER
-        #include "cblas.h"
-    #else
-        #include <cblas.h>
-        //    #include <lapacke.h> // for now no lapack is needed
-    #endif
-#endif
+typedef int BLAS_INT; 
+/* Internal type used for blas indices. set this according to the blas library (32 or 64 bit) */   
+#define CBLAS_INT BLAS_INT
+#define LAPACK_COMPLEX_C99
+#include "cblas.h"
 
 //
 
