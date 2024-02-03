@@ -97,6 +97,7 @@ int main(int argc, char* argv[])
     }
     // ELPH_cmplx Ry2Ha = pow(2,-1.5);
     
+
     free(omega_ph);
     ND_function(destroy,Nd_cmplxS)(eigVec);
     ND_function(destroy,Nd_cmplxS)(dVscf);

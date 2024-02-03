@@ -5,7 +5,7 @@ TARGET 		 :=  elphc
 #### make start here
 
 SUBDIR = nonloc io/ezxml io/inih io io/qe common dvloc elph wfc symmetries fft
-ND_ARR_LIB = -L./nd_array/src -lnd_array
+ND_ARR_LIB = -L./nd_array -lnd_array
 
 
 INCS = $(wildcard *.h $(foreach fd, $(SUBDIR), $(fd)/*.h))
@@ -16,7 +16,7 @@ INC_DIRS = $(FFTW_INC) $(BLAS_INC) $(NETCDF_INC)
 LIBS     = $(ND_ARR_LIB) $(FFTW3_LIB) $(BLAS_LIB) $(NETCDF_LIB) $(HDF5_LIB) -lm
 
 
-libnd_array = ./nd_array/src/libnd_array.a
+libnd_array = ./nd_array/libnd_array.a
 libnd_make = ./nd_array/make.inc
 
 PHONY := $(TARGET)

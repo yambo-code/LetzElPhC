@@ -9,7 +9,7 @@
 #include <string.h>
 #include <complex.h>
 #include <math.h>
-#include "nd_array/src/nd_array.h"
+#include "nd_array/nd_array.h"
 #include <mpi.h>
 #include "common/omp_pragma_def.h"
 #include <fftw3.h>

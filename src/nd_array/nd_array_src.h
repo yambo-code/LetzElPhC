@@ -148,12 +148,6 @@ void ND_function(free, TYPE_S) (ND_array(TYPE_S) * nd_arr_in);
 
 void ND_function(destroy, TYPE_S) (ND_array(TYPE_S) * nd_arr_in);
 
-void ND_function(init_tranpose, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, const ND_int * order, ND_array(TYPE_S) * nd_arr_out);
-
-void ND_function(init_slice, TYPE_S) (const ND_int * start_idx, const ND_int * end_idx, const ND_int * step_idx, \
-                            const ND_array(TYPE_S) * nd_arr_in, ND_array(TYPE_S) * nd_arr_out );
-
-void ND_function(init_strip_dims, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, const ND_int n_dims_strip, ND_array(TYPE_S) * nd_arr_out);
 
 /**************************************************** array.c ND_functions **********************************************************/
 /*********************************************************************************************************************************/
@@ -163,16 +157,6 @@ TYPE_L * ND_function(ele, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, const ND_
 ND_int ND_function(size, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in);
 
 void ND_function(set_all, TYPE_S) (ND_array(TYPE_S) * nd_arr_in, const TYPE_L set_constant );
-
-void ND_function(reshape, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, ND_array(TYPE_S) * nd_arr_out);
-
-void ND_function(strip_dims, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, const ND_int n_dims_strip, \
-                                    const ND_int * stripped_idxs, ND_array(TYPE_S) * nd_arr_out);
-
-void ND_function(slice, TYPE_S) (const ND_int * start_idx, const ND_int * end_idx, const ND_int * step_idx, \
-                            const ND_array(TYPE_S) * nd_arr_in, ND_array(TYPE_S) * nd_arr_out );
-
-void ND_function(tranpose, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, const ND_int * order, ND_array(TYPE_S) * nd_arr_out);
 
 void ND_function(copy, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, ND_array(TYPE_S) * nd_arr_out);
 
@@ -210,61 +194,10 @@ void ND_function(matmulX, TYPE_S) (const char TransA, const char TransB, const T
                 const TYPE_L alpha, const TYPE_L beta, const ND_int ldA, const ND_int ldB, const ND_int ldC, \
                 const ND_int m, const ND_int n, const ND_int k);
 
-#if defined(COMPILE_ND_TBLIS)
-void ND_function(sum, TYPE_S) (char * str_A, char * str_C, ND_array(TYPE_S) * nd_arrA, ND_array(TYPE_S) * nd_arrC, const TYPE_L alpha, const TYPE_L beta);
-
-void ND_function(einsum, TYPE_S) (char * einsum_indices, ND_array(TYPE_S) * nd_arrA, ND_array(TYPE_S) * nd_arrB, ND_array(TYPE_S) * nd_arrC, \
-                                                                                                const TYPE_L alpha, const TYPE_L beta);
-#endif
-
 #endif
 
 
 
-/*************************************************** nd_fft.c functions (FFT) ****************************************************/
-/*********************************************************************************************************************************/
-/** these are fftw malloc and free. returns aligned memory to make use of simd fftw*/
-#if defined(COMPILE_ND_DOUBLE_COMPLEX) || defined(COMPILE_ND_SINGLE_COMPLEX) //|| defined(COMPILE_ND_FLOAT) || defined(COMPILE_ND_DOUBLE)
-
-
-#if defined(COMPILE_ND_DOUBLE_COMPLEX)
-typedef fftw_plan ND_function(FFT_plan, TYPE_S);
-#elif defined(COMPILE_ND_SINGLE_COMPLEX)
-typedef fftwf_plan ND_function(FFT_plan, TYPE_S);
-#endif
-
-void ND_function(FFT_malloc, TYPE_S) (ND_array(TYPE_S) * nd_arr_in);
-void ND_function(FFT_calloc, TYPE_S) (ND_array(TYPE_S) * nd_arr_in);
-
-void ND_function(FFT_free, TYPE_S) (ND_array(TYPE_S) * nd_arr_in);
-void ND_function(FFT_destroy, TYPE_S) (ND_array(TYPE_S) * nd_arr_in);
-
-void ND_function(fft, TYPE_S) (const ND_array(TYPE_S) * nd_arr_A, ND_array(TYPE_S) * nd_arr_B, const ND_int rank, \
-                               const ND_int * in_idx, int exp_sign, bool normalize);
-
-
-void ND_function(fft_planner, TYPE_S) (const ND_array(TYPE_S) * nd_arr_A, ND_array(TYPE_S) * nd_arr_B, const ND_int rank, \
-                        const ND_int * in_idx, int exp_sign, TYPE_L * norm_out, unsigned flag, ND_function(FFT_plan, TYPE_S) * fftplan);
-
-
-void ND_function(fft_execute_plan, TYPE_S) (ND_function(FFT_plan, TYPE_S) fftplan);
-
-void ND_function(fft_destroy_plan, TYPE_S) (ND_function(FFT_plan, TYPE_S) fftplan);
-
-int ND_function(fft_export_wisdom_to_file, TYPE_S) (const char *filename);
-
-int ND_function(fft_import_wisdom_to_file, TYPE_S) (const char *filename);
-
-void ND_function(fft_forget_wisdom, TYPE_S) (void);
-
-void ND_function(fft_cleanup, TYPE_S) (void);
-
-int ND_function(fft_init_threads, TYPE_S) (void);
-
-void ND_function(fft_plan_with_nthreads, TYPE_S) (int nthreads);
-
-void ND_function(fft_cleanup_threads, TYPE_S) (void);
-#endif
 
 
 

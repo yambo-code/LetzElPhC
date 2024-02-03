@@ -28,8 +28,6 @@ LIBS             :=  #-L/Users/murali/softwares/tblis/include -ltblis
 #Debug
 LD_FLAGS         := -g -fsanitize=address -Wl,-no_compact_unwind
 
-### donot change the below
-CFLAGS           += -DWITH_MPI_ERROR
 
 #### Notes Extra CFLAGS
 ### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
