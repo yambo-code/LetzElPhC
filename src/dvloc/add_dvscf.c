@@ -5,7 +5,7 @@ d/dR(Ha + Vxc) i.e induced potential
 #include "dvloc.h"
 
 
-void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc)
+void add_dvscf_qe(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc)
 {   
     /*
     This function adds dVloc is added to dVscf.

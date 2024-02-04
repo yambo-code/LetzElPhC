@@ -12,7 +12,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
                 int ikq, int ik, int kqsym, int ksym, ND_array(Nd_cmplxS) * dVlocr, \
                 const struct ELPH_MPI_Comms * Comm, ELPH_cmplx * elph_kq);
 
-void add_dvscf(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc);
+void add_dvscf_qe(ND_array(Nd_cmplxS) * dVscf, ND_array(Nd_cmplxS) * dVloc);
 
 
 void dVlocq(const ELPH_float * qpt, struct Lattice * lattice, struct Pseudo * pseudo, \

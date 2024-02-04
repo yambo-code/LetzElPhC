@@ -34,7 +34,8 @@ void compute_elphq(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * 
     /* compute the local part of the bare */
     dVlocq(qpt, lattice, pseudo, eigVec, Vlocr, Comm->commK);
     /* add bare local to induce part*/
-    add_dvscf(dVscfq, Vlocr); 
+    add_dvscf_qe(dVscfq, Vlocr); 
+
     /* now we can destroy Vlocr */
     ND_function(destroy, Nd_cmplxS) (Vlocr);
 

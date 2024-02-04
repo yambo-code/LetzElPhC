@@ -52,11 +52,6 @@ int main(int argc, char* argv[])
         for (ND_int ipot = 0; ipot < pseudo->ntype; ++ipot) free(pseudo_pots[ipot]);
         free(pseudo_pots);
     }
-
-    ND_int nk_totalBZ = lattice->kmap->dims[0];
-    if (nk_totalBZ/mpi_comms->nkpools < 1)
-        error_msg("There are no kpoints in some cpus, Make sure nkpool < # of kpoints in full BZ.");
-    
     
     //======= Now we got all we need. start the real computation =========
     // a) COmpute the D_mats and store them in the netcdf file
@@ -64,8 +59,10 @@ int main(int argc, char* argv[])
     bool dmat_file_found = false; /// FIX ME
     if (!dmat_file_found)
     {   
-        compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym, phonon->ph_sym_mats, \
-                                    phonon->ph_sym_tau, phonon->time_rev_array, mpi_comms);
+        compute_and_write_dmats("ndb.Dmats", wfcs, lattice, \
+                                phonon->nph_sym, phonon->ph_sym_mats, \
+                                phonon->ph_sym_tau, phonon->time_rev_array, \
+                                mpi_comms);
         // Debug
         //compute_and_write_dmats("ndb.Dmats", wfcs, lattice, lattice->sym_mat->dims[0], \
         lattice->sym_mat->data, lattice->frac_trans->data, lattice->time_rev_array, mpi_comms);

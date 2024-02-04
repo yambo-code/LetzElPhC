@@ -116,6 +116,8 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     /* broad cast (int nkBZ) */
     mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW );
     /*******/
+    if (nkBZ/Comm->nkpools < 1)
+        error_msg("There are no kpoints in some cpus, Make sure nkpool < # of kpoints in full BZ.");
 
     //printf("Debug-%d \n",1);
     ELPH_float dimensions[18];
