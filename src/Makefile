@@ -1,6 +1,6 @@
 include make.inc
 
-TARGET 		 :=  elphc
+TARGET 		 :=  lelphc
 
 #### make start here
 

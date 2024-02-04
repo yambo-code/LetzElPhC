@@ -30,10 +30,12 @@ void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
     ND_int read_buffer_count = fft_dims[0]*fft_dims[1]*lattice->nfftz_loc;
     // check for buffer overflow of read_buffer_count. This is because mpi takes 
     // parameter as int
-    if (read_buffer_count >= ((ND_int)INT_MAX)) error_msg("Buffer overflow in mpi count argument");
+    if (read_buffer_count >= ((ND_int)INT_MAX)) 
+        error_msg("Buffer overflow in mpi count argument");
 
     double complex * read_buf = malloc(sizeof(double complex)*read_buffer_count);
-    if (read_buf == NULL) error_msg("Allocation of dVscf read buffer failed");
+    if (read_buf == NULL) 
+        error_msg("Allocation of dVscf read buffer failed");
 
     MPI_File handle;
 
@@ -42,6 +44,9 @@ void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
         if (my_rank == 0) fprintf(stderr, "Unable to find the %s file \n",dvscf_file);
         error_msg("unable to open dvscf file");
     }
+    
+    // set the file pointer to 0
+    // mpi_error = MPI_File_seek(handle,0,MPI_SEEK_SET);
 
     // now read stuff
     ND_int nsets = nmodes*lattice->nmag;
@@ -49,7 +54,7 @@ void read_dvscf_qe(const char * dvscf_file, struct Lattice * lattice, \
     {   
         ELPH_cmplx * dvscf_tmp = dvscf_out + iset*read_buffer_count;
         
-        MPI_Offset offset = fft_dims[0]*fft_dims[1]*(iset*fft_dims[2] + lattice->nfftz_loc_shift);
+        MPI_Offset offset = sizeof(double complex)*fft_dims[0]*fft_dims[1]*(iset*fft_dims[2] + lattice->nfftz_loc_shift);
         
         MPI_File_read_at_all(handle, offset, read_buf, read_buffer_count, MPI_C_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
         // transpose from (FFTz, FFTy, FFTx)->(FFTx, FFTy, FFTz)
