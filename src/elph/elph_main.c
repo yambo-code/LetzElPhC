@@ -15,45 +15,34 @@ int main(int argc, char* argv[])
     
     int mpi_error;
 
+    char * dft_code = "qe";
+
     struct usr_input * input_data;
     // read the input file
     read_input_file(argv[1], &input_data, MPI_COMM_WORLD);
     // Note input parameters are broadcasted internally
     // All the parameters in input_data must be available for all cpus in MPI_COMM_WORLD
     
-    ND_int NK = input_data->nkpool;
-    ND_int NQ  = input_data->nqpool;
-    char * SAVEDIR  = input_data->save_dir ;
-    ND_int FIRST_BAND   = input_data->start_bnd ;
-    ND_int LAST_BAND  = input_data->end_bnd ;
-    char * PH_SAVE = input_data->ph_save_dir;
     char * kernel = input_data->kernel;
     
     struct ELPH_MPI_Comms * mpi_comms = malloc(sizeof(struct ELPH_MPI_Comms));
 
-    create_parallel_comms(NQ, NK, MPI_COMM_WORLD, mpi_comms);
+    create_parallel_comms(input_data->nqpool, input_data->nkpool, \
+                        MPI_COMM_WORLD, mpi_comms);
 
     struct Lattice * lattice    = malloc(sizeof(struct Lattice));
     struct Pseudo  * pseudo     = malloc(sizeof(struct Pseudo));
     struct Phonon  * phonon     = malloc(sizeof(struct Phonon));
     struct WFC * wfcs;
-
-    char ** pseudo_pots = NULL;
-    // read phonon stuff from qe (for abinit a similar routine needs to be written)
-    get_data_from_qe(lattice, phonon, PH_SAVE, &pseudo_pots, mpi_comms);
-
-    // read the YAMBO SAVE data
-    read_and_alloc_save_data(SAVEDIR, mpi_comms, FIRST_BAND, LAST_BAND, \
-            &wfcs, PH_SAVE, pseudo_pots, lattice, pseudo, phonon, "qe");
     
-    // free pseudo pots, no longer need
-    if (mpi_comms->commW_rank ==0)
-    {
-        for (ND_int ipot = 0; ipot < pseudo->ntype; ++ipot) free(pseudo_pots[ipot]);
-        free(pseudo_pots);
-    }
+
+    // read the SAVE data and phonon related data.
+    read_and_alloc_save_data(input_data->save_dir, mpi_comms, \
+            input_data->start_bnd, input_data->end_bnd, \
+            &wfcs, input_data->ph_save_dir, lattice, pseudo, \
+            phonon, dft_code);
     
-    //======= Now we got all we need. start the real computation =========
+    //======= Now start the real computation =========
     // a) COmpute the D_mats and store them in the netcdf file
     // ============= Dmats =====================
     bool dmat_file_found = false; /// FIX ME
@@ -84,16 +73,26 @@ int main(int argc, char* argv[])
     ND_function(malloc, Nd_cmplxS)(dVscf);
     ELPH_float * omega_ph = malloc(sizeof(ELPH_float)*nmodes);
 
+    
+    
     for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
     {   
         ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
-        // read dynamica matrix and dvscf for the iBZ qpt
-        get_dvscf_dyn_qe(PH_SAVE, lattice, iqpt_iBZg, eigVec->data, dVscf->data, omega_ph, mpi_comms);
+        // read dynamical matrix and dvscf for the iBZ qpt
+        if (!strcmp(dft_code,"qe"))
+        {
+            get_dvscf_dyn_qe(input_data->ph_save_dir, lattice, iqpt_iBZg, eigVec->data, dVscf->data, omega_ph, mpi_comms);
+            // qe dvscf only contains dV_Ha + dV_xc, we need to add the local part of pseudo
+        }
+        else error_msg("Currently only quantum espresso supported");
+        
         // Now compute the electron-phonon matrix elements
         //compute_elphq(wfcs, &lattice, &pseudo, qpt,  &eigVec, &dVscf, elph_kq, mpi_comms);
     }
-    // ELPH_cmplx Ry2Ha = pow(2,-1.5);
     
+    
+    
+    // ELPH_cmplx Ry2Ha = pow(2,-1.5);
 
     free(omega_ph);
     ND_function(destroy,Nd_cmplxS)(eigVec);
@@ -101,8 +100,7 @@ int main(int argc, char* argv[])
 
     // cleanup
     free_usr_input(input_data);
-    free_save_data(wfcs, lattice, pseudo);
-    free_phonon_data(phonon);
+    free_save_data(wfcs, lattice, pseudo, phonon);
     free(lattice); free(pseudo); free(phonon);
     free_parallel_comms(mpi_comms);
     free(mpi_comms);

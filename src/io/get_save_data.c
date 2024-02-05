@@ -17,6 +17,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ, \
             ND_int nG, ND_int G_shift, const char * save_dir, char * work_array, \
             ELPH_cmplx * out_wfc, MPI_Comm comm);
 
+static void free_phonon_data(struct Phonon * phonon);
 
 static bool check_ele_in_array(ND_int *arr_in, ND_int nelements, ND_int check_ele)
 {
@@ -36,7 +37,7 @@ static bool check_ele_in_array(ND_int *arr_in, ND_int nelements, ND_int check_el
 /* Function body */
 void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm, \
                 ND_int start_band, ND_int end_band, struct WFC ** wfcs, \
-                char * pseudo_dir, char ** pseudo_pots, struct Lattice * lattice, \
+                char * ph_save_dir, struct Lattice * lattice, \
                 struct Pseudo * pseudo, struct Phonon * phonon, char * dft_code)
 {
     /* This function allocates and reads data from SAVE dir.
@@ -50,21 +51,22 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     dimesnion : (read from input )
     ---
     pseudo : 
+    NOTE : ph_save_dir must be available on all processes
     */
-    /*
-    Expect wfcs, all are read by the single IO and broadcasted 
-
-    */
-
-    /*
-    pseudo_dir and pseudo_pots need to be defined only on 0-rank cpu of Comm->commW
-    */
-    int mpi_error;
     
-    if (Comm->commW_rank == 0) 
+    // Expect wfcs, all are read by the single IO and broadcasted 
+    
+    int mpi_error;
+
+    char ** pseudo_pots = NULL;
+    //pseudo_pots need to be defined only on 0-rank cpu of Comm->commW
+
+    // first get the basic dft/dfpt data from dft code (code specific) before anything
+    if(strcmp(dft_code,"qe")==0)
     {
-        if(!strstr(dft_code,"qe") ) error_msg("Only QE supported");
+        get_data_from_qe(lattice, phonon, ph_save_dir, &pseudo_pots, Comm);
     }
+    else error_msg("Only QE supported");
 
     lattice->nfftz_loc =  get_mpi_local_size_idx(lattice->fft_dims[2], \
                             &(lattice->nfftz_loc_shift), Comm->commK);
@@ -73,11 +75,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
 
     int dbid, ppid, tempid, retval; // file ids for ns.db1 , pp_pwscf*
 
-    ND_int pseudo_dir_len = 0;
-    if (Comm->commW_rank == 0) pseudo_dir_len = strlen(pseudo_dir);
-    mpi_error = MPI_Bcast(&pseudo_dir_len, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
-
-    char * temp_str = malloc(pseudo_dir_len + strlen(SAVEdir) + 100);
+    char * temp_str = malloc(strlen(ph_save_dir) + strlen(SAVEdir) + 100);
 
     int nkBZ ; // total kpoints in BZ
 
@@ -466,7 +464,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         {
             char temp_ele[3];
         
-            sprintf(temp_str, "%s/%s", pseudo_dir,pseudo_pots[ipot1]) ; 
+            sprintf(temp_str, "%s/%s", ph_save_dir,pseudo_pots[ipot1]) ; 
             /* read elements from pseudo pots */
             get_upf_element(temp_str, temp_ele); // only single process !
             bool found = false ;
@@ -496,7 +494,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         for (ND_int ipot = 0 ; ipot<pseudo->ntype ; ++ipot)
         {   
             ND_int iorder = pseudo_order[ipot];
-            sprintf(temp_str, "%s/%s", pseudo_dir,pseudo_pots[ipot]) ; 
+            sprintf(temp_str, "%s/%s", ph_save_dir,pseudo_pots[ipot]) ; 
             parse_upf2(temp_str, Zval + iorder, pseudo->Vloc_atomic + iorder, \
                 pseudo->r_grid + iorder, pseudo->rab_grid + iorder);
         }
@@ -533,6 +531,14 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
     create_vlocg_table(lattice, pseudo, Comm);
 
     // free all buffers
+    if (Comm->commW_rank ==0)
+    {   
+        if (pseudo_pots != NULL)
+        {
+            for (ND_int ipot = 0; ipot < pseudo->ntype; ++ipot) free(pseudo_pots[ipot]);
+            free(pseudo_pots);
+        }
+    }
     free(pseudo_order);
     free(atom_symbols);
     free(elements);
@@ -551,7 +557,8 @@ void free_phonon_data(struct Phonon * phonon)
     free(phonon->nqstar);
 }
 
-void free_save_data(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo)
+void free_save_data(struct WFC * wfcs, struct Lattice * lattice, \
+                    struct Pseudo * pseudo, struct Phonon * phonon)
 {   
     /* free fCoeff*/
     free_f_Coeff(lattice, pseudo); // NOTE this function must be called before freeing PP_table
@@ -585,6 +592,9 @@ void free_save_data(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo *
     ND_function(destroy, i)(lattice->kmap);
     free(lattice->kmap);
     free(lattice->atom_type);
+
+    // free the phonon data
+    free_phonon_data(phonon);
 
 }
 
