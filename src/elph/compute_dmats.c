@@ -23,14 +23,11 @@ void compute_and_write_dmats(const char * file_name, const struct WFC * wfcs, \
     {
         if ((nc_err = nc_create_par(file_name, NC_NETCDF4, Comm->commR, MPI_INFO_NULL, &ncid))) ERR(nc_err);
 
-        if ((nc_err = nc_def_dim(ncid, "nsym_ph",   nph_sym,        dimids)))   ERR(nc_err);
-        if ((nc_err = nc_def_dim(ncid, "nkpts",     nk_totalBZ,     dimids+1))) ERR(nc_err);
-        if ((nc_err = nc_def_dim(ncid, "nspin",     lattice->nspin, dimids+2))) ERR(nc_err);
-        if ((nc_err = nc_def_dim(ncid, "nbands_b",  lattice->nbnds, dimids+3))) ERR(nc_err);
-        if ((nc_err = nc_def_dim(ncid, "nbands_a",  lattice->nbnds, dimids+4))) ERR(nc_err);
-        if ((nc_err = nc_def_dim(ncid, "re_im",     2,              dimids+5))) ERR(nc_err);
-
-        nc_def_var(ncid, "Dmats", NetCDF_IO_FTYPE, 6, dimids, &varid);
+        ND_function(def_ncVar, Nd_cmplxS) (ncid, &varid, 5, nd_idx{nph_sym,nk_totalBZ, \
+                lattice->nspin,lattice->nbnds,lattice->nbnds}, "Dmats", \
+                (char *[]){"nsym_ph","nkpts","nspin","nbands_b","nbands_a"}, \
+                (size_t[]){1,1,lattice->nspin,lattice->nbnds,lattice->nbnds,2});
+        
         // Make the access INDEPENDENT as not all can call the put_var function simultaneously
         if((nc_err = nc_var_par_access(ncid, varid, NC_INDEPENDENT))) ERR(nc_err);
 

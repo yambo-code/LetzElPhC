@@ -51,13 +51,13 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
     //(nspin,nbnds,nspinor,npw)
 
     ND_int nspin, nbndsk, nbndskq, nspinor, nmodes, npwkq, npwk ;
-    nspin   = wfc_k->dims[0] ;
-    nbndsk  = wfc_k->dims[1] ;
-    nbndskq = wfc_kq->dims[1];
-    nspinor = wfc_k->dims[2] ;
+    nspin   = lattice->nspin;
+    nbndsk  = lattice->nbnds;
+    nbndskq = lattice->nbnds;
+    nspinor = lattice->nspinor;
     npwkq   = Gkq->dims[0] ;
     npwk    = Gk->dims[0] ;
-    nmodes  = dVlocr->dims[0];
+    nmodes  = lattice->atomic_pos->dims[0]*3;
 
     ELPH_float ulmveckq[3]; // ulmveckq is shift that is applyed to k+q vector i.e -(Skq*kq - S*k - q)
     ELPH_float tempSkq[3] = {0,0,0}; //S2*k2
@@ -198,7 +198,7 @@ void elphLocal(const ELPH_float * qpt, struct WFC * wfcs, struct Lattice * latti
         for (ND_int i =0 ; i<elph_buffer_len; ++i) elph_kq[i] = 0.0 ;
     }
     
-    ND_int nmag = dVlocr->dims[1]; /* nmag = 1 for non magnetic and = 2/4 for spin polarized/magnetic systems */
+    ND_int nmag = lattice->nmag; /* nmag = 1 for non magnetic and = 2/4 for spin polarized/magnetic systems */
     /* nmag is the spinor dimension of the change in potential */
     if (nmag == 2 && nspin != 2 ) error_msg("Incompatible dvscf ");
     if (nmag == 2 && nspinor != 1 ) error_msg("Incompatible dvscf ");

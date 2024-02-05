@@ -4,9 +4,11 @@
 #include "../io/io.h"
 
 
-void compute_elphq(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, \
-            ELPH_float * qpt, ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * dVscfq, 
-            ELPH_cmplx * elph_kq, const struct ELPH_MPI_Comms * Comm);
+void compute_and_write_elphq(struct WFC * wfcs, struct Lattice * lattice, \
+            struct Pseudo * pseudo, struct Phonon  * phonon, \
+            const ND_int iqpt, ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * dVscfq, 
+            const int ncid, const int varid, const bool non_loc, const bool kminusq, \
+            const struct ELPH_MPI_Comms * Comm);
 
 
 void compute_and_write_dmats(const char * file_name, const struct WFC * wfcs, \

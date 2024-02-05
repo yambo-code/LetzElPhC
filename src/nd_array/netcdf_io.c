@@ -211,86 +211,57 @@ void ND_function(readVar_sub, TYPE_S) (const int ncid, const char* var_name, ND_
 }
 
 
-
-
-/* ND_function to write to netCDF */
-void ND_function(writeVar, TYPE_S) (const int ncid, const char* var_name, const ND_array(TYPE_S) * nd_arr_in, char ** dim_names, size_t * chunksize)
+/* ND_function to create a varible to netCDF */
+void ND_function(def_ncVar, TYPE_S) (const int ncid, int * varid, ND_int rank, \
+                ND_int * dims, const char* var_name, char ** dim_names, size_t * chunksize)
 {
-    /* Dumps the ND_array(TYPE_S) to file with filemane (file_name) and dimenstion name (dim_names)
-        varible names
-        Ex: ND_function(write, TYPE_S) ("nc.temp", "elph_ex", &temp_array, (char * [5]) {"nq", "modes", "Sf", "Si", "re_im"});
-    */
-    if (nd_arr_in->rank == NULL) error_msg("Cannot write a uninitialized array");
-
-    if (nd_arr_in->data == NULL) error_msg("Cannot write a empty array");
+    // creates a netcdf variable and returns varid
 
     int retval; // error iD 
-
-    int varid; // var iDs
+    int tmp_varid; // var iDs // return value
 
     if ((retval = nc_inq(ncid, NULL, NULL, NULL, NULL))) ERR(retval); // check the ncid
 
+    int * dimids = malloc((rank + 1) * sizeof(int));
+    //
+    for (ND_int i =0 ; i< rank; ++i )
+    {   
+        if ((retval = nc_inq_dimid(ncid, dim_names[i], dimids+i)))
+        {
+            if ((retval = nc_def_dim(ncid, dim_names[i],  dims[i], dimids+i))) ERR(retval);   
+            // get ids for the omega dimensions
+        }
+        /* Check is dim len are consistant */
+        size_t temp_dim ;
+        if ((retval = nc_inq_dimlen(ncid,dimids[i],&temp_dim))) ERR(retval);
+        if ((ND_int)temp_dim != dims[i]) 
+            error_msg("Dimension name already exist with different dimension length");
+    }
+    
     #if defined(COMPILE_ND_DOUBLE_COMPLEX) || defined(COMPILE_ND_SINGLE_COMPLEX)
-
-    int * dimids = malloc((*(nd_arr_in->rank) + 1) * sizeof(int));
-    //
-    for (ND_int i =0 ; i< (*(nd_arr_in->rank)); ++i )
-    {   
-        if ((retval = nc_inq_dimid(ncid, dim_names[i], dimids+i)))
-        {
-            if ((retval = nc_def_dim(ncid, dim_names[i],  (nd_arr_in->dims)[i], dimids+i))) ERR(retval);   // get ids for the omega dimensions
-        }
-        /* Check is dim len are consistant */
-        size_t temp_dim ;
-        if ((retval = nc_inq_dimlen(ncid,dimids[i],&temp_dim))) ERR(retval);
-        if ((ND_int)temp_dim != (nd_arr_in->dims)[i]) error_msg("Dimension name already exist with different dimension length");
-    }
-    if ((retval = nc_inq_dimid(ncid, "re_im", dimids+ (*(nd_arr_in->rank)) )))
+    if ((retval = nc_inq_dimid(ncid, "re_im", dimids+ rank )))
     {
-        if ((retval = nc_def_dim(ncid, "re_im",  2, dimids+ (*(nd_arr_in->rank))  ))) ERR(retval);   // get ids for the omega dimensions
-    }//
-
-    if ((retval = nc_def_var(ncid, var_name, NetCDF_IO_TYPE, (int) (1 + *(nd_arr_in->rank)), dimids, &varid))) ERR(retval); // Writing the data with name Raman_tensor
-    
-    #else
-    
-    int * dimids = malloc((*(nd_arr_in->rank)) * sizeof(int));
-    //
-    for (ND_int i =0 ; i< (*(nd_arr_in->rank)); ++i )
-    {   
-        if ((retval = nc_inq_dimid(ncid, dim_names[i], dimids+i)))
-        {
-            if ((retval = nc_def_dim(ncid, dim_names[i],  (nd_arr_in->dims)[i], dimids+i))) ERR(retval);   // get ids for the omega dimensions
-        }
-        /* Check is dim len are consistant */
-        size_t temp_dim ;
-        if ((retval = nc_inq_dimlen(ncid,dimids[i],&temp_dim))) ERR(retval);
-        if ((ND_int)temp_dim != (nd_arr_in->dims)[i]) error_msg("Dimension name already exist with different dimension length");
+        if ((retval = nc_def_dim(ncid, "re_im",  2, dimids+ rank  ))) ERR(retval);   
     }
-    //
-    if ((retval = nc_def_var(ncid, var_name, NetCDF_IO_TYPE, (int) (*(nd_arr_in->rank)), dimids, &varid))) ERR(retval); // Writing the data with name Raman_tensor
-    
+    if ((retval = nc_def_var(ncid, var_name, NetCDF_IO_TYPE, 1 + rank, dimids, &tmp_varid))) ERR(retval); 
+    #else
+    if ((retval = nc_def_var(ncid, var_name, NetCDF_IO_TYPE,  rank, dimids, &tmp_varid))) ERR(retval); 
     #endif
 
     // Set chunking if there
     if (chunksize == NULL)
     {
-        if ((retval = nc_def_var_chunking(ncid, varid, NC_CONTIGUOUS, NULL))) ERR(retval);
+        if ((retval = nc_def_var_chunking(ncid, tmp_varid, NC_CONTIGUOUS, NULL))) ERR(retval);
     }
     else
     {
-        if ((retval = nc_def_var_chunking(ncid, varid, NC_CHUNKED, chunksize))) ERR(retval);
+        if ((retval = nc_def_var_chunking(ncid, tmp_varid, NC_CHUNKED, chunksize))) ERR(retval);
     }
-    
-
-    if ((retval = nc_enddef(ncid))) ERR(retval);
-
-    if ((retval =  nc_put_var(ncid, varid, nd_arr_in->data))) ERR(retval);
-
     free(dimids);
 
-    
-} 
+    *varid = tmp_varid;
+
+}
 
 
 

@@ -146,7 +146,8 @@ void ND_function(copy, TYPE_S) (const ND_array(TYPE_S) * nd_arr_in, ND_array(TYP
 
 void ND_function(readVar, TYPE_S) (const int ncid, const char* var_name, ND_array(TYPE_S) * nd_arr_in);
 void ND_function(readVar_sub, TYPE_S) (const int ncid, const char* var_name, ND_array(TYPE_S) * nd_arr_in, ...);
-void ND_function(writeVar, TYPE_S) (const int ncid, const char* var_name, const ND_array(TYPE_S) * nd_arr_in, char ** dim_names, size_t * chunksize);
+void ND_function(def_ncVar, TYPE_S) (const int ncid, int * varid, ND_int rank, \
+                ND_int * dims, const char* var_name, char ** dim_names, size_t * chunksize);
 /*************************************************** linalg.c ND_functions **********************************************************/
 /*********************************************************************************************************************************/
 

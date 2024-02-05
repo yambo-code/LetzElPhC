@@ -178,8 +178,8 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
     /* ----- */
     /* (ispin, nbnd, nspinor,npw) */
     ND_int nspin, nbndK ;
-    nspin  = wfc_K->dims[0] ;
-    nbndK  = wfc_K->dims[1] ;
+    nspin  = lattice->nspin;
+    nbndK  = lattice->nbnds;
     
     ELPH_cmplx su2K[4]  = {1,0,0,1};
     ELPH_cmplx su2Kp[4] = {1,0,0,1};
@@ -396,7 +396,7 @@ void add_elphNonLocal(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo
     if (Comm->commK_rank == 0) 
     {
         /* Convert to mode basis */
-        ND_int nmodes = eigVec->dims[0];
+        ND_int nmodes = lattice->atomic_pos->dims[0]*3;
         ND_int elph_stride = nspin*nbndK*nbndK;
 
         ELPH_cmplx pre_facNL = -2*ELPH_PI*I*ELPH_e2; // this is a prefactor from VKL, but we multiply it here

@@ -1,54 +1,54 @@
 #include "elph.h"
 
 
-void compute_elphq(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * pseudo, \
-            ELPH_float * qpt, ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * dVscfq, 
-            ELPH_cmplx * elph_kq, const struct ELPH_MPI_Comms * Comm)
+void compute_and_write_elphq(struct WFC * wfcs, struct Lattice * lattice, \
+            struct Pseudo * pseudo, struct Phonon  * phonon, \
+            const ND_int iqpt, ND_array(Nd_cmplxS) * eigVec, ND_array(Nd_cmplxS) * dVscfq, 
+            const int ncid, const int varid, const bool non_loc, const bool kminusq, \
+            const struct ELPH_MPI_Comms * Comm)
 {   
     
     /*
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
     ((k, nmodes, nspin, nbands, nbands))
     */
-
     /* distribute k points */
     int mpi_error;
     ND_int nk_totalBZ = lattice->kmap->dims[0];
 
-    ND_int kshift, nk_this_pool;
+    ELPH_float * qpt = phonon->qpts_iBZ + iqpt*3;
+
+    ND_int qpos = 0; // positon of this iBZ qpoint in full q point list
+    for (ND_int i = 0; i < iqpt; ++i) qpos += phonon->nqstar[i];
     
-    nk_this_pool = distribute_to_grps(nk_totalBZ, Comm->nkpools, \
+    ND_int kshift;
+    ND_int nk_this_pool = distribute_to_grps(nk_totalBZ, Comm->nkpools, \
                     Comm->commQ_rank/Comm->commK_size, &kshift);
     
     if (nk_this_pool < 1)
+    {
         error_msg("There are no kpoints in some cpus, Make sure nkpool < # of kpoints in full BZ.");
-
-    /* Computing the  change in local potential */
-    ND_array(Nd_cmplxS) Vlocr[1];
-    // allocate memory for Vlocr
-    ND_int dim_Buffer[4] = {eigVec->dims[0],dVscfq->dims[2], dVscfq->dims[3], dVscfq->dims[4] }; //(nmodes, Nx, Ny, Nz_loc)
-
-    ND_function(init, Nd_cmplxS) (Vlocr, 4, dim_Buffer);
-    ND_function(malloc, Nd_cmplxS)  (Vlocr);
-
-    /* compute the local part of the bare */
-    dVlocq(qpt, lattice, pseudo, eigVec, Vlocr, Comm->commK);
-    /* add bare local to induce part*/
-    add_dvscf_qe(dVscfq, Vlocr); 
-
-    /* now we can destroy Vlocr */
-    ND_function(destroy, Nd_cmplxS) (Vlocr);
-
+    }
     /* get the k point indices and symmetries */
     int * kmap  = lattice->kmap->data ; 
     int * KplusQidxs = malloc((lattice->kmap->dims[0])*sizeof(int));
     
     get_KplusQ_idxs(lattice->kpt_fullBZ_crys, KplusQidxs , qpt, lattice->alat_vec, true);
     
-    ND_int nbnd = wfcs->wfc->dims[1] ; 
-    ND_int elph_kstride = (eigVec->dims[0]) * (lattice->nspin) *nbnd * nbnd; // 1st stride value of elph_kq
-    
+    ND_int nbnds = lattice->nbnds;
+    ND_int nmodes = lattice->atomic_pos->dims[0]*3;
+
+    ELPH_cmplx * elph_kq_mn  = NULL;
+    if (Comm->commK_rank ==0)
+    {
+        elph_kq_mn = calloc(nbnds*nbnds*lattice->nspin*nmodes,sizeof(ELPH_cmplx)); 
+    }
+    //// (nu, nspin, mk, nk+q)
     /* Now Compute elph-matrix elements for each kpoint */
+
+    size_t startp[7]={0, 0, 0, 0, 0, 0, 0};
+    size_t countp[7]={1, 1, nmodes, lattice->nspin, nbnds, nbnds, 2};
+    
     for (ND_int ii =0 ; ii <nk_this_pool; ++ii )
     {   
         /* compute the global k index */
@@ -58,16 +58,25 @@ void compute_elphq(struct WFC * wfcs, struct Lattice * lattice, struct Pseudo * 
         int ikq   = *(kmap + KplusQidxs[i]*2)      ;
         int kqsym = *(kmap + KplusQidxs[i]*2 + 1)  ;
         
-        ELPH_cmplx * elph_kq_mn = elph_kq + ii*elph_kstride ;
-        
         elphLocal(qpt, wfcs, lattice, ikq, ik, kqsym, ksym, dVscfq, Comm, elph_kq_mn);
         /* add the non local part elements */
         // WARNING : non local must be added after elphLocal else U.B
-        add_elphNonLocal(wfcs, lattice, pseudo, ikq, ik, kqsym, ksym, eigVec, elph_kq_mn, Comm);
+        if (non_loc)
+        {
+            add_elphNonLocal(wfcs, lattice, pseudo, ikq, ik, kqsym, ksym, eigVec, elph_kq_mn, Comm);
+        }
+        startp[0] = qpos;   startp[1] = i;
+        int nc_err;
+        if (Comm->commK_rank ==0)
+        {
+            if ((nc_err = nc_put_vara(ncid, varid, startp, countp, elph_kq_mn))) ERR(nc_err);
+        }
+        if (i == 5 && Comm->commK_rank ==0) printf("%f %f \n",creal(elph_kq_mn[4678]), cimag(elph_kq_mn[4678]));
     }
     // free wfc buffers
-    free(KplusQidxs);
+    if (Comm->commK_rank ==0) free(elph_kq_mn);
 
+    free(KplusQidxs);
 }
 
 
