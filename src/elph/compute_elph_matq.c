@@ -71,6 +71,7 @@ void compute_and_write_elphq(struct WFC * wfcs, struct Lattice * lattice, \
         {
             if ((nc_err = nc_put_vara(ncid, varid, startp, countp, elph_kq_mn))) ERR(nc_err);
         }
+        // debug
         if (i == 5 && Comm->commK_rank ==0) printf("%f %f \n",creal(elph_kq_mn[4678]), cimag(elph_kq_mn[4678]));
     }
     // free wfc buffers

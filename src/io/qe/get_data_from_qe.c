@@ -58,10 +58,12 @@ void get_data_from_qe(struct Lattice * lattice, \
     }
     
     // Bcast all the variables
+    
     mpi_error = MPI_Bcast(lat_vec, 9, ELPH_MPI_float, 0, Comm->commW );
     mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW );
     mpi_error = MPI_Bcast(alat, 3, ELPH_MPI_float, 0, Comm->commW );
     
+    mpi_error = MPI_Bcast(&lattice->dimension, 1, MPI_CHAR, 0, Comm->commW );
     mpi_error = MPI_Bcast(&lattice->nmag, 1, ELPH_MPI_ND_INT, 0, Comm->commW); 
     mpi_error = MPI_Bcast(&phonon->nph_sym, 1, ELPH_MPI_ND_INT, 0, Comm->commW); 
 
