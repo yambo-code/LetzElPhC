@@ -495,7 +495,7 @@ void read_and_alloc_save_data(char * SAVEdir, const struct ELPH_MPI_Comms * Comm
         {   
             ND_int iorder = pseudo_order[ipot];
             sprintf(temp_str, "%s/%s", ph_save_dir,pseudo_pots[ipot]) ; 
-            parse_upf2(temp_str, Zval + iorder, pseudo->Vloc_atomic + iorder, \
+            parse_upf(temp_str, Zval + iorder, pseudo->Vloc_atomic + iorder, \
                 pseudo->r_grid + iorder, pseudo->rab_grid + iorder);
         }
     }

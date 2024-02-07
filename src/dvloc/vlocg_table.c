@@ -52,7 +52,7 @@ void create_vlocg_table(const struct Lattice * lattice, \
 
     if (bmin > 0.001) bmin = 0.001; // set some bare minimum
     
-    gmax = (1.7*Nmax +3*fabs(pseudo->vloc_table->qmax_abs))*bmax; 
+    gmax = (1.7*(Nmax+4.0) +3*fabs(pseudo->vloc_table->qmax_abs))*bmax; 
     // we choose 1.7 instead of 1.5
     npts = ceil(gmax/bmin);
     gmin = 0.0;

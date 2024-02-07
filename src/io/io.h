@@ -40,7 +40,7 @@ void Bcast_ND_arrayCmplx(ND_array(Nd_cmplxS) * array_in, bool alloc_mem, int roo
 void Bcast_wfc(struct WFC * wfc, bool alloc_mem, int root, MPI_Comm comm);
 
 
-void parse_upf2(const char * filename, ELPH_float * Zval, ND_array(Nd_floatS)* Vloc, \
+void parse_upf(const char * filename, ELPH_float * Zval, ND_array(Nd_floatS)* Vloc, \
                 ND_array(Nd_floatS)* r_grid, ND_array(Nd_floatS)* rab_grid);
 void get_upf_element(const char * filename, char* atomic_sym);
 
