@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+IndentWidth: 4
+IncludeBlocks: Preserve
+InsertBraces: true
+BreakBeforeBraces: Allman
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: 1
