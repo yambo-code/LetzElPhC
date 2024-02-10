@@ -52,8 +52,8 @@ int main(int argc, char* argv[])
                                 phonon->ph_sym_tau, phonon->time_rev_array, \
                                 mpi_comms);
         // Debug
-        //compute_and_write_dmats("ndb.Dmats", wfcs, lattice, lattice->sym_mat->dims[0], \
-        lattice->sym_mat->data, lattice->frac_trans->data, lattice->time_rev_array, mpi_comms);
+        //compute_and_write_dmats("ndb.Dmats", wfcs, lattice, lattice->sym_mat->dims[0], 
+        // lattice->sym_mat->data, lattice->frac_trans->data, lattice->time_rev_array, mpi_comms);
     }       
     // b) Compute elph 
     // ============= ELPH iBZ computation =============
