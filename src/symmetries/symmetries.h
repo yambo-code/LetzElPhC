@@ -1,39 +1,22 @@
-#pragma once 
-#include "../elphC.h"
+#pragma once
 #include "../common/numerical_func.h"
 #include "../common/parallel.h"
+#include "../elphC.h"
 
-#define Function(FUN_NAME, TYPE_SMALL)                  Function_HIDDEN(FUN_NAME, TYPE_SMALL)
-#define Function_HIDDEN(FUN_NAME, TYPE_SMALL)           ELPH_ ## TYPE_SMALL ## FUN_NAME
+ND_int bz_expand(const ND_int Nibz, const ND_int Nsym,
+                 const ELPH_float* ibz_kpts, const struct symmetry* symms,
+                 const ELPH_float* lat_vec, ELPH_float* kpoints,
+                 ND_int* kstar, int* kmap);
 
-void bz_expand(ND_array(Nd_floatS) * ibz_kpts, ND_array(Nd_floatS) * sym_mats, \
-            ND_array(Nd_floatS) * lat_vec,ND_array(Nd_floatS) * kpoints, nd_arr_i * kmap);
+void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
+                     const ELPH_float* Rsym_mat, const ELPH_float* tauR,
+                     const bool tim_revR, const ND_int ikBZ,
+                     ELPH_cmplx* Dkmn_rep, const struct ELPH_MPI_Comms* Comm);
 
-void get_KplusQ_idxs(ND_array(Nd_floatS) * kpoints, int * KplusQidxs , \
-                    ELPH_float * Q_pt, ND_array(Nd_floatS) * lat_vec, bool Qincrystal);
+void elph_q_rotate(const ELPH_cmplx* elph_mat_q, const struct Lattice* lattice,
+                   const ELPH_cmplx* Dmats, const ELPH_float* symS,
+                   const bool tim_revS, const ELPH_cmplx fac,
+                   const ELPH_float* qpt, ELPH_cmplx* restrict elph_mat_Sq);
 
-bool Function(isVECpresent, Nd_cmplxS) ( const ND_array(Nd_floatS) * array,  \
-                                const ELPH_float * vec, ND_int * idx  );
-
-
-void electronic_reps(const struct WFC * wfcs, const struct Lattice * lattice, \
-    const ELPH_float * Rsym_mat,  const ELPH_float * tauR, \
-    const bool tim_revR, const ND_int ikBZ, ELPH_cmplx * Dkmn_rep, \
-    const struct ELPH_MPI_Comms * Comm);
-
-
-void elph_q_rotate(const ELPH_cmplx * elph_mat_q, const struct Lattice * lattice, \
-            const ELPH_cmplx * Dmats, const ELPH_float * symS, const bool tim_revS, \
-            const ELPH_cmplx fac, const ELPH_float * qpt, ELPH_cmplx * restrict elph_mat_Sq);
-
-
-
-
-
-
-
-
-
-
-
-
+ND_int find_inv_symm_idx(ND_int nsym, const ELPH_float* Smat,
+                         const ELPH_float* point_group, const bool trans);
