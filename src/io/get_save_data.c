@@ -69,7 +69,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     char* pp_head = "ns.kb_pp_pwscf"; // Change this accordingly
     if (strcmp(dft_code, "qe") == 0)
     {
-        char* pp_head = "ns.kb_pp_pwscf";
+        //char* pp_head = "ns.kb_pp_pwscf";
         get_data_from_qe(lattice, phonon, ph_save_dir, &pseudo_pots, Comm);
     }
     else
