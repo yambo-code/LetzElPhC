@@ -6,8 +6,10 @@
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              struct Pseudo* pseudo, struct Phonon* phonon,
                              const ND_int iqpt, ELPH_cmplx* eigVec,
-                             ELPH_cmplx* dVscfq, const int ncid,
-                             const int varid, const bool non_loc,
+                             ELPH_cmplx* dVscfq, 
+                             const int ncid_elph, const int varid_elph, 
+                             const int ncid_dmat, const int varid_dmat, 
+                             const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm);
 

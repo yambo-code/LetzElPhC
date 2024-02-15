@@ -62,11 +62,25 @@ int main(int argc, char* argv[])
     ELPH_float* omega_ph = malloc(sizeof(ELPH_float) * nmodes);
     // buffer for storing phonon freq
 
-    int ncid_elph, nc_err;
-    int varid_eig, varid_elph, varid_omega;
+    int ncid_elph, ncid_dmat, nc_err;
+    int varid_eig, varid_elph, varid_omega, varid_dmat;
     // Define netcdf variables
     if (mpi_comms->commK_rank == 0)
-    {
+    {   
+        // open Dmat file
+        if ((nc_err = nc_open_par("ndb.Dmats", NC_NOWRITE, mpi_comms->commR,
+                                    MPI_INFO_NULL, &ncid_dmat)))
+        {
+            ERR(nc_err);
+        }
+
+        // get dmat var id for dmats
+        if ((nc_err = nc_inq_varid(ncid_dmat, "Dmats", &varid_dmat)))
+        {
+            ERR(nc_err);
+        }
+
+        // create elph file
         if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4, mpi_comms->commR,
                                     MPI_INFO_NULL, &ncid_elph)))
         {
@@ -150,7 +164,8 @@ int main(int argc, char* argv[])
         }
         // Now compute the electron-phonon matrix elements
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
-                                eigVec, dVscf, ncid_elph, varid_elph, true,
+                                eigVec, dVscf, ncid_elph, varid_elph, 
+                                ncid_dmat, varid_dmat, true,
                                 false, mpi_comms);
     }
 

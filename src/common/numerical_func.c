@@ -15,6 +15,7 @@ static ELPH_float factorial(ND_int n);
 
 /* Function bodies */
 
+
 /* Function to compute legendre transforms */
 ELPH_float legendre(int l_val, int m_val, ELPH_float x_in)
 {
@@ -511,3 +512,15 @@ void get_KplusQ_idxs(const ND_int Nbz, const ELPH_float* kpoints,
         }
     }
 }
+
+
+// some helper functions
+void swap_ints(int * restrict a, int * restrict b)
+{
+    const int c = *b;
+    *b = *a;
+    *a = c;
+}
+
+
+
