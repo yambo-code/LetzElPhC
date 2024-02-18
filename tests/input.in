@@ -1,5 +1,3 @@
-[input] ### This is a mandatory line
-
 nkpool          = 1                                    # k point parallelization
 nqpool          = 1                                    # q point parallelization
 start_bnd       = 1                                  # starting band

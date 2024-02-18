@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
             (ND_int[]) { phonon->nq_BZ, lattice->nkpts_BZ, nmodes,
                          lattice->nspin, lattice->nbnds, lattice->nbnds, 2 },
             "elph_mat",
-            (char*[]) { "nq", "nk", "nmodes", "nspin", "nband_k", "nband_kq", "re_im" },
+            (char*[]) { "nq", "nk", "nmodes", "nspin", "initial_band", "final_band_PH_abs", "re_im" },
             (size_t[]) { 1, 1, nmodes, lattice->nspin, lattice->nbnds,
                          lattice->nbnds, 2 });
     }
@@ -167,6 +167,21 @@ int main(int argc, char* argv[])
                                 eigVec, dVscf, ncid_elph, varid_elph, 
                                 ncid_dmat, varid_dmat, true,
                                 false, mpi_comms);
+    }
+
+
+    if (mpi_comms->commK_rank == 0)
+    {
+        // close files
+        if ((nc_err = nc_close(ncid_elph)))
+        {
+            ERR(nc_err);
+        }
+
+        if ((nc_err = nc_close(ncid_dmat)))
+        {
+            ERR(nc_err);
+        }
     }
 
     // ELPH_cmplx Ry2Ha = pow(2,-1.5);

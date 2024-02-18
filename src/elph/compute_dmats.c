@@ -32,7 +32,7 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
             (ND_int[]) { nph_sym, nk_totalBZ, lattice->nspin, lattice->nbnds,
                          lattice->nbnds, 2 },
             "Dmats",
-            (char*[]) { "nsym_ph", "nkpts", "nspin", "nbands_b", "nbands_a", "re_im" },
+            (char*[]) { "nsym_ph", "nkpts", "nspin", "Rk_band", "k_band", "re_im" },
             (size_t[]) { 1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2 });
 
         // Make the access INDEPENDENT as not all can call the put_var function

@@ -18,7 +18,7 @@ void init_usr_input(struct usr_input** input)
     *input = malloc(sizeof(struct usr_input));
     struct usr_input* inp = *input;
 
-    inp->save_dir = calloc(MAX_STR_INPUT, sizeof(char));
+    inp->save_dir = calloc(MAX_STR_INPUT, 1);
     inp->ph_save_dir = inp->save_dir + 600;
     inp->kernel = inp->save_dir + 1200;
 
@@ -75,51 +75,43 @@ static int handler(void* user, const char* section, const char* name,
         error_msg("Invalid input");
     }
 
-    if (strcmp(section, "input") == 0)
+    if (strcmp(name, "nkpool") == 0)
     {
-        if (strcmp(name, "nkpool") == 0)
+        inp->nkpool = atoi(value);
+    }
+    else if (strcmp(name, "nqpool") == 0)
+    {
+        inp->nqpool = atoi(value);
+    }
+    else if (strcmp(name, "start_bnd") == 0)
+    {
+        inp->start_bnd = atoi(value);
+    }
+    else if (strcmp(name, "end_bnd") == 0)
+    {
+        inp->end_bnd = atoi(value);
+    }
+    else if (strcmp(name, "save_dir") == 0)
+    {
+        strcpy(inp->save_dir, value);
+    }
+    else if (strcmp(name, "ph_save_dir") == 0)
+    {
+        strcpy(inp->ph_save_dir, value);
+    }
+    else if (strcmp(name, "kernel") == 0)
+    {
+        strcpy(inp->kernel, value);
+        for (char* p = inp->kernel; *p; ++p)
         {
-            inp->nkpool = atoi(value);
-        }
-        else if (strcmp(name, "nqpool") == 0)
-        {
-            inp->nqpool = atoi(value);
-        }
-        else if (strcmp(name, "start_bnd") == 0)
-        {
-            inp->start_bnd = atoi(value);
-        }
-        else if (strcmp(name, "end_bnd") == 0)
-        {
-            inp->end_bnd = atoi(value);
-        }
-        else if (strcmp(name, "save_dir") == 0)
-        {
-            strcpy(inp->save_dir, value);
-        }
-        else if (strcmp(name, "ph_save_dir") == 0)
-        {
-            strcpy(inp->ph_save_dir, value);
-        }
-        else if (strcmp(name, "kernel") == 0)
-        {
-            strcpy(inp->kernel, value);
-            for (char* p = inp->kernel; *p; ++p)
-            {
-                *p = toupper(*p);
-            }
-        }
-        else
-        {
-            error_msg("Invalid variable in input file.");
+            *p = toupper(*p);
         }
     }
     else
     {
-        // error_msg("Invalid variable in input file");
-        error_msg(
-            "Invalid input file. input file must contain [input] at the top.");
+        error_msg("Invalid variable in input file.");
     }
+
     return 1;
 }
 
