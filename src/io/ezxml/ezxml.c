@@ -27,13 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifndef EZXML_NOMMAP
-#include <sys/mman.h>
-#endif // EZXML_NOMMAP
-#include <sys/stat.h>
-
 #include "ezxml.h"
 
 #define EZXML_WS "\t\r\n " // whitespace
@@ -449,7 +442,7 @@ void ezxml_proc_inst(ezxml_root_t root, char* s, size_t len)
         root->pi[i] = malloc(sizeof(char*) * 3);
         root->pi[i][0] = target;
         root->pi[i][1] = (char*)(root->pi[i + 1] = NULL); // terminate pi list
-        root->pi[i][2] = strdup(""); // empty document position list
+        root->pi[i][2] = calloc(1,1); // empty document position list
     }
 
     while (root->pi[i][j])
@@ -968,8 +961,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
 }
 
 // Wrapper for ezxml_parse_str() that accepts a file stream. Reads the entire
-// stream into memory and then parses it. For xml files, use ezxml_parse_file()
-// or ezxml_parse_fd()
+// stream into memory and then parses it. 
 ezxml_t ezxml_parse_fp(FILE* fp)
 {
     ezxml_root_t root;
@@ -998,54 +990,6 @@ ezxml_t ezxml_parse_fp(FILE* fp)
     return &root->xml;
 }
 
-// A wrapper for ezxml_parse_str() that accepts a file descriptor. First
-// attempts to mem map the file. Failing that, reads the file into memory.
-// Returns NULL on failure.
-ezxml_t ezxml_parse_fd(int fd)
-{
-    ezxml_root_t root;
-    struct stat st;
-    size_t l;
-    void* m;
-
-    if (fd < 0)
-    {
-        return NULL;
-    }
-    fstat(fd, &st);
-
-#ifndef EZXML_NOMMAP
-    l = (st.st_size + sysconf(_SC_PAGESIZE) - 1) & ~(sysconf(_SC_PAGESIZE) - 1);
-    if ((m = mmap(NULL, l, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0)) != MAP_FAILED)
-    {
-        madvise(m, l, MADV_SEQUENTIAL); // optimize for sequential access
-        root = (ezxml_root_t)ezxml_parse_str(m, st.st_size);
-        madvise(m, root->len = l, MADV_NORMAL); // put it back to normal
-    }
-    else
-    { // mmap failed, read file into memory
-#endif // EZXML_NOMMAP
-        l = read(fd, m = malloc(st.st_size), st.st_size);
-        root = (ezxml_root_t)ezxml_parse_str(m, l);
-        root->len = -1; // so we know to free s in ezxml_free()
-#ifndef EZXML_NOMMAP
-    }
-#endif // EZXML_NOMMAP
-    return &root->xml;
-}
-
-// a wrapper for ezxml_parse_fd that accepts a file name
-ezxml_t ezxml_parse_file(const char* file)
-{
-    int fd = open(file, O_RDONLY, 0);
-    ezxml_t xml = ezxml_parse_fd(fd);
-
-    if (fd >= 0)
-    {
-        close(fd);
-    }
-    return xml;
-}
 
 // Encodes ampersand sequences appending the results to *dst, reallocating *dst
 // if length excedes max. a is non-zero for attribute encoding. Returns *dst
@@ -1285,12 +1229,7 @@ void ezxml_free(ezxml_t xml)
         {
             free(root->m); // malloced xml data
         }
-#ifndef EZXML_NOMMAP
-        else if (root->len)
-        {
-            munmap(root->m, root->len); // mem mapped xml data
-        }
-#endif // EZXML_NOMMAP
+
         if (root->u)
         {
             free(root->u); // utf8 conversion
@@ -1454,7 +1393,7 @@ ezxml_t ezxml_set_attr(ezxml_t xml, const char* name, const char* value)
         if (xml->attr == EZXML_NIL)
         { // first attribute
             xml->attr = malloc(4 * sizeof(char*));
-            xml->attr[1] = strdup(""); // empty list of malloced names/vals
+            xml->attr[1] = calloc(1,1); // empty list of malloced names/vals
         }
         else
         {
@@ -1579,23 +1518,4 @@ ezxml_t ezxml_cut(ezxml_t xml)
     return xml;
 }
 
-#ifdef EZXML_TEST // test harness
-int main(int argc, char** argv)
-{
-    ezxml_t xml;
-    char* s;
-    int i;
 
-    if (argc != 2)
-    {
-        return fprintf(stderr, "usage: %s xmlfile\n", argv[0]);
-    }
-
-    xml = ezxml_parse_file(argv[1]);
-    printf("%s\n", (s = ezxml_toxml(xml)));
-    free(s);
-    i = fprintf(stderr, "%s", ezxml_error(xml));
-    ezxml_free(xml);
-    return (i) ? 1 : 0;
-}
-#endif // EZXML_TEST

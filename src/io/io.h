@@ -33,7 +33,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               ND_int start_band, ND_int end_band,
                               struct WFC** wfcs, char* ph_save_dir,
                               struct Lattice* lattice, struct Pseudo* pseudo,
-                              struct Phonon* phonon, char* dft_code);
+                              struct Phonon* phonon, enum ELPH_dft_code dft_code);
 
 void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
                     struct Pseudo* pseudo, struct Phonon* phonon);

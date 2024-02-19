@@ -41,7 +41,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               ND_int start_band, ND_int end_band,
                               struct WFC** wfcs, char* ph_save_dir,
                               struct Lattice* lattice, struct Pseudo* pseudo,
-                              struct Phonon* phonon, char* dft_code)
+                              struct Phonon* phonon, enum ELPH_dft_code dft_code)
 {
     /* This function allocates and reads data from SAVE dir.
     The following data is read : wfcs(in iBZ), lattice and pseudo
@@ -67,7 +67,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     // first get the basic dft/dfpt data from dft code (code specific) before
     // anything
     char* pp_head = "ns.kb_pp_pwscf"; // Change this accordingly
-    if (strcmp(dft_code, "qe") == 0)
+    if (dft_code == DFT_CODE_QE)
     {
         //char* pp_head = "ns.kb_pp_pwscf";
         get_data_from_qe(lattice, phonon, ph_save_dir, &pseudo_pots, Comm);

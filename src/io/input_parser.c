@@ -104,7 +104,7 @@ static int handler(void* user, const char* section, const char* name,
         strcpy(inp->kernel, value);
         for (char* p = inp->kernel; *p; ++p)
         {
-            *p = toupper(*p);
+            *p = tolower(*p);
         }
     }
     else

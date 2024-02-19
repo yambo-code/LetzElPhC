@@ -25,7 +25,6 @@
 #ifndef _EZXML_H
 #define _EZXML_H
 
-#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,14 +60,6 @@ extern "C"
     // and decoding ampersand sequences. If you don't want this, copy the data
     // and pass in the copy. Returns NULL on failure.
     ezxml_t ezxml_parse_str(char* s, size_t len);
-
-    // A wrapper for ezxml_parse_str() that accepts a file descriptor. First
-    // attempts to mem map the file. Failing that, reads the file into memory.
-    // Returns NULL on failure.
-    ezxml_t ezxml_parse_fd(int fd);
-
-    // a wrapper for ezxml_parse_fd() that accepts a file name
-    ezxml_t ezxml_parse_file(const char* file);
 
     // Wrapper for ezxml_parse_str() that accepts a file stream. Reads the
     // entire stream into memory and then parses it. For xml files, use

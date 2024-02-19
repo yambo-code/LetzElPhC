@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 
     int mpi_error;
 
-    char* dft_code = "qe";
+    enum ELPH_dft_code dft_code = DFT_CODE_QE;
 
     struct usr_input* input_data;
     // read the input file
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
     {
         ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
         // read dynamical matrix and dvscf for the iBZ qpt
-        if (!strcmp(dft_code, "qe"))
+        if (dft_code == DFT_CODE_QE)
         {
             get_dvscf_dyn_qe(input_data->ph_save_dir, lattice, iqpt_iBZg,
                              eigVec, dVscf, omega_ph, mpi_comms);
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
         dVlocq(phonon->qpts_iBZ + iqpt_iBZg * 3, lattice, pseudo, eigVec, Vlocr,
                mpi_comms->commK);
 
-        if (!strcmp(dft_code, "qe"))
+        if (dft_code == DFT_CODE_QE)
         {
             add_dvscf_qe(dVscf, Vlocr, lattice); // add bare local to induce part
         }

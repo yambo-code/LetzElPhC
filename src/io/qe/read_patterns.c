@@ -10,10 +10,16 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
     patvec dim (nmodes, natom, 3)
     */
     // open the xml file
-    ezxml_t patxml = ezxml_parse_file(pat_file);
+    FILE* fp = fopen(pat_file, "r");
+    if (fp == NULL)
+    {
+        error_msg("Opening pattern.xml file failed");
+    }
+
+    ezxml_t patxml = ezxml_parse_fp(fp);
     if (patxml == NULL)
     {
-        error_msg("Opening pattern file failed \n");
+        error_msg("parsing pattern file failed \n");
     }
 
     // first get the number of irrep
@@ -63,4 +69,5 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
 
     free(pat_tmp_read);
     ezxml_free(patxml);
+    fclose(fp);
 }

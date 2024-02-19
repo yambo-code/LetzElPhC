@@ -3,18 +3,25 @@ This file contains the necessary data-structures
 used in the Code.
 
 Some comments :
-1) "DO NOT" typedef a struct. always use
-    "struct" keyword when defining
+1) "DO NOT" typedef a struct/enum. always use
+    "struct"/"enum" keyword when defining
     for example
     correct way to define :
     ```
     struct lattice a ;
     struct wfc a ;
+    enum ELPH_dft_code a;
     ```
 */
 #pragma once
 #include "../elphC.h"
 #include "error.h"
+
+enum ELPH_dft_code
+{
+    DFT_CODE_QE
+};
+
 
 struct symmetry
 {
