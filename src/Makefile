@@ -4,7 +4,9 @@ TARGET 		 :=  lelphc
 
 #### make start here
 
-SUBDIR = nonloc io/ezxml io/inih io io/qe common dvloc elph wfc symmetries fft
+SUBDIR = nonloc io/ezxml io/inih io \
+		 io/qe common dvloc elph wfc \
+		 symmetries fft common/cwalk preprocessor
 
 
 INCS = $(wildcard *.h $(foreach fd, $(SUBDIR), $(fd)/*.h))

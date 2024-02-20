@@ -130,3 +130,25 @@ char* str_reverse_in_place(char* str)
     }
     return str;
 }
+
+
+void str_replace_chars(char * str_in, const char * delimters, const char * replace_chars)
+{
+    ND_int ndelimters = strlen(delimters);
+    // if  ndelimters != strlen(replace_chars) buffer overflow
+
+    ND_int str_in_len = strlen(str_in);
+
+    for (ND_int i =0; i< str_in_len; ++i)
+    {
+        for (ND_int j=0; j<ndelimters; ++j)
+        {
+            if (str_in[i] == delimters[j])
+            {
+                str_in[i] = replace_chars[j];
+                break;
+            }
+        }
+    }
+}
+

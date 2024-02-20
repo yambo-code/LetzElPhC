@@ -17,6 +17,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
                               ND_int nspin, ND_int nspinor, ND_int start_band,
                               ND_int nbnds, ND_int nG, ND_int G_shift,
                               const char* save_dir, char* work_array,
+                              const size_t work_array_len, 
                               ELPH_cmplx* out_wfc, MPI_Comm comm);
 
 static void free_phonon_data(struct Phonon* phonon);
@@ -88,7 +89,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     int dbid, ppid, tempid, retval; // file ids for ns.db1 , pp_pwscf*
 
-    char* temp_str = malloc(strlen(ph_save_dir) + strlen(SAVEdir) + 100);
+    size_t temp_str_len = strlen(ph_save_dir) + strlen(SAVEdir) + 100;
+    char* temp_str = malloc(temp_str_len);
 
     int nkBZ; // total kpoints in BZ
 
@@ -109,7 +111,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     /*****/
     if (Comm->commW_rank == 0)
     {
-        sprintf(temp_str, "%s/ndb.kindx", SAVEdir);
+        cwk_path_join(SAVEdir, "ndb.kindx", temp_str, temp_str_len);
 
         if ((retval = nc_open(temp_str, NC_NOWRITE, &tempid)))
         {
@@ -146,7 +148,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     ELPH_float dimensions[18];
     if (Comm->commW_rank == 0)
     {
-        sprintf(temp_str, "%s/ns.db1", SAVEdir);
+        cwk_path_join(SAVEdir, "ns.db1", temp_str, temp_str_len);
         if ((retval = nc_open(temp_str, NC_NOWRITE, &dbid)))
         {
             ERR(retval);
@@ -414,7 +416,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     // ------------------
     if (Comm->commW_rank == 0)
     {
-        sprintf(temp_str, "%s/%s", SAVEdir, pp_head);
+        cwk_path_join(SAVEdir, pp_head, temp_str, temp_str_len);
         if ((retval = nc_open(temp_str, NC_NOWRITE, &ppid)))
         {
             ERR(retval);
@@ -481,7 +483,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
             get_wfc_from_save(spin_stride_len, ik, nibz, lattice->nspin,
                               lattice->nspinor, lattice->start_band,
                               lattice->nbnds, pw_this_cpu, G_shift, SAVEdir,
-                              temp_str, (wfc_temp + ik)->wfc, Comm->commK);
+                              temp_str, temp_str_len, (wfc_temp + ik)->wfc, Comm->commK);
+                              
         }
         // Bcast the wfc
         mpi_error = MPI_Bcast((wfc_temp + ik)->wfc, lattice->nspin * spin_stride_len,
@@ -489,8 +492,12 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         /* initiate, allocate and load Fk (Kleinbylander Coefficients)*/
         //(nltimesj, ntype, npw_loc)
         (wfc_temp + ik)->Fk = malloc(sizeof(ELPH_float) * pseudo->nltimesj * pseudo->ntype * pw_this_cpu);
-        sprintf(temp_str, "%s/%s_fragment_%d", SAVEdir, pp_head,
-                (int)(ik + 1)); // fix it for abinit
+        
+        char small_buf[64];
+
+        snprintf(small_buf, 64, "%s_fragment_%d", pp_head, (int)(ik + 1));
+        cwk_path_join(SAVEdir, small_buf, temp_str, temp_str_len);
+
         /* Abinit has a aditional spin dimension instead of 2*n projectors */
         if (Comm->commR_rank == 0)
         {
@@ -499,7 +506,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
             {
                 ERR(retval);
             }
-            sprintf(temp_str, "PP_KB_K%d", (int)(ik + 1)); // fix be for abinit
+
+            snprintf(temp_str, temp_str_len, "PP_KB_K%d", (int)(ik + 1));
 
             size_t startppkb[] = { 0, 0, G_shift };
             size_t countppkb[] = { pseudo->nltimesj, pseudo->ntype, pw_this_cpu };
@@ -538,7 +546,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         {
             char temp_ele[3];
 
-            sprintf(temp_str, "%s/%s", ph_save_dir, pseudo_pots[ipot1]);
+            cwk_path_join(ph_save_dir, pseudo_pots[ipot1], temp_str, temp_str_len);
+
             /* read elements from pseudo pots */
             get_upf_element(temp_str, temp_ele); // only single process !
             bool found = false;
@@ -569,7 +578,9 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         for (ND_int ipot = 0; ipot < pseudo->ntype; ++ipot)
         {
             ND_int iorder = pseudo_order[ipot];
-            sprintf(temp_str, "%s/%s", ph_save_dir, pseudo_pots[ipot]);
+
+            cwk_path_join(ph_save_dir, pseudo_pots[ipot], temp_str, temp_str_len);
+
             parse_upf(temp_str, pseudo->loc_pseudo + iorder);
         }
     }
@@ -713,14 +724,16 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
                               ND_int nspin, ND_int nspinor, ND_int start_band,
                               ND_int nbnds, ND_int nG, ND_int G_shift,
                               const char* save_dir, char* work_array,
+                              const size_t work_array_len, 
                               ELPH_cmplx* out_wfc, MPI_Comm comm)
 {
     int wfID, retval;
     // NO OPENMP !! , Not thread safe
     for (ND_int is = 0; is < nspin; ++is)
-    {
-        sprintf(work_array, "%s/ns.wf_fragments_%d_1", save_dir,
-                (int)(is * nkiBZ + (ik + 1)));
+    {   
+        char tmp_buf[64];
+        snprintf(tmp_buf, 64, "ns.wf_fragments_%d_1", (int)(is * nkiBZ + (ik + 1)));
+        cwk_path_join(save_dir, tmp_buf, work_array, work_array_len);
 
         if ((retval = nc_open_par(work_array, NC_NOWRITE, comm, MPI_INFO_NULL,
                                   &wfID)))
@@ -728,7 +741,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
             ERR(retval);
         }
 
-        sprintf(work_array, "WF_COMPONENTS_@_SP_POL%d_K%d_BAND_GRP_1",
+        snprintf(work_array, work_array_len, "WF_COMPONENTS_@_SP_POL%d_K%d_BAND_GRP_1",
                 (int)(is + 1), (int)(ik + 1));
 
         //// (nspin, bands, nspinor, npw)

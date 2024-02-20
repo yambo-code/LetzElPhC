@@ -36,18 +36,16 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
     ND_int imode = 0;
     for (int irep = 0; irep < nirrep; ++irep)
     {
-        sprintf(rep_str, "REPRESENTION.%d", irep + 1);
+        snprintf(rep_str, 100, "REPRESENTION.%d", irep + 1);
         int npert = atoll(ezxml_get(patxml, "IRREPS_INFO", 0, rep_str, 0,
-                                    "NUMBER_OF_PERTURBATIONS", -1)
-                              ->txt);
+                                    "NUMBER_OF_PERTURBATIONS", -1)->txt);
 
         for (int ipert = 0; ipert < npert; ++ipert)
         {
-            sprintf(pert_str, "PERTURBATION.%d", ipert + 1);
+            snprintf(pert_str, 100, "PERTURBATION.%d", ipert + 1);
 
-            char* per_vec_str = ezxml_get(patxml, "IRREPS_INFO", 0, rep_str, 0, pert_str, 0,
-                                          "DISPLACEMENT_PATTERN", -1)
-                                    ->txt;
+            char* per_vec_str = ezxml_get(patxml, "IRREPS_INFO", 0, rep_str,
+                                0, pert_str, 0, "DISPLACEMENT_PATTERN", -1)->txt;
 
             if (parser_doubles_from_string(per_vec_str, pat_tmp_read) != (2 * nmodes))
             {

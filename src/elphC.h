@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "common/cwalk/cwalk.h"
 #include "common/omp_pragma_def.h"
 #if defined(ELPH_OMP_PARALLEL_BUILD)
 #include <omp.h>
