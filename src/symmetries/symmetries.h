@@ -22,3 +22,8 @@ void elph_q_rotate(const ELPH_cmplx* Dmats_l,
 
 ND_int find_inv_symm_idx(ND_int nsym, const ELPH_float* Smat,
                          const ELPH_float* point_group, const bool trans);
+
+void rotate_eig_vecs(struct symmetry* sym, const struct Lattice * lattice,
+                    const ELPH_float * qpt, const ELPH_cmplx * eig_q,
+                    ELPH_cmplx * restrict eig_Sq);
+

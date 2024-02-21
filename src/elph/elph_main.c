@@ -107,6 +107,14 @@ int main(int argc, char* argv[])
                          lattice->nbnds, 2 });
     }
 
+
+    ELPH_cmplx * eig_Sq = NULL;
+
+    if (mpi_comms->commQ_rank == 0)
+    {
+        eig_Sq = calloc(nmodes*nmodes,sizeof(ELPH_cmplx));
+    }
+
     for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
     {
         ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
@@ -150,25 +158,46 @@ int main(int argc, char* argv[])
         {
             size_t startp[5] = { qpos, 0, 0, 0, 0 };
             size_t countp[5] = { 1, nmodes, nmodes / 3, 3, 2 };
-            if ((nc_err = nc_put_vara(ncid_elph, varid_eig, startp, countp,
-                                      eigVec)))
+            if ((nc_err = nc_put_vara(ncid_elph, varid_eig, startp, countp, eigVec)))
             {
                 ERR(nc_err);
             }
 
-            if ((nc_err = nc_put_vara(ncid_elph, varid_omega, startp, countp,
-                                      omega_ph)))
+            if ((nc_err = nc_put_vara(ncid_elph, varid_omega, startp, countp, omega_ph)))
             {
                 ERR(nc_err);
             }
+            // write down the rotate eigen vectors;
+            for (ND_int istar = 1 ; istar < phonon->nqstar[iqpt_iBZg]; ++istar)
+            {
+                ND_int qpos_star = qpos + istar;
+
+                struct symmetry * sym_rot = phonon->ph_syms + phonon->qmap[2*qpos_star + 1];
+
+                rotate_eig_vecs(sym_rot, lattice, phonon->qpts_iBZ + iqpt_iBZg * 3,
+                                eigVec, eig_Sq);
+                //
+                startp[0] = qpos_star;
+                if ((nc_err = nc_put_vara(ncid_elph, varid_eig, startp, countp, eig_Sq)))
+                {
+                    ERR(nc_err);
+                }
+
+                if ((nc_err = nc_put_vara(ncid_elph, varid_omega, startp, countp, omega_ph)))
+                {
+                    ERR(nc_err);
+                }
+                //
+            }
         }
-        // Now compute the electron-phonon matrix elements
+        // Now compute and write the electron-phonon matrix elements
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, ncid_elph, varid_elph, 
                                 ncid_dmat, varid_dmat, true,
                                 false, mpi_comms);
     }
 
+    free(eig_Sq);
 
     if (mpi_comms->commK_rank == 0)
     {
