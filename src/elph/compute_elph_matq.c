@@ -3,9 +3,9 @@
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              struct Pseudo* pseudo, struct Phonon* phonon,
                              const ND_int iqpt, ELPH_cmplx* eigVec,
-                             ELPH_cmplx* dVscfq, 
-                             const int ncid_elph, const int varid_elph, 
-                             const int ncid_dmat, const int varid_dmat, 
+                             ELPH_cmplx* dVscfq,
+                             const int ncid_elph, const int varid_elph,
+                             const int ncid_dmat, const int varid_dmat,
                              const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm)
@@ -27,7 +27,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     }
 
     // sanity check
-    if (phonon->qmap[2*qpos] != iqpt || phonon->qmap[2*qpos+1] != 0)
+    if (phonon->qmap[2 * qpos] != iqpt || phonon->qmap[2 * qpos + 1] != 0)
     {
         error_msg("Qpoint in iBZ cannot be traced in phonon qmap");
     }
@@ -47,11 +47,11 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     int* KplusQidxs = malloc(nk_totalBZ * sizeof(int));
 
     ELPH_float qpt_tmp[3];
-    memcpy(qpt_tmp,qpt,sizeof(ELPH_float)*3);
+    memcpy(qpt_tmp, qpt, sizeof(ELPH_float) * 3);
     // incase if we want yambo convention
     if (kminusq)
     {
-        for (int xi=0; xi<3; ++xi)
+        for (int xi = 0; xi < 3; ++xi)
         {
             qpt_tmp[xi] = -qpt_tmp[xi];
         }
@@ -72,15 +72,15 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     size_t startp[7] = { 0, 0, 0, 0, 0, 0, 0 };
     size_t countp[7] = { 1, 1, nmodes, lattice->nspin, nbnds, nbnds, 2 };
 
-    ELPH_cmplx * gSq_buff = NULL;
-    ELPH_cmplx * D_mat_l  = NULL;
-    ELPH_cmplx * D_mat_r  = NULL;
+    ELPH_cmplx* gSq_buff = NULL;
+    ELPH_cmplx* D_mat_l = NULL;
+    ELPH_cmplx* D_mat_r = NULL;
 
     if (Comm->commK_rank == 0)
     {
         gSq_buff = calloc(nbnds * nbnds * lattice->nspin * nmodes, sizeof(ELPH_cmplx));
-        D_mat_l  = calloc(nbnds * nbnds * lattice->nspin, sizeof(ELPH_cmplx));
-        D_mat_r  = calloc(nbnds * nbnds * lattice->nspin, sizeof(ELPH_cmplx));
+        D_mat_l = calloc(nbnds * nbnds * lattice->nspin, sizeof(ELPH_cmplx));
+        D_mat_r = calloc(nbnds * nbnds * lattice->nspin, sizeof(ELPH_cmplx));
     }
 
     for (ND_int ii = 0; ii < nk_this_pool; ++ii)
@@ -96,11 +96,11 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
             swap_ints(&idx_k, &idx_kq);
         }
 
-        int ik      = kmap[2*idx_k];
-        int ksym    = kmap[2*idx_k + 1];
+        int ik = kmap[2 * idx_k];
+        int ksym = kmap[2 * idx_k + 1];
 
-        int ikq     = kmap[2*idx_kq];
-        int kqsym   = kmap[2*idx_kq + 1];
+        int ikq = kmap[2 * idx_kq];
+        int kqsym = kmap[2 * idx_kq + 1];
 
         elphLocal(qpt, wfcs, lattice, ikq, ik, kqsym, ksym, dVscfq, Comm,
                   elph_kq_mn);
@@ -123,52 +123,52 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         }
 
         // expand the el-ph matrix elements in full BZ
-        const ELPH_float * kpt_BZ = lattice->kpt_fullBZ + 3*i;
+        const ELPH_float* kpt_BZ = lattice->kpt_fullBZ + 3 * i;
 
         // only master node does this
         if (Comm->commK_rank == 0)
-        {   
+        {
             for (ND_int istar = 1; istar < phonon->nqstar[iqpt]; ++istar)
             {
                 ND_int qpos_star = qpos + istar;
-                // get the symmetry 
-                int istar_symm = phonon->qmap[2*qpos_star+1];
+                // get the symmetry
+                int istar_symm = phonon->qmap[2 * qpos_star + 1];
 
                 size_t D_mat_sp[6] = { istar_symm, idx_kq, 0, 0, 0, 0 };
                 size_t D_mat_cp[6] = { 1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2 };
-                // read D_mats //const int ncid_dmat, const int varid_dmat, 
+                // read D_mats //const int ncid_dmat, const int varid_dmat,
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp, D_mat_cp, D_mat_l)))
-                {   // k + q
+                { // k + q
                     ERR(nc_err);
                 }
 
                 D_mat_sp[1] = idx_k;
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp, D_mat_cp, D_mat_r)))
-                {   // k
+                { // k
                     ERR(nc_err);
                 }
-                
+
                 // gSq_buff
-                elph_q_rotate(D_mat_l, elph_kq_mn, D_mat_r, lattice, 
-                            phonon->ph_syms[istar_symm].time_rev, gSq_buff);
+                elph_q_rotate(D_mat_l, elph_kq_mn, D_mat_r, lattice,
+                              phonon->ph_syms[istar_symm].time_rev, gSq_buff);
 
                 ELPH_float Sk_crys[3];
                 ELPH_float Sk_cart[3];
 
                 MatVec3f(phonon->ph_syms[istar_symm].Rmat, kpt_BZ,
-                false, Sk_cart);
+                         false, Sk_cart);
                 // convert to crsytal units
                 MatVec3f(lattice->alat_vec, Sk_cart, true, Sk_crys);
 
                 // now get the indices of S*k
 
-                ND_int idx_Sk  = find_kidx_in_list(lattice->nkpts_BZ, 
-                        lattice->kpt_fullBZ_crys, Sk_crys);
-            
+                ND_int idx_Sk = find_kidx_in_list(lattice->nkpts_BZ,
+                                                  lattice->kpt_fullBZ_crys, Sk_crys);
+
                 if (idx_Sk < 0)
                 {
                     error_msg("Unable to to find S*k index "
-                    "This is due to incommenserate k and q grids.");
+                              "This is due to incommenserate k and q grids.");
                 }
 
                 startp[0] = qpos_star;

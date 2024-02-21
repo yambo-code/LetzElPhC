@@ -22,7 +22,6 @@ enum ELPH_dft_code
     DFT_CODE_QE
 };
 
-
 struct symmetry
 {
     ELPH_float Rmat[9];

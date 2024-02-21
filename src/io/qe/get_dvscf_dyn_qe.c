@@ -25,19 +25,19 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
     if (Comm->commQ_rank == 0)
     {
         if (dvscf != NULL)
-        {   
+        {
             snprintf(small_buf, 32, "patterns.%d.xml", (int)(iq_BZ + 1));
-            cwk_path_join(  ph_save_dir, small_buf, tmp_char_buf,
-                            tmp_char_buf_len);
+            cwk_path_join(ph_save_dir, small_buf, tmp_char_buf,
+                          tmp_char_buf_len);
 
             read_pattern_qe(tmp_char_buf, lattice, pat_vecs);
         }
         ELPH_float qpts[3];
 
         snprintf(small_buf, 32, "dyn%d", (int)(iq_BZ + 1));
-        cwk_path_join(  ph_save_dir, small_buf, tmp_char_buf,
-                        tmp_char_buf_len);
-        
+        cwk_path_join(ph_save_dir, small_buf, tmp_char_buf,
+                      tmp_char_buf_len);
+
         ND_int ndyn_read = read_dyn_qe(tmp_char_buf, lattice, qpts, omega_ph, eig);
         if (ndyn_read != 1)
         {
@@ -56,9 +56,9 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
         MPI_Bcast(pat_vecs, nmodes * nmodes, ELPH_MPI_cmplx, 0, Comm->commQ);
 
         snprintf(small_buf, 32, "dvscf%d", (int)(iq_BZ + 1));
-        cwk_path_join(  ph_save_dir, small_buf, tmp_char_buf,
-                        tmp_char_buf_len);
-        
+        cwk_path_join(ph_save_dir, small_buf, tmp_char_buf,
+                      tmp_char_buf_len);
+
         if (Comm->commRq_rank == 0)
         {
             read_dvscf_qe(tmp_char_buf, lattice, eig, pat_vecs, dvscf,

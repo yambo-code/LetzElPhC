@@ -66,10 +66,10 @@ int main(int argc, char* argv[])
     int varid_eig, varid_elph, varid_omega, varid_dmat;
     // Define netcdf variables
     if (mpi_comms->commK_rank == 0)
-    {   
+    {
         // open Dmat file
         if ((nc_err = nc_open_par("ndb.Dmats", NC_NOWRITE, mpi_comms->commR,
-                                    MPI_INFO_NULL, &ncid_dmat)))
+                                  MPI_INFO_NULL, &ncid_dmat)))
         {
             ERR(nc_err);
         }
@@ -107,12 +107,11 @@ int main(int argc, char* argv[])
                          lattice->nbnds, 2 });
     }
 
-
-    ELPH_cmplx * eig_Sq = NULL;
+    ELPH_cmplx* eig_Sq = NULL;
 
     if (mpi_comms->commQ_rank == 0)
     {
-        eig_Sq = calloc(nmodes*nmodes,sizeof(ELPH_cmplx));
+        eig_Sq = calloc(nmodes * nmodes, sizeof(ELPH_cmplx));
     }
 
     for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
@@ -168,11 +167,11 @@ int main(int argc, char* argv[])
                 ERR(nc_err);
             }
             // write down the rotate eigen vectors;
-            for (ND_int istar = 1 ; istar < phonon->nqstar[iqpt_iBZg]; ++istar)
+            for (ND_int istar = 1; istar < phonon->nqstar[iqpt_iBZg]; ++istar)
             {
                 ND_int qpos_star = qpos + istar;
 
-                struct symmetry * sym_rot = phonon->ph_syms + phonon->qmap[2*qpos_star + 1];
+                struct symmetry* sym_rot = phonon->ph_syms + phonon->qmap[2 * qpos_star + 1];
 
                 rotate_eig_vecs(sym_rot, lattice, phonon->qpts_iBZ + iqpt_iBZg * 3,
                                 eigVec, eig_Sq);
@@ -192,7 +191,7 @@ int main(int argc, char* argv[])
         }
         // Now compute and write the electron-phonon matrix elements
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
-                                eigVec, dVscf, ncid_elph, varid_elph, 
+                                eigVec, dVscf, ncid_elph, varid_elph,
                                 ncid_dmat, varid_dmat, true,
                                 false, mpi_comms);
     }

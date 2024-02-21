@@ -17,6 +17,5 @@ bool string_end_with(char* str, char* compare_str, bool trim);
 // Do a inplace reversing of string
 char* str_reverse_in_place(char* str);
 
-void str_replace_chars(char * str_in, const char * delimters,
-                       const char * replace_chars);
-
+void str_replace_chars(char* str_in, const char* delimters,
+                       const char* replace_chars);

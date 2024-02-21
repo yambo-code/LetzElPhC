@@ -22,12 +22,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "ezxml.h"
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ezxml.h"
 
 #define EZXML_WS "\t\r\n " // whitespace
 #define EZXML_ERRL 128 // maximum error string length
@@ -442,7 +442,7 @@ void ezxml_proc_inst(ezxml_root_t root, char* s, size_t len)
         root->pi[i] = malloc(sizeof(char*) * 3);
         root->pi[i][0] = target;
         root->pi[i][1] = (char*)(root->pi[i + 1] = NULL); // terminate pi list
-        root->pi[i][2] = calloc(1,1); // empty document position list
+        root->pi[i][2] = calloc(1, 1); // empty document position list
     }
 
     while (root->pi[i][j])
@@ -961,7 +961,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
 }
 
 // Wrapper for ezxml_parse_str() that accepts a file stream. Reads the entire
-// stream into memory and then parses it. 
+// stream into memory and then parses it.
 ezxml_t ezxml_parse_fp(FILE* fp)
 {
     ezxml_root_t root;
@@ -989,7 +989,6 @@ ezxml_t ezxml_parse_fp(FILE* fp)
     root->len = -1; // so we know to free s in ezxml_free()
     return &root->xml;
 }
-
 
 // Encodes ampersand sequences appending the results to *dst, reallocating *dst
 // if length excedes max. a is non-zero for attribute encoding. Returns *dst
@@ -1393,7 +1392,7 @@ ezxml_t ezxml_set_attr(ezxml_t xml, const char* name, const char* value)
         if (xml->attr == EZXML_NIL)
         { // first attribute
             xml->attr = malloc(4 * sizeof(char*));
-            xml->attr[1] = calloc(1,1); // empty list of malloced names/vals
+            xml->attr[1] = calloc(1, 1); // empty list of malloced names/vals
         }
         else
         {
@@ -1517,5 +1516,3 @@ ezxml_t ezxml_cut(ezxml_t xml)
     xml->ordered = xml->sibling = xml->next = NULL;
     return xml;
 }
-
-

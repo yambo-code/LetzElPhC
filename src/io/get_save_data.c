@@ -17,7 +17,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
                               ND_int nspin, ND_int nspinor, ND_int start_band,
                               ND_int nbnds, ND_int nG, ND_int G_shift,
                               const char* save_dir, char* work_array,
-                              const size_t work_array_len, 
+                              const size_t work_array_len,
                               ELPH_cmplx* out_wfc, MPI_Comm comm);
 
 static void free_phonon_data(struct Phonon* phonon);
@@ -70,7 +70,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     char* pp_head = "ns.kb_pp_pwscf"; // Change this accordingly
     if (dft_code == DFT_CODE_QE)
     {
-        //char* pp_head = "ns.kb_pp_pwscf";
+        // char* pp_head = "ns.kb_pp_pwscf";
         get_data_from_qe(lattice, phonon, ph_save_dir, &pseudo_pots, Comm);
     }
     else
@@ -484,7 +484,6 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               lattice->nspinor, lattice->start_band,
                               lattice->nbnds, pw_this_cpu, G_shift, SAVEdir,
                               temp_str, temp_str_len, (wfc_temp + ik)->wfc, Comm->commK);
-                              
         }
         // Bcast the wfc
         mpi_error = MPI_Bcast((wfc_temp + ik)->wfc, lattice->nspin * spin_stride_len,
@@ -492,7 +491,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         /* initiate, allocate and load Fk (Kleinbylander Coefficients)*/
         //(nltimesj, ntype, npw_loc)
         (wfc_temp + ik)->Fk = malloc(sizeof(ELPH_float) * pseudo->nltimesj * pseudo->ntype * pw_this_cpu);
-        
+
         char small_buf[64];
 
         snprintf(small_buf, 64, "%s_fragment_%d", pp_head, (int)(ik + 1));
@@ -724,13 +723,13 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
                               ND_int nspin, ND_int nspinor, ND_int start_band,
                               ND_int nbnds, ND_int nG, ND_int G_shift,
                               const char* save_dir, char* work_array,
-                              const size_t work_array_len, 
+                              const size_t work_array_len,
                               ELPH_cmplx* out_wfc, MPI_Comm comm)
 {
     int wfID, retval;
     // NO OPENMP !! , Not thread safe
     for (ND_int is = 0; is < nspin; ++is)
-    {   
+    {
         char tmp_buf[64];
         snprintf(tmp_buf, 64, "ns.wf_fragments_%d_1", (int)(is * nkiBZ + (ik + 1)));
         cwk_path_join(save_dir, tmp_buf, work_array, work_array_len);
@@ -742,7 +741,7 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
         }
 
         snprintf(work_array, work_array_len, "WF_COMPONENTS_@_SP_POL%d_K%d_BAND_GRP_1",
-                (int)(is + 1), (int)(ik + 1));
+                 (int)(is + 1), (int)(ik + 1));
 
         //// (nspin, bands, nspinor, npw)
         size_t startp[4] = { start_band - 1, 0, G_shift, 0 };

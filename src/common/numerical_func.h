@@ -44,9 +44,8 @@ void matmul_Cmpl2x2(ELPH_cmplx* restrict mat1, ELPH_cmplx* restrict mat2,
 int get_fft_idx(ELPH_float idx_in, int FFT_dimension);
 ND_int get_miller_idx(ND_int idx_in, ND_int FFT_dimension);
 
-
 // swap functions
-void swap_ints(int * restrict a, int * restrict b);
+void swap_ints(int* restrict a, int* restrict b);
 
 /* spline.c*/
 // spline interpolation functions

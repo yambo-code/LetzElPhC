@@ -4,6 +4,8 @@
 #error Your compiler does not C99 complex numbers, Please use a supported compiler.
 #endif
 
+#include "common/cwalk/cwalk.h"
+#include "common/omp_pragma_def.h"
 #include <complex.h>
 #include <fftw3.h>
 #include <limits.h>
@@ -15,8 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common/cwalk/cwalk.h"
-#include "common/omp_pragma_def.h"
 #if defined(ELPH_OMP_PARALLEL_BUILD)
 #include <omp.h>
 #endif
