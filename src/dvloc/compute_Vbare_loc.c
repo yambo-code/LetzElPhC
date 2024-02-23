@@ -226,7 +226,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     ELPH_cmplx* dVpsiG = malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * npwkq);
 
-    ND_int elph_buffer_len = nbnds * nbnds * nspin;
+    ND_int elph_buffer_len = nmodes * nbnds * nbnds * nspin;
     if (Comm->commK_rank == 0)
     {
         ELPH_OMP_PAR_FOR_SIMD // FIX ME, only master node?
