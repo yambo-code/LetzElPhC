@@ -59,7 +59,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     get_KplusQ_idxs(nk_totalBZ, lattice->kpt_fullBZ_crys, qpt_tmp, KplusQidxs);
 
     ND_int nbnds = lattice->nbnds;
-    ND_int nmodes = lattice->natom * 3;
+    ND_int nmodes = lattice->nmodes;
 
     ELPH_cmplx* elph_kq_mn = NULL;
     if (Comm->commK_rank == 0)
@@ -174,7 +174,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 startp[0] = qpos_star;
                 startp[1] = idx_Sk;
                 // Write it for Sq and Sk point
-                if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp, countp, elph_kq_mn)))
+                if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp, countp, gSq_buff)))
                 {
                     ERR(nc_err);
                 }

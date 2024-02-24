@@ -332,7 +332,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         lattice->natom = 0; // Bcast
         for (ND_int ia = 0; ia < pseudo->ntype; ++ia)
         {
-            lattice->natom += rint(natom_per_type[ia]);
+            lattice->natom += (int)rint(natom_per_type[ia]);
         }
         ND_int nspec_max = rint(find_maxfloat(natom_per_type, pseudo->ntype));
 
@@ -369,6 +369,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     // Bcast variables
     mpi_error = MPI_Bcast(&lattice->natom, 1, MPI_INT, 0, Comm->commW);
+    lattice->nmodes = 3 * lattice->natom;
+
     if (Comm->commW_rank != 0)
     {
         lattice->atom_type = malloc(sizeof(int) * lattice->natom); // Bcast
@@ -379,7 +381,6 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     mpi_error = MPI_Bcast(lattice->atomic_pos, 3 * lattice->natom,
                           ELPH_MPI_float, 0, Comm->commW);
 
-    // Fixed till here
 
     ELPH_float* nGmax = malloc(sizeof(ELPH_float) * nibz); // max number of gvectors for each wfc in iBZ
     *wfcs = malloc(sizeof(struct WFC) * nibz); // wfcs in iBZ

@@ -25,7 +25,7 @@ void add_dvscf_qe(ELPH_cmplx* restrict dVscf, const ELPH_cmplx* dVloc,
     dVloc -> (nmodes, nffts)
     */
     const ND_int nmag = lattice->nmag;
-    const ND_int nmodes = 3 * lattice->natom;
+    const ND_int nmodes = lattice->nmodes;
     const ND_int nffts = lattice->fft_dims[0] * lattice->fft_dims[1] * lattice->nfftz_loc;
 
     ND_int mag_iter = 1;

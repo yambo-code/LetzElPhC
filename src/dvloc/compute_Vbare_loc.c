@@ -32,7 +32,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     const ND_int nspin = lattice->nspin;
     const ND_int nbnds = lattice->nbnds;
     const ND_int nspinor = lattice->nspinor;
-    const ND_int nmodes = lattice->natom * 3;
+    const ND_int nmodes = lattice->nmodes;
     const ND_int nmag = lattice->nmag;
     /* nmag = 1 for non magnetic and = 2/4 for spin
     polarized/magnetic systems */

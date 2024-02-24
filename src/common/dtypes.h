@@ -62,6 +62,8 @@ struct Lattice
     ND_int nmag;
     /*  nmag = 1 for non magnetic case, nmag = 2 for lsda, and
     nmag = 4  for non-collinear magnetic */
+    ND_int nmodes;
+    // number of phonon modes
     ND_int nkpts_iBZ;
     // number of kpoints in iBZ
     ND_int nkpts_BZ;

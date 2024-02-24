@@ -6,4 +6,5 @@ fcoeff.py
 *.o
 git.sh
 version*
+**un~
 clang_format.sh

@@ -24,7 +24,7 @@ void elph_q_rotate(const ELPH_cmplx* Dmats_l,
     Dmats = (nspin, nbands, nbands)
     */
     const ND_int nbnds = lattice->nbnds;
-    const ND_int nmodes = lattice->natom * 3;
+    const ND_int nmodes = lattice->nmodes;
     const ND_int nspin = lattice->nspin;
 
     ELPH_cmplx* tmp_buffer = calloc(nbnds * nbnds, sizeof(ELPH_cmplx));

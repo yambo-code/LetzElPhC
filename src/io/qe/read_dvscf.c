@@ -26,7 +26,7 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
     mpi_error = MPI_Comm_rank(commK, &my_rank);
 
     const ND_int* fft_dims = lattice->fft_dims;
-    const ND_int nmodes = 3 * lattice->natom; // 3*natoms
+    const ND_int nmodes = lattice->nmodes;
 
     ND_int read_buffer_count = fft_dims[0] * fft_dims[1] * lattice->nfftz_loc;
     // check for buffer overflow of read_buffer_count. This is because mpi takes

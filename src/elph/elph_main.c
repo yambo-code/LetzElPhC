@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
     }
     // b) Compute elph
     // ============= ELPH iBZ computation =============
-    ND_int nmodes = lattice->natom * 3;
+    ND_int nmodes = lattice->nmodes; 
     ND_int nfft_loc = lattice->fft_dims[0] * lattice->fft_dims[1] * lattice->nfftz_loc;
 
     ELPH_cmplx* eigVec = malloc(sizeof(ELPH_cmplx) * nmodes * nmodes);
