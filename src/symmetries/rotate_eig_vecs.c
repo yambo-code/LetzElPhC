@@ -12,7 +12,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
 
     const ELPH_float* blat = lattice->blat_vec;
     const ND_int natom = lattice->natom;
-    const ND_int nmodes = natom * 3;
+    const ND_int nmodes = lattice->nmodes;
 
     // find the equalivalent positions that the symmetry maps
     ELPH_float* atom_pos_crys = calloc(3 * natom, sizeof(ELPH_float));
@@ -97,8 +97,8 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
             exp_Sqr[ia] += Sq_cart[ix] * pos_tmp[ix];
             exp_qr[ia] += qcart[ix] * pos_tmp[ix];
         }
-        exp_Sqr[ia] = qphase * cexp(I * exp_Sqr[ia]);
-        exp_qr[ia] = cexp(-I * exp_qr[ia]);
+        exp_Sqr[ia] = cexp(I * exp_Sqr[ia]);
+        exp_qr[ia]  = cexp(-I * exp_qr[ia]);
     }
 
     for (ND_int imode = 0; imode < nmodes; ++imode)
@@ -116,6 +116,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
             for (int ix = 0; ix < 3; ++ix)
             {
                 rot_eig_ia[ix] *= exp_qr[ia];
+                rot_eig_ia[ix] *= qphase;
             }
 
             // index of atom that the symmetry maps ia atom
@@ -124,7 +125,13 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
 
             // add Sq phase back
             for (int ix = 0; ix < 3; ++ix)
-            {
+            {   
+                // in case of time reversal symmetry we need to conjugate
+                if (sym->time_rev)
+                {
+                    rot_eig_ia[ix] = -conj(rot_eig_ia[ix]);
+                    // the negative sign is from rotation matrix 
+                }
                 eig_Sq_mode_ia[ix] = exp_Sqr[ia_rot] * rot_eig_ia[ix];
             }
         }
