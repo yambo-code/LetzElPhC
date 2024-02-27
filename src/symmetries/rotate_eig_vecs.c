@@ -33,6 +33,10 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
         for (int ix = 0; ix < 3; ++ix)
         {
             rot_atom[ix] += sym->tau[ix];
+            if (sym->time_rev)
+            {
+                rot_atom[ix] = -rot_atom[ix];
+            }
         }
         ELPH_float rot_atom_crys[3] = { 0, 0, 0 };
         // convert to cystal
