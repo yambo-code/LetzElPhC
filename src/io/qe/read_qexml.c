@@ -56,7 +56,7 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
 
     if (assume_isolated_found)
     {
-        char* assume_iso = ezxml_get(qexml, "input", 0, "boundary_conditions",
+        char* assume_iso = ezxml_get(qexml, "output", 0, "boundary_conditions",
                                      0, "assume_isolated", -1)
                                ->txt;
         if (string_start_with(assume_iso, "2D", true))
@@ -71,7 +71,7 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     strcpy(*pseudo_dir, tmp_str);
     // printf("pseudo dir : %s",*pseudo_dir);
     //  get ntypes
-    ezxml_t atom_specs = ezxml_get(qexml, "input", 0, "atomic_species", -1);
+    ezxml_t atom_specs = ezxml_get(qexml, "output", 0, "atomic_species", -1);
     if (atom_specs == NULL)
     {
         error_msg("error reading atomic spices from data-file-schema.xml file");
