@@ -3,6 +3,10 @@
 #include "../io/io.h"
 #include "../nonloc/Vnonloc.h"
 
+void elph_driver(const char* ELPH_input_file,
+                 enum ELPH_dft_code dft_code,
+                 MPI_Comm comm_world);
+
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              struct Pseudo* pseudo, struct Phonon* phonon,
                              const ND_int iqpt, ELPH_cmplx* eigVec,

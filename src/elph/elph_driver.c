@@ -3,32 +3,25 @@ THe starting point for the entire code
 */
 #include "elph.h"
 
-int main(int argc, char* argv[])
+void elph_driver(const char* ELPH_input_file,
+                 enum ELPH_dft_code dft_code,
+                 MPI_Comm comm_world)
 {
-#if defined(ELPH_OMP_PARALLEL_BUILD)
-    int provided;
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
-#else
-    MPI_Init(&argc, &argv);
-#endif
-
     int mpi_error;
-
-    enum ELPH_dft_code dft_code = DFT_CODE_QE;
 
     struct usr_input* input_data;
     // read the input file
-    read_input_file(argv[1], &input_data, MPI_COMM_WORLD);
+    read_input_file(ELPH_input_file, &input_data, comm_world);
     // Note input parameters are broadcasted internally
     // All the parameters in input_data must be available for all cpus in
-    // MPI_COMM_WORLD
+    // comm_world
 
     char* kernel = input_data->kernel;
 
     struct ELPH_MPI_Comms* mpi_comms = malloc(sizeof(struct ELPH_MPI_Comms));
 
     create_parallel_comms(input_data->nqpool, input_data->nkpool,
-                          MPI_COMM_WORLD, mpi_comms);
+                          comm_world, mpi_comms);
 
     struct Lattice* lattice = malloc(sizeof(struct Lattice));
     struct Pseudo* pseudo = malloc(sizeof(struct Pseudo));
@@ -52,7 +45,7 @@ int main(int argc, char* argv[])
     }
     // b) Compute elph
     // ============= ELPH iBZ computation =============
-    ND_int nmodes = lattice->nmodes; 
+    ND_int nmodes = lattice->nmodes;
     ND_int nfft_loc = lattice->fft_dims[0] * lattice->fft_dims[1] * lattice->nfftz_loc;
 
     ELPH_cmplx* eigVec = malloc(sizeof(ELPH_cmplx) * nmodes * nmodes);
@@ -226,7 +219,4 @@ int main(int argc, char* argv[])
     free_parallel_comms(mpi_comms);
     free(mpi_comms);
     fftw_fun(cleanup)();
-    MPI_Finalize();
-
-    return 0;
 }

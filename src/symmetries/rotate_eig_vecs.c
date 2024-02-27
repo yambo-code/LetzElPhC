@@ -98,7 +98,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
             exp_qr[ia] += qcart[ix] * pos_tmp[ix];
         }
         exp_Sqr[ia] = cexp(I * exp_Sqr[ia]);
-        exp_qr[ia]  = cexp(-I * exp_qr[ia]);
+        exp_qr[ia] = cexp(-I * exp_qr[ia]);
     }
 
     for (ND_int imode = 0; imode < nmodes; ++imode)
@@ -125,12 +125,12 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
 
             // add Sq phase back
             for (int ix = 0; ix < 3; ++ix)
-            {   
+            {
                 // in case of time reversal symmetry we need to conjugate
                 if (sym->time_rev)
                 {
                     rot_eig_ia[ix] = -conj(rot_eig_ia[ix]);
-                    // the negative sign is from rotation matrix 
+                    // the negative sign is from rotation matrix
                 }
                 eig_Sq_mode_ia[ix] = exp_Sqr[ia_rot] * rot_eig_ia[ix];
             }

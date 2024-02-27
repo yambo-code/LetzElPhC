@@ -381,7 +381,6 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     mpi_error = MPI_Bcast(lattice->atomic_pos, 3 * lattice->natom,
                           ELPH_MPI_float, 0, Comm->commW);
 
-
     ELPH_float* nGmax = malloc(sizeof(ELPH_float) * nibz); // max number of gvectors for each wfc in iBZ
     *wfcs = malloc(sizeof(struct WFC) * nibz); // wfcs in iBZ
     struct WFC* wfc_temp = *wfcs;

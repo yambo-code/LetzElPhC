@@ -1,36 +1,86 @@
-#include "../elphC.h"
+#include "preprocessor.h"
+#include "ELPH_getopt.h"
 
-enum calc_type
+void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
 {
-    CALC_ELPH, // initiate elph calculation
-    CALC_PH_SAVE_CREATE, // preprocess (creating ph_save_dir)
-    CALC_HELP, // help
-    CALC_VERSION // print version
-};
+    // set default
+    calc_info->calc = CALC_ELPH;
+    calc_info->code = DFT_CODE_QE;
+    strcpy(calc_info->input_file, "");
+    /*
+     * Here are the options
+     * --help (help)
+     * --version (version)
+     * -pp (run preprocessor)
+     * --code=qe
+     * -F file name
+     */
+    bool help_cmd = false;
+    bool ver_cmd = false;
+    bool pp_cmd = false;
 
-enum calc_type ELPH_calc_type(int narg, const char** argv)
-{
-    // first check if the use requested help
-    enum calc_type ctype = CALC_ELPH;
+    const struct option long_options[] = {
+        { "help", no_argument, NULL, 'h' },
+        { "version", no_argument, NULL, 'v' },
+        { "pp", no_argument, NULL, 'p' },
+        { "code", required_argument, NULL, 'c' },
+        { "F", required_argument, NULL, 'f' }
+    };
 
-    for (int i = 0; i < narg; ++i)
+    int ch;
+    int longindex;
+    while ((ch = ELPH_getopt_long_only(argc, argv, "", long_options, &longindex)) != -1)
     {
-        const char* cli_str = argv[i];
-        if (strstr(cli_str, "--help"))
+        switch (ch)
         {
-            ctype = CALC_HELP;
+        case 'h':
+            help_cmd = true;
             break;
-        }
-        else if (strstr(cli_str, "-pp"))
-        {
-            ctype = CALC_PH_SAVE_CREATE;
+        case 'v':
+            ver_cmd = true;
             break;
-        }
-        else if (strstr(cli_str, "--version"))
-        {
-            ctype = CALC_VERSION;
+        case 'p':
+            pp_cmd = true;
             break;
+        case 'c':
+            // get the code
+            if (strstr(optarg, "qe"))
+            {
+                calc_info->code = DFT_CODE_QE;
+            }
+            else
+            {
+                fprintf(stderr, "only --code=qe is supported\n");
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
+            break;
+        case 'f':
+            strncpy(calc_info->input_file, optarg, 512 - 1);
+            break;
+        case '?':
+            fprintf(stderr, "Unsupported argument given.\n");
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
     }
-    return ctype;
+
+    if (help_cmd)
+    {
+        calc_info->calc = CALC_HELP;
+        return;
+    }
+    else if (ver_cmd)
+    {
+        calc_info->calc = CALC_VERSION;
+        return;
+    }
+    else if (pp_cmd)
+    {
+        calc_info->calc = CALC_PH_SAVE_CREATE;
+        return;
+    }
+    else
+    {
+        calc_info->calc = CALC_ELPH;
+        return;
+    }
 }

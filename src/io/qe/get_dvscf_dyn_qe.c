@@ -9,7 +9,7 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
 {
     // ph_save_dir must be available on all cpus else U.B
     // if dvscf == NULL, then only eig vecs are returned.
-    ND_int nmodes = lattice->nmodes; 
+    ND_int nmodes = lattice->nmodes;
 
     char small_buf[32];
 
