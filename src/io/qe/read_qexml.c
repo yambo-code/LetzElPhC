@@ -92,7 +92,7 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
 
     // get alat
     alat[0] = atof(ezxml_attr(
-        ezxml_get(qexml, "input", 0, "atomic_structure", -1), "alat"));
+        ezxml_get(qexml, "output", 0, "atomic_structure", -1), "alat"));
     alat[1] = alat[0];
     alat[2] = alat[0];
     // get fft dims
