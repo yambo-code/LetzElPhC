@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     else 
     {
         // run preprocessor
-        if (!my_rank)
+        if (my_rank == 0)
         {
             if (calc_info->calc == CALC_HELP)
             {
