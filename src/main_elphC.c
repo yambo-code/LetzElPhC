@@ -20,10 +20,10 @@ int main(int argc, char* argv[])
     
     struct calc_details * calc_info = malloc(sizeof(struct calc_details)); 
 
-    int dft_code_tmp;
-    bool run_elph_calc = false;
+    ND_int dft_code_tmp;
     // this is used to broad cast the enum
-    if (!my_rank)
+    bool run_elph_calc = false;
+    if (my_rank == 0)
     {
         ELPH_cli_parser(argc, argv, calc_info);
         
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
         }
     }
     
-    MPI_Bcast(&dft_code_tmp,  1, MPI_INT,    0, MPI_COMM_WORLD);
+    MPI_Bcast(&dft_code_tmp,  1, ELPH_MPI_ND_INT,    0, MPI_COMM_WORLD);
     MPI_Bcast(&run_elph_calc, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(calc_info->input_file, sizeof(calc_info->input_file), MPI_CHAR, 0, MPI_COMM_WORLD);
     
