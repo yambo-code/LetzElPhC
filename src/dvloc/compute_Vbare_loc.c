@@ -27,8 +27,6 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     process writes)
     */
 
-    int mpi_error;
-
     const ND_int nspin = lattice->nspin;
     const ND_int nbnds = lattice->nbnds;
     const ND_int nspinor = lattice->nspinor;
@@ -59,7 +57,10 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     /*initialization and setup */
 
     ELPH_float* gSkq_buf = calloc(3 * npwkq, sizeof(ELPH_float));
+    CHECK_ALLOC(gSkq_buf);
+
     ELPH_float* gSk_buf = calloc(3 * npwk, sizeof(ELPH_float));
+    CHECK_ALLOC(gSk_buf);
 
     /*initialization and setup */
     const ELPH_float* kqvec = lattice->kpt_iredBZ + 3 * ikq;
@@ -167,6 +168,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     allocate a gvec array to store gvecs in floats (needed for translation
     routine) */
     ELPH_float* gvecs_float_tmp = malloc(sizeof(ELPH_float) * 3 * max_npw);
+    CHECK_ALLOC(gvecs_float_tmp);
 
     for (ND_int ipw = 0; ipw < (3 * npwkq); ++ipw)
     {
@@ -185,6 +187,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     }
 
     ELPH_cmplx* wfcSk_r = malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * nfft_loc);
+    CHECK_ALLOC(wfcSk_r);
 
     struct ELPH_fft_plan fft_plan;
 
@@ -225,6 +228,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
              lattice->fft_dims, FFTW_MEASURE, Comm->commK);
 
     ELPH_cmplx* dVpsiG = malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * npwkq);
+    CHECK_ALLOC(dVpsiG);
 
     if (Comm->commK_rank == 0)
     {
@@ -251,6 +255,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     // create a temporary buffer to store local el-ph mat elements
     ELPH_cmplx* elph_kq_mn = calloc(nbnds * nbnds, sizeof(ELPH_cmplx));
+    CHECK_ALLOC(elph_kq_mn);
     /* Now Get Sk in real space*/
 
     /* Compute dVpsi in G space and compute the sandwich */
@@ -304,8 +309,9 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
             {
                 elph_sum_buf = &temp_sum;
             }
-            MPI_Reduce(elph_kq_mn, elph_sum_buf, nbnds * nbnds, ELPH_MPI_cmplx,
+            int mpi_error = MPI_Reduce(elph_kq_mn, elph_sum_buf, nbnds * nbnds, ELPH_MPI_cmplx,
                        MPI_SUM, 0, Comm->commK);
+            MPI_error_msg(mpi_error);
         }
     }
     // Free stuff
