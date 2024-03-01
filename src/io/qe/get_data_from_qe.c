@@ -14,6 +14,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     if (Comm->commW_rank == 0)
     {
         tmp_buffer = calloc(1024 + strlen(ph_save_dir), 1);
+        CHECK_ALLOC(tmp_buffer);
     }
     if (Comm->commW_rank == 0)
     {
@@ -24,7 +25,10 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     }
     // Bcast data
     mpi_error = MPI_Bcast(&phonon->nq_iBZ, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&phonon->nq_BZ, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     // divide the qpoints in iBZ over q pools
     phonon->nq_iBZ_loc = distribute_to_grps(phonon->nq_iBZ, Comm->nqpools,
@@ -42,9 +46,11 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     if (Comm->commW_rank != 0)
     {
         phonon->qpts_iBZ = malloc(sizeof(ELPH_float) * 3 * phonon->nq_iBZ);
+        CHECK_ALLOC(phonon->qpts_iBZ);
     }
     mpi_error = MPI_Bcast(phonon->qpts_iBZ, 3 * phonon->nq_iBZ, ELPH_MPI_float,
                           0, Comm->commW);
+    MPI_error_msg(mpi_error);
     // qpts must be divided to get then cart units
     // now get the basic info from
     ELPH_float alat[3];
@@ -71,15 +77,28 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     // Bcast all the variables
 
     mpi_error = MPI_Bcast(lat_vec, 9, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(alat, 3, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&lattice->dimension, 1, MPI_CHAR, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&lattice->nmag, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&phonon->nph_sym, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&lattice->is_soc_present, 1, MPI_C_BOOL, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&ph_tim_rev, 1, MPI_C_BOOL, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     ELPH_float blat[9];
     reciprocal_vecs(lat_vec, blat);
@@ -90,6 +109,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
 
     // allocate memory for phonon symmetric matrices on rest of the cpus
     phonon->ph_syms = malloc(sizeof(struct symmetry) * 2 * phonon->nph_sym);
+    CHECK_ALLOC(phonon->ph_syms);
     // we create 2*phonon->nph_sym sets of symmetries (factor 2 to store the
     // time rev case) Note: the second half([phonon->nph_sym:]) are only
     // used when time reversal is present
@@ -172,8 +192,13 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     free(tmp_buffer);
 
     phonon->qpts_BZ = malloc(phonon->nq_BZ * 3 * sizeof(ELPH_float));
+    CHECK_ALLOC(phonon->qpts_BZ);
+
     phonon->qmap = malloc(phonon->nq_BZ * 2 * sizeof(int));
+    CHECK_ALLOC(phonon->qmap);
+
     phonon->nqstar = malloc(phonon->nq_iBZ * sizeof(ND_int));
+    CHECK_ALLOC(phonon->nqstar);
 
     // convert to iBZ qpts to cart. coordinates.
     for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ; ++iqpt)

@@ -7,6 +7,7 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
                       ND_int iq_BZ, ELPH_cmplx* eig, ELPH_cmplx* dvscf,
                       ELPH_float* omega_ph, const struct ELPH_MPI_Comms* Comm)
 {
+    int mpi_error;
     // ph_save_dir must be available on all cpus else U.B
     // if dvscf == NULL, then only eig vecs are returned.
     ND_int nmodes = lattice->nmodes;
@@ -51,12 +52,16 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
 
     // Bcast variables
 
-    MPI_Bcast(eig, nmodes * nmodes, ELPH_MPI_cmplx, 0, Comm->commQ);
-    MPI_Bcast(omega_ph, nmodes, ELPH_MPI_float, 0, Comm->commQ);
+    mpi_error = MPI_Bcast(eig, nmodes * nmodes, ELPH_MPI_cmplx, 0, Comm->commQ);
+    MPI_error_msg(mpi_error);
+
+    mpi_error = MPI_Bcast(omega_ph, nmodes, ELPH_MPI_float, 0, Comm->commQ);
+    MPI_error_msg(mpi_error);
 
     if (dvscf != NULL)
     {
-        MPI_Bcast(pat_vecs, nmodes * nmodes, ELPH_MPI_cmplx, 0, Comm->commQ);
+        mpi_error = MPI_Bcast(pat_vecs, nmodes * nmodes, ELPH_MPI_cmplx, 0, Comm->commQ);
+        MPI_error_msg(mpi_error);
 
         snprintf(small_buf, 32, "dvscf%d", (int)(iq_BZ + 1));
         cwk_path_join(ph_save_dir, small_buf, tmp_char_buf,
@@ -76,7 +81,10 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
         {
             error_msg("Buffer Overflow in dvscf_len. Contact developer");
         }
-        MPI_Bcast(dvscf, dvscf_len, ELPH_MPI_cmplx, 0, Comm->commRq);
+        
+        mpi_error = MPI_Bcast(dvscf, dvscf_len, ELPH_MPI_cmplx, 0, Comm->commRq);
+        MPI_error_msg(mpi_error);
+
         free(pat_vecs);
     }
 
