@@ -22,8 +22,12 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
     // qe store stuff in doubles as an array of shape (nmodes, nmag, FFTz, FFTy,
     // FFTx)
     int my_rank, Comm_size, mpi_error;
+
     mpi_error = MPI_Comm_size(commK, &Comm_size);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_rank(commK, &my_rank);
+    MPI_error_msg(mpi_error);
 
     const ND_int* fft_dims = lattice->fft_dims;
     const ND_int nmodes = lattice->nmodes;
@@ -37,10 +41,7 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
     }
 
     double complex* read_buf = malloc(sizeof(double complex) * read_buffer_count);
-    if (read_buf == NULL)
-    {
-        error_msg("Allocation of dVscf read buffer failed");
-    }
+    CHECK_ALLOC(read_buf);
 
     MPI_File handle;
 
@@ -66,10 +67,10 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
 
         MPI_Offset offset = sizeof(double complex) * fft_dims[0] * fft_dims[1] * (iset * fft_dims[2] + lattice->nfftz_loc_shift);
 
-        MPI_File_read_at_all(handle, offset, read_buf, read_buffer_count,
+        mpi_error = MPI_File_read_at_all(handle, offset, read_buf, read_buffer_count,
                              MPI_C_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+        MPI_error_msg(mpi_error);
         // transpose from (FFTz, FFTy, FFTx)->(FFTx, FFTy, FFTz)
-
         ND_int ld_read_buf = fft_dims[0] * fft_dims[1];
         ND_int ld_dvscf_buf = lattice->nfftz_loc * fft_dims[1];
 
@@ -107,6 +108,7 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
 
     ELPH_cmplx* eig_pat = calloc(nmodes * nmodes, sizeof(ELPH_cmplx));
     // const ELPH_cmplx * eig, const ELPH_cmplx * pats
+    CHECK_ALLOC(eig_pat);
 
     // compute eig@pattern_vec^\dagger
     matmul_cmplx('N', 'C', eig, pats, eig_pat, 1.0, 0.0, nmodes, nmodes, nmodes,
@@ -118,6 +120,7 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
     // relatively smaller buffer and do multiple matmuls (nmodes, FFTy,
     // FFTz_loc)
     ELPH_cmplx* dvscf_mode = calloc(nmodes * fft_dims[1] * lattice->nfftz_loc, sizeof(ELPH_cmplx));
+    CHECK_ALLOC(dvscf_mode);
 
     ND_int niter = lattice->nmag * fft_dims[0]; // FFTx*nmag
     ND_int ld_mode = niter * fft_dims[1] * lattice->nfftz_loc; // nmag*FFTx*FFTy*FFTz_loc

@@ -163,9 +163,15 @@ static void parse_upf2(FILE* fp, struct local_pseudo* loc_pseudo)
 
     loc_pseudo->ngrid = ngrid;
     loc_pseudo->Zval = Zval;
+
     loc_pseudo->Vloc_atomic = malloc(sizeof(ELPH_float) * ngrid);
+    CHECK_ALLOC(loc_pseudo->Vloc_atomic);
+
     loc_pseudo->r_grid = malloc(sizeof(ELPH_float) * ngrid);
+    CHECK_ALLOC(loc_pseudo->r_grid);
+
     loc_pseudo->rab_grid = malloc(sizeof(ELPH_float) * ngrid);
+    CHECK_ALLOC(loc_pseudo->rab_grid);
 
     if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) != ngrid)
     {
@@ -202,10 +208,7 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
     }
 
     char* xml_buf = malloc(1000);
-    if (xml_buf == NULL)
-    {
-        error_msg("error allocating the upf header read buffer");
-    }
+    CHECK_ALLOC(xml_buf);
 
     float Zval = -1;
     int ngrid = -1;
@@ -268,10 +271,7 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
     length += 15; // to add root elements and one for null terminator
 
     xml_buf = malloc(length);
-    if (xml_buf == NULL)
-    {
-        error_msg("error allocating the upf 1 read buffer");
-    }
+    CHECK_ALLOC(xml_buf);
 
     xml_buf[length] = '\0';
     strcpy(xml_buf, "<root>");
@@ -313,9 +313,15 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
 
     loc_pseudo->ngrid = ngrid;
     loc_pseudo->Zval = Zval;
+
     loc_pseudo->Vloc_atomic = malloc(sizeof(ELPH_float) * ngrid);
+    CHECK_ALLOC(loc_pseudo->Vloc_atomic);
+
     loc_pseudo->r_grid = malloc(sizeof(ELPH_float) * ngrid);
+    CHECK_ALLOC(loc_pseudo->r_grid);
+
     loc_pseudo->rab_grid = malloc(sizeof(ELPH_float) * ngrid);
+    CHECK_ALLOC(loc_pseudo->rab_grid);
 
     if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) != ngrid)
     {
@@ -383,10 +389,7 @@ static void get_upf1_element(FILE* fp, char* atomic_sym)
 
     atomic_sym[2] = '\0';
     char* xml_buf = malloc(1000);
-    if (xml_buf == NULL)
-    {
-        error_msg("error allocating the upf header read buffer");
-    }
+    CHECK_ALLOC(xml_buf);
 
     bool read_header = false;
     while (fgets(xml_buf, 1000, fp))

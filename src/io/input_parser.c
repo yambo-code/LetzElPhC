@@ -16,9 +16,13 @@ void init_usr_input(struct usr_input** input)
 {
     // this function also sets defaults for the user input file
     *input = malloc(sizeof(struct usr_input));
+    CHECK_ALLOC(*input);
+
     struct usr_input* inp = *input;
 
     inp->save_dir = calloc(MAX_STR_INPUT, 1);
+    CHECK_ALLOC(inp->save_dir);
+
     inp->ph_save_dir = inp->save_dir + 600;
     inp->kernel = inp->save_dir + 1200;
 
@@ -45,12 +49,20 @@ static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
 
     // all char * will be bcasted in one single call
     mpi_error = MPI_Bcast(input->save_dir, MAX_STR_INPUT, MPI_CHAR, root, comm);
+    MPI_error_msg(mpi_error);
     // ph_save_dir and kernel are also broadcasted when entire save_dir is
     // Bcasted
     mpi_error = MPI_Bcast(&input->nkpool, 1, MPI_INT, root, comm);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&input->nqpool, 1, MPI_INT, root, comm);
+    MPI_error_msg(mpi_error);
+    
     mpi_error = MPI_Bcast(&input->start_bnd, 1, MPI_INT, root, comm);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&input->end_bnd, 1, MPI_INT, root, comm);
+    MPI_error_msg(mpi_error);
 }
 
 static int handler(void* user, const char* section, const char* name,
@@ -123,7 +135,9 @@ void read_input_file(const char* input_file, struct usr_input** input_data,
     init_usr_input(input_data);
 
     int mpi_world_rank, mpi_error;
+    
     mpi_error = MPI_Comm_rank(MPI_world_comm, &mpi_world_rank);
+    MPI_error_msg(mpi_error);
 
     if (mpi_world_rank == 0)
     {

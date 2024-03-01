@@ -28,6 +28,7 @@ void prepare_spline(const ND_int nvals, ELPH_float* restrict xin,
 
     /* first allocate a buffer required for scratch space*/
     ELPH_float* buf = malloc(sizeof(ELPH_float) * 4 * nvals);
+    CHECK_ALLOC(buf);
 
     // // sort xin
     // for (ND_int i = 0 ; i<nvals; ++i)

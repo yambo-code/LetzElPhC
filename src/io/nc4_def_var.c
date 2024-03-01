@@ -16,6 +16,7 @@ void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
     }
 
     int* dimids = malloc(rank * sizeof(int));
+    CHECK_ALLOC(dimids);
     //
     for (ND_int i = 0; i < rank; ++i)
     {

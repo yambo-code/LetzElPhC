@@ -44,6 +44,7 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
 
         Dkmn_rep_ptr = calloc(lattice->nspin * lattice->nbnds * lattice->nbnds,
                               sizeof(ELPH_cmplx));
+        CHECK_ALLOC(Dkmn_rep_ptr);
     }
 
     // for computation of Dmats, we use all the nodes

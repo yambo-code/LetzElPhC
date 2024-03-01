@@ -28,6 +28,7 @@ void elph_q_rotate(const ELPH_cmplx* Dmats_l,
     const ND_int nspin = lattice->nspin;
 
     ELPH_cmplx* tmp_buffer = calloc(nbnds * nbnds, sizeof(ELPH_cmplx));
+    CHECK_ALLOC(tmp_buffer);
 
     char g_conj = 'T';
     if (tim_rev)

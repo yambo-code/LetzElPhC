@@ -14,12 +14,15 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
     char small_buf[32];
 
     size_t tmp_char_buf_len = 1024 + strlen(ph_save_dir);
+
     char* tmp_char_buf = malloc(tmp_char_buf_len);
+    CHECK_ALLOC(tmp_char_buf);
 
     ELPH_cmplx* pat_vecs = NULL;
     if (dvscf != NULL)
     {
         pat_vecs = malloc(sizeof(ELPH_cmplx) * nmodes * nmodes);
+        CHECK_ALLOC(pat_vecs);
     }
 
     if (Comm->commQ_rank == 0)

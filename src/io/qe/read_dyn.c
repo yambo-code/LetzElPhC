@@ -37,7 +37,10 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     }
 
     char* read_buf = malloc(sizeof(char) * DYN_READ_BUF_SIZE);
+    CHECK_ALLOC(read_buf);
+
     ELPH_float* read_fbuf = malloc(sizeof(ELPH_float) * DYN_FLOAT_BUF_SIZE);
+    CHECK_ALLOC(read_fbuf);
 
     // two comment lines
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
@@ -64,10 +67,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     }
 
     ELPH_float* atm_mass = malloc(sizeof(ELPH_float) * (natom + ntype));
-    if (atm_mass == NULL)
-    {
-        error_msg("Failed to allocate buffer for atomic masses");
-    }
+    CHECK_ALLOC(atm_mass);
 
     // read atomic mass for each type
     ELPH_float* atm_mass_type = atm_mass + natom;
@@ -99,9 +99,12 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
 
     // allocate a tmp buffer for diagonalization
     double complex* dyn_mat_tmp = malloc(sizeof(double complex) * nmodes * nmodes);
+    CHECK_ALLOC(dyn_mat_tmp);
 
     // allocate workspace for zheev
     double* omega2 = malloc(sizeof(double) * 4 * nmodes); // // (3N-2 + N) = 4N-2
+    CHECK_ALLOC(omega2);
+
     double* rwork = omega2 + nmodes;
 
     int info_z, lwork;
@@ -115,7 +118,9 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
             "Error in query request for zheev, when diagonalizing dyn mat");
     }
     lwork = (int)rint(creal(tmp_work_var));
+    
     double complex* work_array = malloc(sizeof(double complex) * lwork);
+    CHECK_ALLOC(work_array);
 
     // start reading the dynamical matrices
     while (!nq_found) // while(true) // put while(true) to read all the
@@ -254,7 +259,8 @@ void read_qpts_qe(const char* dyn0_file, ND_int* nqpt_iBZ, ND_int* nqpt_fullBZ,
         error_msg("Unable to open the dyn0 file");
     }
 
-    char* read_buf = malloc(sizeof(char) * DYN_READ_BUF_SIZE);
+    char* read_buf = malloc(DYN_READ_BUF_SIZE);
+    CHECK_ALLOC(read_buf);
 
     int qgrid[3];
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
@@ -274,6 +280,8 @@ void read_qpts_qe(const char* dyn0_file, ND_int* nqpt_iBZ, ND_int* nqpt_fullBZ,
     *nqpt_fullBZ = qgrid[0] * qgrid[1] * qgrid[2];
 
     ELPH_float* iBZ_qpts = malloc(sizeof(ELPH_float) * 3 * nq_iBZ_tmp);
+    CHECK_ALLOC(iBZ_qpts);
+
     *qpts = iBZ_qpts;
 
     // now read list of qpoints

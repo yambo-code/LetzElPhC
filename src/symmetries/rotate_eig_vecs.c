@@ -16,7 +16,10 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
 
     // find the equalivalent positions that the symmetry maps
     ELPH_float* atom_pos_crys = calloc(3 * natom, sizeof(ELPH_float));
+    CHECK_ALLOC(atom_pos_crys);
+
     ND_int* rot_map = malloc(sizeof(ND_int) * natom);
+    CHECK_ALLOC(rot_map);
 
     matmul_float('N', 'N', lattice->atomic_pos, blat, atom_pos_crys,
                  1.0 / (2 * ELPH_PI), 0.0, 3, 3, 3, natom, 3, 3);
@@ -79,10 +82,14 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
 
     ELPH_cmplx* exp_Sqr = malloc(natom * sizeof(ELPH_cmplx));
     // exp(I*Sq*atomic_pos)
+    CHECK_ALLOC(exp_Sqr);
+
     ELPH_cmplx* exp_qr = malloc(natom * sizeof(ELPH_cmplx));
     // exp(-I*q*atomic_pos)
+    CHECK_ALLOC(exp_qr);
 
     ELPH_cmplx* rot_eig = calloc(nmodes, sizeof(ELPH_cmplx));
+    CHECK_ALLOC(rot_eig);
 
     ELPH_cmplx Rmat_cmplx[9];
     for (int i = 0; i < 9; ++i)

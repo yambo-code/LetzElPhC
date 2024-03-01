@@ -45,6 +45,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     /* get the k point indices and symmetries */
     int* kmap = lattice->kmap;
     int* KplusQidxs = malloc(nk_totalBZ * sizeof(int));
+    CHECK_ALLOC(KplusQidxs);
 
     ELPH_float qpt_tmp[3];
     memcpy(qpt_tmp, qpt, sizeof(ELPH_float) * 3);
@@ -65,6 +66,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     if (Comm->commK_rank == 0)
     {
         elph_kq_mn = calloc(nbnds * nbnds * lattice->nspin * nmodes, sizeof(ELPH_cmplx));
+        CHECK_ALLOC(elph_kq_mn);
     }
     //// (nu, nspin, mk, nk+q)
     /* Now Compute elph-matrix elements for each kpoint */
@@ -79,8 +81,13 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     if (Comm->commK_rank == 0)
     {
         gSq_buff = calloc(nbnds * nbnds * lattice->nspin * nmodes, sizeof(ELPH_cmplx));
+        CHECK_ALLOC(gSq_buff);
+
         D_mat_l = calloc(nbnds * nbnds * lattice->nspin, sizeof(ELPH_cmplx));
+        CHECK_ALLOC(D_mat_l);
+
         D_mat_r = calloc(nbnds * nbnds * lattice->nspin, sizeof(ELPH_cmplx));
+        CHECK_ALLOC(D_mat_r);
     }
 
     for (ND_int ii = 0; ii < nk_this_pool; ++ii)
@@ -181,6 +188,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
             }
         }
         mpi_error = MPI_Barrier(Comm->commK);
+        MPI_error_msg(mpi_error);
     }
     // free wfc buffers
     if (Comm->commK_rank == 0)

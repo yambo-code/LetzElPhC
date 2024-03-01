@@ -78,11 +78,14 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
 
     char* read_buf = malloc(4 * PH_X_INP_READ_BUF_SIZE);
+    CHECK_ALLOC(read_buf);
+
     char* key_str = read_buf + PH_X_INP_READ_BUF_SIZE;
     char* val_str = read_buf + 2 * PH_X_INP_READ_BUF_SIZE;
     char* tmp_buf = read_buf + 3 * PH_X_INP_READ_BUF_SIZE;
 
     char* inputs_vals = malloc(5 * PH_X_INP_READ_BUF_SIZE);
+    CHECK_ALLOC(inputs_vals);
 
     char* out_dir = inputs_vals;
     char* dyn_prefix = inputs_vals + PH_X_INP_READ_BUF_SIZE;

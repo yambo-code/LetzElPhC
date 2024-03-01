@@ -6,6 +6,7 @@
 
 #include "common/cwalk/cwalk.h"
 #include "common/omp_pragma_def.h"
+#include "common/error.h"
 #include <complex.h>
 #include <fftw3.h>
 #include <limits.h>

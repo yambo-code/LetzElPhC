@@ -7,7 +7,6 @@ void elph_driver(const char* ELPH_input_file,
                  enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world)
 {
-    int mpi_error;
 
     struct usr_input* input_data;
     // read the input file
@@ -19,13 +18,20 @@ void elph_driver(const char* ELPH_input_file,
     char* kernel = input_data->kernel;
 
     struct ELPH_MPI_Comms* mpi_comms = malloc(sizeof(struct ELPH_MPI_Comms));
+    CHECK_ALLOC(mpi_comms);
 
     create_parallel_comms(input_data->nqpool, input_data->nkpool,
                           comm_world, mpi_comms);
 
     struct Lattice* lattice = malloc(sizeof(struct Lattice));
+    CHECK_ALLOC(lattice);
+
     struct Pseudo* pseudo = malloc(sizeof(struct Pseudo));
+    CHECK_ALLOC(pseudo);
+
     struct Phonon* phonon = malloc(sizeof(struct Phonon));
+    CHECK_ALLOC(phonon);
+    
     struct WFC* wfcs;
 
     // read the SAVE data and phonon related data.
@@ -50,10 +56,15 @@ void elph_driver(const char* ELPH_input_file,
 
     ELPH_cmplx* eigVec = malloc(sizeof(ELPH_cmplx) * nmodes * nmodes);
     //(nmodes,nmodes) // buffer to store eigen vectors
+    CHECK_ALLOC(eigVec);
+
     ELPH_cmplx* dVscf = malloc(sizeof(ELPH_cmplx) * nmodes * lattice->nmag * nfft_loc);
     // (nmodes,nmag,Nx,Ny,Nz) // bufffer to store dVscf
+    CHECK_ALLOC(dVscf);
+
     ELPH_float* omega_ph = malloc(sizeof(ELPH_float) * nmodes);
     // buffer for storing phonon freq
+    CHECK_ALLOC(omega_ph);
 
     int ncid_elph, ncid_dmat, nc_err;
     int varid_eig, varid_elph, varid_omega, varid_dmat;
@@ -105,6 +116,7 @@ void elph_driver(const char* ELPH_input_file,
     if (mpi_comms->commQ_rank == 0)
     {
         eig_Sq = calloc(nmodes * nmodes, sizeof(ELPH_cmplx));
+        CHECK_ALLOC(eig_Sq);
     }
 
     for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
@@ -124,6 +136,7 @@ void elph_driver(const char* ELPH_input_file,
         }
         ELPH_cmplx* Vlocr = malloc(sizeof(ELPH_cmplx) * nmodes * nfft_loc);
         // buffer to store local part of the pseudo potential
+        CHECK_ALLOC(Vlocr);
         //
         // compute the local part of the bare
         dVlocq(phonon->qpts_iBZ + iqpt_iBZg * 3, lattice, pseudo, eigVec, Vlocr,

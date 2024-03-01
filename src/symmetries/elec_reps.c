@@ -114,8 +114,13 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
 
     // compute the rotated gvecs in crystal coordinates
     ELPH_float* G_S1k1 = calloc(3 * npw_k1_loc, sizeof(ELPH_float)); // S1*k1 gvecs
+    CHECK_ALLOC(G_S1k1);
+
     ELPH_float* G_RS1k1 = calloc(3 * npw_k1_loc, sizeof(ELPH_float)); // R*S1*k1 gvecs
+    CHECK_ALLOC(G_RS1k1);
+
     ELPH_float* G_S2k2 = calloc(3 * npw_k2_loc, sizeof(ELPH_float)); // S2*k2 gvecs
+    CHECK_ALLOC(G_S2k2);
 
     // compute the ulm vec i.e S2K2 + G = R*S1*k1 = > G = R*S1*k1-S2K2
     // C'_G-G0 = C_G. we need to add -G0 = S2*k2-R*S1*k1;
@@ -170,34 +175,28 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
     if (Comm->commK_rank == 0)
     {
         G_RS1k1_root_all = malloc(sizeof(ELPH_float) * npw_k1_total * 3);
+        CHECK_ALLOC(G_RS1k1_root_all);
+
         G_S2k2_root_all = malloc(sizeof(ELPH_float) * npw_k2_total * 3);
+        CHECK_ALLOC(G_S2k2_root_all);
+
         idx_arr = malloc(sizeof(ND_int) * npw_k2_total);
+        CHECK_ALLOC(idx_arr);
+
         counts = malloc(4 * sizeof(int) * Comm->commK_size);
+        CHECK_ALLOC(counts);
+        
         disp = counts + Comm->commK_size;
         counts2 = counts + 2 * Comm->commK_size;
         disp2 = counts + 3 * Comm->commK_size;
 
-        if (counts == NULL)
-        {
-            error_msg("Failed to allocate comm array");
-        }
-        if (G_S2k2_root_all == NULL)
-        {
-            error_msg("Failed to allocate gvec123 array");
-        }
-        if (G_RS1k1_root_all == NULL)
-        {
-            error_msg("Failed to allocate gvec1 array");
-        }
-        if (idx_arr == NULL)
-        {
-            error_msg("Failed to allocate indices array");
-        }
     }
 
     // collect R*S1*G on root
     int pw_loc_int = 3 * npw_k1_loc;
     mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, Comm->commK);
+    MPI_error_msg(mpi_error);
+
     if (Comm->commK_rank == 0)
     {
         int disp_tmp = 0;
@@ -215,6 +214,8 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
     pw_loc_int = 3 * npw_k2_loc;
     mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts2, 1, MPI_INT, 0,
                            Comm->commK);
+    MPI_error_msg(mpi_error);
+
     if (Comm->commK_rank == 0)
     {
         int disp_tmp = 0;
@@ -256,29 +257,24 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
     if (Comm->commK_rank == 0)
     {
         wfc_k2_root = malloc(sizeof(ELPH_cmplx) * npw_k2_total);
+        CHECK_ALLOC(wfc_k2_root);
+
         wfc_k2_sort_root = malloc(sizeof(ELPH_cmplx) * npw_k1_total);
+        CHECK_ALLOC(wfc_k2_sort_root);
     }
 
     ND_int nsets = lattice->nspin * lattice->nbnds; // nbands * nspin
     ND_int npw_spinor_k1 = lattice->nspinor * npw_k1_loc; // nspinor * npw
 
     ELPH_cmplx* wfc_RS1k = malloc(nsets * npw_spinor_k1 * sizeof(ELPH_cmplx)); // R*Sym1*k1 wfc
-    if (wfc_RS1k == NULL)
-    {
-        error_msg("Allocation of sorted local buffer RS1k failed");
-    }
+    CHECK_ALLOC(wfc_RS1k);
+
     ELPH_cmplx* wfc_S2k2 = malloc(nsets * npw_spinor_k1 * sizeof(ELPH_cmplx)); // Sym2*k2 wfc
-    if (wfc_S2k2 == NULL)
-    {
-        error_msg("Allocation of sorted local buffer S2k2 failed");
-    }
+    CHECK_ALLOC(wfc_S2k2);
 
     // create a tmp buffer
     ELPH_cmplx* Dkmn_rep_tmp = calloc(lattice->nbnds * lattice->nbnds, sizeof(ELPH_cmplx));
-    if (Dkmn_rep_tmp == NULL)
-    {
-        error_msg("Allocation of local buffer Dkmn failed");
-    }
+    CHECK_ALLOC(Dkmn_rep_tmp);
 
     // Now rearrage the wavefunctin, and compute the sandwitch
     for (ND_int iset = 0; iset < nsets; ++iset)
@@ -315,6 +311,8 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
             mpi_error = MPI_Gatherv(
                 wfc_k2_tmp + ispinor * npw_k2_loc, npw_k2_loc, ELPH_MPI_cmplx,
                 wfc_k2_root, counts2, disp2, ELPH_MPI_cmplx, 0, Comm->commK);
+            MPI_error_msg(mpi_error);
+
             if (Comm->commK_rank == 0)
             {
                 // rearrange
@@ -337,6 +335,7 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
             mpi_error = MPI_Scatterv(wfc_k2_sort_root, counts, disp, ELPH_MPI_cmplx,
                                      wfc_S2k2_tmp + ispinor * npw_k1_loc, npw_k1_loc,
                                      ELPH_MPI_cmplx, 0, Comm->commK);
+            MPI_error_msg(mpi_error);
         }
 
         // apply SU(S2) on k2

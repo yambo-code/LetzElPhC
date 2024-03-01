@@ -30,6 +30,8 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
     ND_int nmodes = natom * 3;
 
     ELPH_float* pat_tmp_read = malloc(sizeof(ELPH_float) * 2 * nmodes);
+    CHECK_ALLOC(pat_tmp_read);
+
     char rep_str[100];
     char pert_str[100];
 

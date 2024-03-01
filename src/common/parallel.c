@@ -9,7 +9,10 @@ ND_int get_mpi_local_size_idx(const ND_int n, ND_int* start_idx, MPI_Comm Comm)
     int my_rank, total_size;
     int mpi_error;
     mpi_error = MPI_Comm_rank(Comm, &my_rank);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_size(Comm, &total_size);
+    MPI_error_msg(mpi_error);
 
     ND_int n_q = n / total_size;
     ND_int n_r = n % total_size;
@@ -81,7 +84,10 @@ void create_parallel_comms(const int nqpools, const int nkpools,
     Comm->nkpools = nkpools;
 
     mpi_error = MPI_Comm_rank(Comm->commW, &Comm->commW_rank);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_size(Comm->commW, &Comm->commW_size);
+    MPI_error_msg(mpi_error);
 
     // check Comm->commW_size is divisible by nqpools*nkpools
     if (nqpools < 1 || nkpools < 1)
@@ -100,21 +106,38 @@ void create_parallel_comms(const int nqpools, const int nkpools,
     // commQ
     mpi_error = MPI_Comm_split(Comm->commW, Comm->commW_rank / Comm->commQ_size,
                                Comm->commW_rank, &Comm->commQ);
+    MPI_error_msg(mpi_error);
+    
     mpi_error = MPI_Comm_rank(Comm->commQ, &Comm->commQ_rank);
+    MPI_error_msg(mpi_error);
+
     // commK
     mpi_error = MPI_Comm_split(Comm->commQ, Comm->commQ_rank / Comm->commK_size,
                                Comm->commW_rank, &Comm->commK);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_rank(Comm->commK, &Comm->commK_rank);
+    MPI_error_msg(mpi_error);
     // commR
     mpi_error = MPI_Comm_split(Comm->commW, Comm->commK_rank, Comm->commW_rank,
                                &Comm->commR);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_rank(Comm->commR, &Comm->commR_rank);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_size(Comm->commR, &Comm->commR_size);
+    MPI_error_msg(mpi_error);
     // commRq
     mpi_error = MPI_Comm_split(Comm->commQ, Comm->commK_rank, Comm->commW_rank,
                                &Comm->commRq);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_rank(Comm->commRq, &Comm->commRq_rank);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_size(Comm->commRq, &Comm->commRq_size);
+    MPI_error_msg(mpi_error);
 
     // Sanity check
     if (Comm->commK_rank != Comm->commW_rank % Comm->commK_size)
@@ -136,7 +159,15 @@ void free_parallel_comms(struct ELPH_MPI_Comms* Comm)
 {
     int mpi_error;
     mpi_error = MPI_Comm_free(&Comm->commQ);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_free(&Comm->commK);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_free(&Comm->commR);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Comm_free(&Comm->commRq);
+    MPI_error_msg(mpi_error);
 }
+

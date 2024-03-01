@@ -34,7 +34,10 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     }
 
     bool assume_isolated_found = false;
+
     char* tmp_read = malloc(ELPH_XML_READ_LINE_SIZE);
+    CHECK_ALLOC(tmp_read);
+
     while (fgets(tmp_read, ELPH_XML_READ_LINE_SIZE, fp))
     {
         if (strstr(tmp_read, "assume_isolated"))
@@ -67,7 +70,10 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     // next get the pseudo pot directory
     tmp_str = ezxml_get(qexml, "input", 0, "control_variables", 0, "pseudo_dir", -1)
                   ->txt;
+    
     *pseudo_dir = malloc(strlen(tmp_str) + 1); // we need to free this outside of this function
+    CHECK_ALLOC(*pseudo_dir);
+
     strcpy(*pseudo_dir, tmp_str);
     // printf("pseudo dir : %s",*pseudo_dir);
     //  get ntypes
@@ -79,6 +85,7 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
 
     ND_int ntype = atoll(ezxml_attr(atom_specs, "ntyp"));
     *pseudo_pots = malloc(sizeof(char*) * ntype);
+    CHECK_ALLOC(*pseudo_pots);
 
     char** pot_tmp = *pseudo_pots;
 
@@ -87,6 +94,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
         tmp_str = ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
         // printf("%d : %s \n",(int)itype, tmp_str);
         pot_tmp[itype] = malloc(1 + strlen(tmp_str));
+        CHECK_ALLOC(pot_tmp[itype]);
+
         strcpy(pot_tmp[itype], tmp_str);
     }
 
@@ -252,7 +261,10 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     // is present and these are not computed in this function. but we allocate
     // the storage
     *ph_sym_mats = malloc(sizeof(ELPH_float) * 3 * 3 * 2 * (*nph_sym));
+    CHECK_ALLOC(*ph_sym_mats);
+
     *ph_sym_tau = malloc(sizeof(ELPH_float) * 3 * 2 * (*nph_sym));
+    CHECK_ALLOC(*ph_sym_tau);
 
     bool inversion_sym = false;
 

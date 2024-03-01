@@ -91,10 +91,12 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     size_t temp_str_len = strlen(ph_save_dir) + strlen(SAVEdir) + 100;
     char* temp_str = malloc(temp_str_len);
+    CHECK_ALLOC(temp_str);
 
     int nkBZ; // total kpoints in BZ
 
-    char* elements = malloc(sizeof(char) * 3 * 104); // coded 104 elements
+    char* elements = malloc(3 * 104); // coded 104 elements
+    CHECK_ALLOC(elements);
     {
         char* temp = "NA\0H \0He\0Li\0Be\0B \0C \0N \0O "
                      "\0F \0Ne\0Na\0Mg\0Al\0Si\0P \0S \0Cl\0Ar\0K \0Ca"
@@ -135,6 +137,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     /* broad cast (int nkBZ) */
     mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
     /*******/
     if (nkBZ / Comm->nkpools < 1)
     {
@@ -157,6 +160,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     /* bcast ELPH_float dimensions[18] */
     mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     lattice->nspinor = rint(dimensions[11]);
     lattice->nspin = rint(dimensions[12]);
@@ -204,19 +208,25 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     /*Bcast ELPH_float lat_param[3] */
     mpi_error = MPI_Bcast(lat_param, 3, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
     // alloc memory for kpots, symm,
     /* read */
 
     lattice->kpt_iredBZ = malloc(sizeof(ELPH_float) * 3 * nibz);
+    CHECK_ALLOC(lattice->kpt_iredBZ);
+
     lattice->syms = malloc(sizeof(struct symmetry) * lattice->nsym);
+    CHECK_ALLOC(lattice->syms);
 
     if (Comm->commW_rank == 0)
     {
         ELPH_float* sym_temp = malloc(sizeof(ELPH_float) * 12 * lattice->nsym); // free
+        CHECK_ALLOC(sym_temp);
         // (9+3) 9 for symms 3 for tau
         ELPH_float* tau = sym_temp + 9 * lattice->nsym;
 
         ELPH_float* kiBZtmp = malloc(sizeof(ELPH_float) * 3 * nibz);
+        CHECK_ALLOC(kiBZtmp);
 
         quick_read(dbid, "LATTICE_VECTORS", lattice->alat_vec);
         quick_read(dbid, "SYMMETRY",
@@ -284,7 +294,10 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     Bcast_symmetries(lattice->nsym, lattice->syms, 0, Comm->commW);
     mpi_error = MPI_Bcast(lattice->kpt_iredBZ, 3 * nibz, ELPH_MPI_float, 0,
                           Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(lattice->alat_vec, 9, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     // compute reciprocal vectors and volume
     reciprocal_vecs(lattice->alat_vec, lattice->blat_vec);
@@ -292,8 +305,13 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     lattice->volume = fabs(det3x3(lattice->alat_vec));
 
     lattice->kpt_fullBZ_crys = calloc(3 * nkBZ, sizeof(ELPH_float));
+    CHECK_ALLOC(lattice->kpt_fullBZ_crys);
+
     lattice->kpt_fullBZ = calloc(3 * nkBZ, sizeof(ELPH_float));
+    CHECK_ALLOC(lattice->kpt_fullBZ);
+
     lattice->kmap = malloc(sizeof(int) * nkBZ * 2);
+    CHECK_ALLOC(lattice->kmap);
 
     ND_int tmp_nkBZ = bz_expand(nibz, lattice->nsym, lattice->kpt_iredBZ,
                                 lattice->syms, lattice->alat_vec,
@@ -316,6 +334,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     /* Bcast ELPH_float ntype */
     mpi_error = MPI_Bcast(&ntype, 1, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     pseudo->ntype = rint(ntype);
 
     /* Read atomic positions */
@@ -324,6 +344,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     if (Comm->commW_rank == 0)
     {
         ELPH_float* natom_per_type = malloc(sizeof(ELPH_float) * 2 * pseudo->ntype);
+        CHECK_ALLOC(natom_per_type);
+
         ELPH_float* atomic_numbers = natom_per_type + pseudo->ntype;
 
         quick_read(dbid, "N_ATOMS", natom_per_type);
@@ -337,15 +359,24 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         ND_int nspec_max = rint(find_maxfloat(natom_per_type, pseudo->ntype));
 
         ELPH_float* atomic_map = malloc(sizeof(ELPH_float) * pseudo->ntype * nspec_max);
+        CHECK_ALLOC(atomic_map);
+
         ELPH_float* atom_pos_temp = malloc(sizeof(ELPH_float) * pseudo->ntype * nspec_max * 3);
+        CHECK_ALLOC(atom_pos_temp);
 
         quick_read(dbid, "ATOM_MAP", atomic_map);
         quick_read(dbid, "ATOM_POS", atom_pos_temp);
 
         lattice->atom_type = malloc(sizeof(int) * lattice->natom); // Bcast
+        CHECK_ALLOC(lattice->atom_type);
+
         atom_symbols = malloc(3 * pseudo->ntype);
+        CHECK_ALLOC(atom_symbols);
+
         //
         lattice->atomic_pos = malloc(sizeof(ELPH_float) * 3 * lattice->natom); // Bcast
+        CHECK_ALLOC(lattice->atomic_pos);
+
         for (ND_int it = 0; it < pseudo->ntype; ++it)
         {
             ND_int ia_no = rint(atomic_numbers[it]);
@@ -369,20 +400,32 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     // Bcast variables
     mpi_error = MPI_Bcast(&lattice->natom, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     lattice->nmodes = 3 * lattice->natom;
 
     if (Comm->commW_rank != 0)
     {
         lattice->atom_type = malloc(sizeof(int) * lattice->natom); // Bcast
+        CHECK_ALLOC(lattice->atom_type);
+
         lattice->atomic_pos = malloc(sizeof(ELPH_float) * 3 * lattice->natom); // Bcast
+        CHECK_ALLOC(lattice->atomic_pos);
     }
 
     mpi_error = MPI_Bcast(lattice->atom_type, lattice->natom, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(lattice->atomic_pos, 3 * lattice->natom,
                           ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     ELPH_float* nGmax = malloc(sizeof(ELPH_float) * nibz); // max number of gvectors for each wfc in iBZ
+    CHECK_ALLOC(nGmax);
+
     *wfcs = malloc(sizeof(struct WFC) * nibz); // wfcs in iBZ
+    CHECK_ALLOC(*wfcs);
+
     struct WFC* wfc_temp = *wfcs;
 
     /* allocate arrays of arrays for wfc, gvsc, Fk */
@@ -392,12 +435,16 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     /* Bcast ELPH_float * nGmax */
     mpi_error = MPI_Bcast(nGmax, nibz, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     // dimensions[]
     ND_int ng_total = rint(dimensions[7]);
     ND_int ng_shell = rint(dimensions[8]);
     ELPH_float* totalGvecs = malloc(sizeof(ELPH_float) * 3 * ng_total);
+    CHECK_ALLOC(totalGvecs);
+
     ELPH_float* Gvecidxs = malloc(sizeof(ELPH_float) * nibz * ng_shell);
+    CHECK_ALLOC(Gvecidxs);
 
     if (Comm->commW_rank == 0)
     {
@@ -410,7 +457,10 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     // Need to Bcast totalGvecs and Gvecidxs
     mpi_error = MPI_Bcast(totalGvecs, 3 * ng_total, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(Gvecidxs, nibz * ng_shell, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
     // ! Warning, Only read only mode for opening files
 
     // ------------------
@@ -431,12 +481,19 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
 
     mpi_error = MPI_Bcast(&(pseudo->nltimesj), 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(&(pseudo->lmax), 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     pseudo->PP_table = malloc(sizeof(ELPH_float) * pseudo->ntype * pseudo->nltimesj * 3);
     // (nltimesj,natom_types,3) (l+1,2j,pp_spin)
+    CHECK_ALLOC(pseudo->PP_table);
+
     pseudo->Fsign = malloc(sizeof(ELPH_float) * pseudo->ntype * pseudo->nltimesj);
     // (nlj_max, natom_types)
+    CHECK_ALLOC(pseudo->Fsign);
+
     if (Comm->commW_rank == 0)
     {
         quick_read(ppid, "PP_TABLE", pseudo->PP_table);
@@ -451,8 +508,11 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     // ------------------
     mpi_error = MPI_Bcast(pseudo->PP_table, pseudo->nltimesj * pseudo->ntype * 3,
                           ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
     mpi_error = MPI_Bcast(pseudo->Fsign, pseudo->nltimesj * pseudo->ntype,
                           ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     // We read the wfcs from one k pool and then broad cast them over rest of
     // the pools
@@ -468,6 +528,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         /* set the local number of pw's */
         (wfc_temp + ik)->npw_loc = pw_this_cpu;
         (wfc_temp + ik)->gvec = malloc(sizeof(ELPH_float) * 3 * pw_this_cpu);
+        CHECK_ALLOC((wfc_temp + ik)->gvec);
 
         alloc_and_set_Gvec((wfc_temp + ik)->gvec, ik, totalGvecs, ng_total,
                            Gvecidxs, ng_shell, lat_param, pw_this_cpu, G_shift);
@@ -475,6 +536,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         /* initiate, allocate and load wfcs*/
         ND_int spin_stride_len = lattice->nbnds * lattice->nspinor * pw_this_cpu;
         (wfc_temp + ik)->wfc = malloc(sizeof(ELPH_cmplx) * lattice->nspin * spin_stride_len);
+        CHECK_ALLOC((wfc_temp + ik)->wfc);
         // (nspin, bands, nspinor, npw)
         // only one K pool must read the wfc, we then bcast to rest of the k
         // pools
@@ -488,9 +550,12 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         // Bcast the wfc
         mpi_error = MPI_Bcast((wfc_temp + ik)->wfc, lattice->nspin * spin_stride_len,
                               ELPH_MPI_cmplx, 0, Comm->commR);
+        MPI_error_msg(mpi_error);
+
         /* initiate, allocate and load Fk (Kleinbylander Coefficients)*/
         //(nltimesj, ntype, npw_loc)
         (wfc_temp + ik)->Fk = malloc(sizeof(ELPH_float) * pseudo->nltimesj * pseudo->ntype * pw_this_cpu);
+        CHECK_ALLOC((wfc_temp + ik)->Fk);
 
         char small_buf[64];
 
@@ -522,6 +587,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         mpi_error = MPI_Bcast((wfc_temp + ik)->Fk,
                               pseudo->nltimesj * pseudo->ntype * pw_this_cpu,
                               ELPH_MPI_float, 0, Comm->commR);
+        MPI_error_msg(mpi_error);
     }
     // MPI_Barrier(Comm->commW);
     /* Free temp gvec arrays */
@@ -534,6 +600,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     /* Read upf data */
     /* First get the pseudo pots order */
     ND_int* pseudo_order = malloc(sizeof(ND_int) * pseudo->ntype);
+    CHECK_ALLOC(pseudo_order);
+
     for (ND_int ipot1 = 0; ipot1 < pseudo->ntype; ++ipot1)
     {
         pseudo_order[ipot1] = -1;
@@ -569,8 +637,10 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     }
     // Bcast pseudo_order[pseudo->ntype]
     mpi_error = MPI_Bcast(pseudo_order, pseudo->ntype, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     pseudo->loc_pseudo = malloc(pseudo->ntype * sizeof(struct local_pseudo));
+    CHECK_ALLOC(pseudo->loc_pseudo);
     /* Get data from upfs */
     if (Comm->commW_rank == 0)
     {
