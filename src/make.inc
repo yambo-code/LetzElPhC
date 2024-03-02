@@ -1,6 +1,7 @@
 CC                  :=  mpicc
 
 ### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
+### add -DCOMPILE_ELPH_DOUBLE if you want to compile the code in double precession to cflags
 #CFLAGS             := -O3 -march=native  -fopenmp
 #LD_FLAGS           := -fopenmp 
 
@@ -24,5 +25,6 @@ LIBS                :=
 
 
 #### Notes Extra CFLAGS
+### add -DCOMPILE_ELPH_DOUBLE if you want to compile the code in double precession
 ### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
 ### for openmp use -DELPH_OMP_PARALLEL_BUILD in CFLAGS and set -fopenmp in LD_FLAGS and CFLAGS
