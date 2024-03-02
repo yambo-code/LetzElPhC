@@ -78,7 +78,7 @@ bool string_end_with(char* str, char* compare_str, bool trim)
     */
     char* temp_str = malloc(sizeof(char) * (strlen(str) + strlen(compare_str) + 2));
     CHECK_ALLOC(temp_str);
-    
+
     char* a = temp_str;
     char* b = temp_str + strlen(str) + 1;
 

@@ -7,7 +7,6 @@ This file contains functions which are system dependent
 #include "../io/ezxml/ezxml.h"
 #include "preprocessor.h"
 
-
 #if defined(_WIN32)
 #include <direct.h>
 #define mkdir(path, mode) _mkdir(path)
@@ -17,7 +16,6 @@ This file contains functions which are system dependent
 #include <sys/types.h>
 #define ELPH_COPY_CMD_DEFAULT "cp"
 #endif
-
 
 void create_ph_save_dir_pp_qe(const char* inp_file)
 {

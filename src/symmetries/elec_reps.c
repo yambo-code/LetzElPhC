@@ -185,11 +185,10 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
 
         counts = malloc(4 * sizeof(int) * Comm->commK_size);
         CHECK_ALLOC(counts);
-        
+
         disp = counts + Comm->commK_size;
         counts2 = counts + 2 * Comm->commK_size;
         disp2 = counts + 3 * Comm->commK_size;
-
     }
 
     // collect R*S1*G on root

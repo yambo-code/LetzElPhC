@@ -118,7 +118,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
             "Error in query request for zheev, when diagonalizing dyn mat");
     }
     lwork = (int)rint(creal(tmp_work_var));
-    
+
     double complex* work_array = malloc(sizeof(double complex) * lwork);
     CHECK_ALLOC(work_array);
 

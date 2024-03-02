@@ -81,7 +81,7 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
         {
             error_msg("Buffer Overflow in dvscf_len. Contact developer");
         }
-        
+
         mpi_error = MPI_Bcast(dvscf, dvscf_len, ELPH_MPI_cmplx, 0, Comm->commRq);
         MPI_error_msg(mpi_error);
 

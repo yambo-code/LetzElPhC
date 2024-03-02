@@ -310,7 +310,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
                 elph_sum_buf = &temp_sum;
             }
             int mpi_error = MPI_Reduce(elph_kq_mn, elph_sum_buf, nbnds * nbnds, ELPH_MPI_cmplx,
-                       MPI_SUM, 0, Comm->commK);
+                                       MPI_SUM, 0, Comm->commK);
             MPI_error_msg(mpi_error);
         }
     }

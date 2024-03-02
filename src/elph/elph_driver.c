@@ -31,7 +31,7 @@ void elph_driver(const char* ELPH_input_file,
 
     struct Phonon* phonon = malloc(sizeof(struct Phonon));
     CHECK_ALLOC(phonon);
-    
+
     struct WFC* wfcs;
 
     // read the SAVE data and phonon related data.

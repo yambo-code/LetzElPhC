@@ -7,7 +7,6 @@
 #define ELPH_MAX_ENV_SIZE 64
 #define PH_SAVE_DIR_NAME_DEFAULT "ph_save"
 
-
 enum calc_type
 {
     CALC_ELPH, // initiate elph calculation
@@ -32,5 +31,3 @@ void create_ph_save_dir_pp_qe(const char* inp_file);
 
 void ELPH_print_version();
 void ELPH_print_help();
-
-

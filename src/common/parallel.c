@@ -107,7 +107,7 @@ void create_parallel_comms(const int nqpools, const int nkpools,
     mpi_error = MPI_Comm_split(Comm->commW, Comm->commW_rank / Comm->commQ_size,
                                Comm->commW_rank, &Comm->commQ);
     MPI_error_msg(mpi_error);
-    
+
     mpi_error = MPI_Comm_rank(Comm->commQ, &Comm->commQ_rank);
     MPI_error_msg(mpi_error);
 
@@ -170,4 +170,3 @@ void free_parallel_comms(struct ELPH_MPI_Comms* Comm)
     mpi_error = MPI_Comm_free(&Comm->commRq);
     MPI_error_msg(mpi_error);
 }
-

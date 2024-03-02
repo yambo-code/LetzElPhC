@@ -213,8 +213,6 @@ struct WFC
     // -------------------------------------------------------
 };
 
-
-
 struct ELPH_MPI_Comms
 {
     /* This struct contains all the information about communications
@@ -261,6 +259,3 @@ struct ELPH_MPI_Comms
     in 2nd commQ
     */
 };
-
-
-

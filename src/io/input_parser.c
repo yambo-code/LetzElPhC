@@ -57,7 +57,7 @@ static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
 
     mpi_error = MPI_Bcast(&input->nqpool, 1, MPI_INT, root, comm);
     MPI_error_msg(mpi_error);
-    
+
     mpi_error = MPI_Bcast(&input->start_bnd, 1, MPI_INT, root, comm);
     MPI_error_msg(mpi_error);
 
@@ -135,7 +135,7 @@ void read_input_file(const char* input_file, struct usr_input** input_data,
     init_usr_input(input_data);
 
     int mpi_world_rank, mpi_error;
-    
+
     mpi_error = MPI_Comm_rank(MPI_world_comm, &mpi_world_rank);
     MPI_error_msg(mpi_error);
 

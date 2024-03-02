@@ -68,7 +68,7 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
         MPI_Offset offset = sizeof(double complex) * fft_dims[0] * fft_dims[1] * (iset * fft_dims[2] + lattice->nfftz_loc_shift);
 
         mpi_error = MPI_File_read_at_all(handle, offset, read_buf, read_buffer_count,
-                             MPI_C_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+                                         MPI_C_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
         MPI_error_msg(mpi_error);
         // transpose from (FFTz, FFTy, FFTx)->(FFTx, FFTy, FFTz)
         ND_int ld_read_buf = fft_dims[0] * fft_dims[1];
