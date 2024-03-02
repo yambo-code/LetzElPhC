@@ -52,11 +52,11 @@ int main(int argc, char* argv[])
         {
             if (calc_info->calc == CALC_HELP)
             {
-                printf("help\n");
+                ELPH_print_help();
             }
             else if (calc_info->calc == CALC_VERSION)
             {
-                printf("version\n");
+                ELPH_print_version();
             }
             else if (calc_info->calc == CALC_PH_SAVE_CREATE)
             {
