@@ -21,6 +21,7 @@ struct usr_input
     char* save_dir; // save dir
     char* ph_save_dir; // ph_save directory
     char* kernel; // level of screening to include
+    bool kminusq; // true is convention is "yambo" else false
 };
 
 #define ERR(e)                                          \

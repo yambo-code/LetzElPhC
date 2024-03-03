@@ -31,9 +31,10 @@ void init_usr_input(struct usr_input** input)
     inp->nqpool = 1;
     inp->start_bnd = 0;
     inp->end_bnd = 0;
-    strcpy(inp->save_dir, "./SAVE");
-    strcpy(inp->ph_save_dir, "./ph_save");
+    strcpy(inp->save_dir, "SAVE");
+    strcpy(inp->ph_save_dir, "ph_save");
     strcpy(inp->kernel, "dfpt");
+    inp->kminusq = false; // default is standard
 }
 
 // function to free usr_input struct data
@@ -62,6 +63,9 @@ static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&input->end_bnd, 1, MPI_INT, root, comm);
+    MPI_error_msg(mpi_error);
+
+    mpi_error = MPI_Bcast(&input->kminusq, 1, MPI_C_BOOL, root, comm);
     MPI_error_msg(mpi_error);
 }
 
@@ -117,6 +121,22 @@ static int handler(void* user, const char* section, const char* name,
         for (char* p = inp->kernel; *p; ++p)
         {
             *p = tolower(*p);
+        }
+    }
+    else if (strcmp(name, "convention") == 0)
+    {
+        if (strstr(value,"yambo"))
+        {
+            inp->kminusq = true;
+        }
+        else if (strstr(value,"standard"))
+        {
+            inp->kminusq = false;
+        }
+        else 
+        {
+            error_msg("Invalid value for convention in the input file."
+                    " Only yambo or standard are accepted.");
         }
     }
     else

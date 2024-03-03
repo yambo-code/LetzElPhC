@@ -26,6 +26,12 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
             fprintf(stderr, "Error creating Dmat file");
             ERR(nc_err);
         }
+        // set no fill mode (to avoid writting twice)
+        if ((nc_err = ncsetfill(ncid, NC_NOFILL)))
+        {
+            fprintf(stderr, "Error setting nc_fill to dmat file.");
+            ERR(nc_err);
+        }
 
         def_ncVar(
             ncid, &varid, 6, ELPH_NC4_IO_FLOAT,

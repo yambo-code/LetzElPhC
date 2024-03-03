@@ -88,6 +88,14 @@ void elph_driver(const char* ELPH_input_file,
         if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4, mpi_comms->commR,
                                     MPI_INFO_NULL, &ncid_elph)))
         {
+            fprintf(stderr, "Error creating ndb.elph file.");
+            ERR(nc_err);
+        }
+
+        // set no fill mode (to avoid writting twice)
+        if ((nc_err = ncsetfill(ncid_elph, NC_NOFILL)))
+        {
+            fprintf(stderr, "Error setting nc_fill to ndb.elph file.");
             ERR(nc_err);
         }
 
@@ -199,7 +207,7 @@ void elph_driver(const char* ELPH_input_file,
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, ncid_elph, varid_elph,
                                 ncid_dmat, varid_dmat, true,
-                                false, mpi_comms);
+                                input_data->kminusq, mpi_comms);
     }
 
     free(eig_Sq);
