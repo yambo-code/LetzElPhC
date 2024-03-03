@@ -125,18 +125,18 @@ static int handler(void* user, const char* section, const char* name,
     }
     else if (strcmp(name, "convention") == 0)
     {
-        if (strstr(value,"yambo"))
+        if (strstr(value, "yambo"))
         {
             inp->kminusq = true;
         }
-        else if (strstr(value,"standard"))
+        else if (strstr(value, "standard"))
         {
             inp->kminusq = false;
         }
-        else 
+        else
         {
             error_msg("Invalid value for convention in the input file."
-                    " Only yambo or standard are accepted.");
+                      " Only yambo or standard are accepted.");
         }
     }
     else
