@@ -5,7 +5,7 @@
  */
 #include "preprocessor.h"
 
-void ELPH_print_version()
+void ELPH_print_version(void)
 {
     // we print to stdout
     fprintf(stdout, "LetzElPhC, ");
@@ -25,7 +25,7 @@ void ELPH_print_version()
 #endif
 }
 
-void ELPH_print_help()
+void ELPH_print_help(void)
 {
     fprintf(stdout, "LetzElPhC help\n");
     fprintf(stdout, "--help     : to print the help\n");
