@@ -52,3 +52,8 @@ void read_input_file(const char* input_file, struct usr_input** input_data,
 void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
                ND_int* dims, const char* var_name, char** dim_names,
                size_t* chunksize);
+
+void write_basic_data(const int ncid, struct Lattice* lattice,
+        struct Phonon* phonon, const char * kernel_str, const char * convention_str);
+
+

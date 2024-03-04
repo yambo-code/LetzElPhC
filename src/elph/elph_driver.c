@@ -231,6 +231,31 @@ void elph_driver(const char* ELPH_input_file,
         }
     }
 
+    // finally write some basic info to ndb.elph file (only master node writes it)
+    
+    if (mpi_comms->commW_rank == 0)
+    {
+        if ((nc_err = nc_open("ndb.elph", NC_WRITE, &ncid_elph)))
+        {
+            ERR(nc_err);
+        }
+
+        char convention_str[32];
+        strcpy(convention_str, "standard");
+        if (input_data->kminusq)
+        {
+            strcpy(convention_str, "yambo");
+        }
+        write_basic_data(ncid_elph, lattice, phonon,  
+        input_data->kernel_str, convention_str);
+
+        if ((nc_err = nc_close(ncid_elph)))
+        {
+            ERR(nc_err);
+        }
+
+    }
+
     // ELPH_cmplx Ry2Ha = pow(2,-1.5);
     free(omega_ph);
     free(eigVec);
