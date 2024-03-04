@@ -24,7 +24,7 @@ void init_usr_input(struct usr_input** input)
     CHECK_ALLOC(inp->save_dir);
 
     inp->ph_save_dir = inp->save_dir + 600;
-    inp->kernel = inp->save_dir + 1200;
+    inp->kernel_str = inp->save_dir + 1200;
 
     // defaults
     inp->nkpool = 1;
@@ -33,7 +33,7 @@ void init_usr_input(struct usr_input** input)
     inp->end_bnd = 0;
     strcpy(inp->save_dir, "SAVE");
     strcpy(inp->ph_save_dir, "ph_save");
-    strcpy(inp->kernel, "dfpt");
+    strcpy(inp->kernel_str, "dfpt");
     inp->kminusq = false; // default is standard
 }
 
@@ -51,7 +51,7 @@ static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
     // all char * will be bcasted in one single call
     mpi_error = MPI_Bcast(input->save_dir, MAX_STR_INPUT, MPI_CHAR, root, comm);
     MPI_error_msg(mpi_error);
-    // ph_save_dir and kernel are also broadcasted when entire save_dir is
+    // ph_save_dir and kernel_str are also broadcasted when entire save_dir is
     // Bcasted
     mpi_error = MPI_Bcast(&input->nkpool, 1, MPI_INT, root, comm);
     MPI_error_msg(mpi_error);
@@ -117,8 +117,8 @@ static int handler(void* user, const char* section, const char* name,
     }
     else if (strcmp(name, "kernel") == 0)
     {
-        strcpy(inp->kernel, value);
-        for (char* p = inp->kernel; *p; ++p)
+        strcpy(inp->kernel_str, value);
+        for (char* p = inp->kernel_str; *p; ++p)
         {
             *p = tolower(*p);
         }

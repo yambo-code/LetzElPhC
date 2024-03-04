@@ -22,6 +22,20 @@ enum ELPH_dft_code
     DFT_CODE_QE
 };
 
+enum ELPH_screening
+{
+    ELPH_NO_SCREENING,
+    ELPH_DFPT_SCREENING
+};
+
+struct kernel_info
+{
+    char name_str[32];
+    bool bare_loc;
+    bool non_loc;
+    enum ELPH_screening screening;
+};
+
 struct symmetry
 {
     ELPH_float Rmat[9];

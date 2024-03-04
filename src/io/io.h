@@ -20,8 +20,8 @@ struct usr_input
     int end_bnd; // last band
     char* save_dir; // save dir
     char* ph_save_dir; // ph_save directory
-    char* kernel; // level of screening to include
-    bool kminusq; // true is convention is "yambo" else false
+    char* kernel_str; // level of screening to include
+    bool kminusq; // true if convention is "yambo" else false
 };
 
 #define ERR(e)                                          \

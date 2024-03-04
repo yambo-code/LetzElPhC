@@ -15,7 +15,11 @@ void elph_driver(const char* ELPH_input_file,
     // All the parameters in input_data must be available for all cpus in
     // comm_world
 
-    char* kernel = input_data->kernel;
+    struct kernel_info * kernel = malloc(sizeof(struct kernel_info));
+    // initate the kernel with default
+    init_kernel(kernel);
+    // set the kernel
+    set_kernel(input_data->kernel_str, kernel);
 
     struct ELPH_MPI_Comms* mpi_comms = malloc(sizeof(struct ELPH_MPI_Comms));
     CHECK_ALLOC(mpi_comms);
@@ -142,6 +146,7 @@ void elph_driver(const char* ELPH_input_file,
         {
             error_msg("Currently only quantum espresso supported");
         }
+        // local part
         ELPH_cmplx* Vlocr = malloc(sizeof(ELPH_cmplx) * nmodes * nfft_loc);
         // buffer to store local part of the pseudo potential
         CHECK_ALLOC(Vlocr);
@@ -160,7 +165,7 @@ void elph_driver(const char* ELPH_input_file,
         }
 
         free(Vlocr);
-
+        // free the local part buffer 
         ND_int qpos = 0; // positon of this iBZ qpoint in full q point list
         for (ND_int i = 0; i < iqpt_iBZg; ++i)
         {
@@ -232,6 +237,7 @@ void elph_driver(const char* ELPH_input_file,
     free(dVscf);
 
     // cleanup
+    free(kernel);
     free_usr_input(input_data);
     free_save_data(wfcs, lattice, pseudo, phonon);
     free(lattice);
