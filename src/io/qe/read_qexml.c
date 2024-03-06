@@ -288,6 +288,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
         }
 
         // parse translation (in crystal units) tau_cart = alat@tau_crys
+        // It should be noted that we use Sx + v convention, but qe uses S(x+v)
+        // so our v = S*tau_qe
         tmp_str = ezxml_get(sym_xml_tmp, "symmetry", isym,
                             "fractional_translation", -1)
                       ->txt;
