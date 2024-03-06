@@ -125,7 +125,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
             // is present
             ELPH_float* sym_tmp = ph_sym_mats + isym * 9;
             ELPH_float* sym_tmp_trev = ph_sym_mats + (isym + phonon->nph_sym) * 9;
-            
+
             // It should be noted that we use Sx + v convention, but qe uses S(x+v)
             // so our v = S*tau_qe
             ELPH_float* vec_tmp = ph_sym_tau + isym * 3;
@@ -143,7 +143,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
             }
             // first to cartisian units
             MatVec3f(lat_vec, vec_tmp, false, vec_tmp_trev);
-            // compute S*tau 
+            // compute S*tau
             MatVec3f(sym_tmp, vec_tmp_trev, false, vec_tmp);
             // we also negate the frac .tras. vec (just a convention used in
             // this code)

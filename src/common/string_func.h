@@ -5,7 +5,7 @@
 #include "../elphC.h"
 
 // lower case a string
-void lowercase_str(char * str);
+void lowercase_str(char* str);
 
 // Extract all float values from given string
 // if out == NULL, it return number of float it parsed

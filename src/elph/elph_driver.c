@@ -15,7 +15,7 @@ void elph_driver(const char* ELPH_input_file,
     // All the parameters in input_data must be available for all cpus in
     // comm_world
 
-    struct kernel_info * kernel = malloc(sizeof(struct kernel_info));
+    struct kernel_info* kernel = malloc(sizeof(struct kernel_info));
     // initate the kernel with default
     init_kernel(kernel);
     // set the kernel
@@ -165,7 +165,7 @@ void elph_driver(const char* ELPH_input_file,
         }
 
         free(Vlocr);
-        // free the local part buffer 
+        // free the local part buffer
         ND_int qpos = 0; // positon of this iBZ qpoint in full q point list
         for (ND_int i = 0; i < iqpt_iBZg; ++i)
         {
@@ -232,7 +232,7 @@ void elph_driver(const char* ELPH_input_file,
     }
 
     // finally write some basic info to ndb.elph file (only master node writes it)
-    
+
     if (mpi_comms->commW_rank == 0)
     {
         if ((nc_err = nc_open("ndb.elph", NC_WRITE, &ncid_elph)))
@@ -246,14 +246,13 @@ void elph_driver(const char* ELPH_input_file,
         {
             strcpy(convention_str, "yambo");
         }
-        write_basic_data(ncid_elph, lattice, phonon,  
-        input_data->kernel_str, convention_str);
+        write_basic_data(ncid_elph, lattice, phonon,
+                         input_data->kernel_str, convention_str);
 
         if ((nc_err = nc_close(ncid_elph)))
         {
             ERR(nc_err);
         }
-
     }
 
     // ELPH_cmplx Ry2Ha = pow(2,-1.5);

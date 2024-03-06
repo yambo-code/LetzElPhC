@@ -123,7 +123,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         // now read key
         char* token = strtok(read_buf, "=");
         strcpy(key_str, token);
-        //lower case the key 
+        // lower case the key
         lowercase_str(key_str);
         //  read value
         token = strtok(NULL, "=");

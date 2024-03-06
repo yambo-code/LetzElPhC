@@ -54,6 +54,4 @@ void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
                size_t* chunksize);
 
 void write_basic_data(const int ncid, struct Lattice* lattice,
-        struct Phonon* phonon, const char * kernel_str, const char * convention_str);
-
-
+                      struct Phonon* phonon, const char* kernel_str, const char* convention_str);

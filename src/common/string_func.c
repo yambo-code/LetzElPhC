@@ -3,8 +3,7 @@
 This file contains some useful string functions
 */
 
-
-void lowercase_str(char * str)
+void lowercase_str(char* str)
 {
     // lower case all the chars in a string
     for (char* p = str; *p; ++p)
