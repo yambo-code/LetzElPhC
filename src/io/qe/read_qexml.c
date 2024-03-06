@@ -154,10 +154,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     // check if soc is present
     tmp_str = ezxml_get(qexml, "output", 0, "magnetization", 0, "spinorbit", -1)->txt;
     strcpy(tmp_read, tmp_str);
-    for (char* p = tmp_read; *p; ++p)
-    {
-        *p = tolower(*p);
-    }
+    lowercase_str(tmp_read);
+
     if (strstr(tmp_read, "true"))
     {
         *is_soc_present = true;
@@ -168,10 +166,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     bool lsda = false;
     tmp_str = ezxml_get(qexml, "output", 0, "magnetization", 0, "lsda", -1)->txt;
     strcpy(tmp_read, tmp_str);
-    for (char* p = tmp_read; *p; ++p)
-    {
-        *p = tolower(*p);
-    }
+    lowercase_str(tmp_read);
+
     if (strstr(tmp_read, "true"))
     {
         lsda = true;
@@ -183,10 +179,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     bool no_inv = false;
     tmp_str = ezxml_get(qexml, "input", 0, "symmetry_flags", 0, "noinv", -1)->txt;
     strcpy(tmp_read, tmp_str);
-    for (char* p = tmp_read; *p; ++p)
-    {
-        *p = tolower(*p);
-    }
+    lowercase_str(tmp_read);
+
     if (strstr(tmp_read, "true"))
     {
         no_inv = true;
@@ -209,10 +203,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
         tmp_str = ezxml_get(qexml, "output", 0, "magnetization", 0, "noncolin", -1)
                       ->txt;
         strcpy(tmp_read, tmp_str);
-        for (char* p = tmp_read; *p; ++p)
-        {
-            *p = tolower(*p);
-        }
+        lowercase_str(tmp_read);
+
         if (strstr(tmp_read, "true"))
         {
             is_non_collinear = true;
@@ -224,10 +216,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
                                 "do_magnetization", -1)
                           ->txt;
             strcpy(tmp_read, tmp_str);
-            for (char* p = tmp_read; *p; ++p)
-            {
-                *p = tolower(*p);
-            }
+            lowercase_str(tmp_read);
+
             if (strstr(tmp_read, "true"))
             {
                 mag_system = true;

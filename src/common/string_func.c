@@ -3,6 +3,16 @@
 This file contains some useful string functions
 */
 
+
+void lowercase_str(char * str)
+{
+    // lower case all the chars in a string
+    for (char* p = str; *p; ++p)
+    {
+        *p = tolower(*p);
+    }
+}
+
 ND_int parser_doubles_from_string(char* str, ELPH_float* out)
 {
     /*

@@ -115,11 +115,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         // remove comments
         str_replace_chars(read_buf, ",'\"!", "   \0");
-        // lower case all the chars
-        for (char* p = read_buf; *p; ++p)
-        {
-            *p = tolower(*p);
-        }
+
         if (strlen(read_buf) == 0)
         {
             continue;
@@ -127,7 +123,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         // now read key
         char* token = strtok(read_buf, "=");
         strcpy(key_str, token);
-
+        //lower case the key 
+        lowercase_str(key_str);
         //  read value
         token = strtok(NULL, "=");
         if (token)
@@ -149,6 +146,9 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         if (!strcmp(key_str, "ldisp"))
         {
+            // lowercase val_str
+            lowercase_str(val_str);
+
             if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") || !strcmp(val_str, "t"))
             {
                 ldisp = true;
@@ -182,6 +182,9 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         //
         else if (!strcmp(key_str, "electron_phonon"))
         {
+            // lowercase val_str
+            lowercase_str(val_str);
+
             if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") || !strcmp(val_str, "wannier"))
             {
                 elph_yambo = true;

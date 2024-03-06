@@ -118,10 +118,7 @@ static int handler(void* user, const char* section, const char* name,
     else if (strcmp(name, "kernel") == 0)
     {
         strcpy(inp->kernel_str, value);
-        for (char* p = inp->kernel_str; *p; ++p)
-        {
-            *p = tolower(*p);
-        }
+        lowercase_str(inp->kernel_str);
     }
     else if (strcmp(name, "convention") == 0)
     {

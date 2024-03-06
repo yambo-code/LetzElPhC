@@ -4,6 +4,9 @@
 
 #include "../elphC.h"
 
+// lower case a string
+void lowercase_str(char * str);
+
 // Extract all float values from given string
 // if out == NULL, it return number of float it parsed
 ND_int parser_doubles_from_string(char* str, ELPH_float* out);
