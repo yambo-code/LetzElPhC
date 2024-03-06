@@ -74,11 +74,14 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     for (ND_int i = 0; i < ntype; ++i)
     {
         fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-        if (parser_doubles_from_string(read_buf, read_fbuf) != 2)
+        int tmpi_read;
+        double tmpf_read;
+        char tmps_read[128];
+        if (sscanf(read_buf, "%d '%[^']' %lf", &tmpi_read, tmps_read, &tmpf_read) != 3)
         {
             error_msg("Failed to read atomic masses from dyn file");
         }
-        atm_mass_type[i] = read_fbuf[1];
+        atm_mass_type[i] = tmpf_read;
         if (fabs(atm_mass_type[i]) < ELPH_EPS)
         {
             error_msg("Zero masses in dynamical file");
