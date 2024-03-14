@@ -1,0 +1,14 @@
+phonons on a grid 
+ &inputph 
+  nq1 = 3, 
+  nq2 = 3, 
+  nq3 = 2, 
+  fildyn = 'hBN.dyn', 
+  tr2_ph = 1e-16, 
+  prefix = 'hBN', 
+  trans = .false., 
+  electron_phonon = 'yambo',
+  fildvscf = 'dvscf', 
+  ldisp = .true., 
+  reduce_io = .true.
+/ 

@@ -8,3 +8,8 @@ git.sh
 version*
 **un~
 clang_format.sh
+docs/*
+!main.tex
+!refs.bib
+!splncs04.bst
+!main.pdf

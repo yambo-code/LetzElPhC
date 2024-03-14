@@ -1,0 +1,43 @@
+&CONTROL
+  calculation = 'scf'
+  outdir = '.'
+  prefix = 'mos2'
+  pseudo_dir = '../../pseudos_dojo'
+  verbosity = 'high'
+  nstep = 20000
+/
+&system
+             ecutwfc = 80
+             celldm(1) = 1.0
+             noncolin = .true.
+             ibrav = 0
+             nat = 3
+             ntyp = 2
+             assume_isolated = '2D'
+/&end
+&ELECTRONS
+  diago_full_acc=.true.
+  mixing_beta = 0.5
+  conv_thr =   1.0000000000d-12
+  electron_maxstep = 1000
+/&end
+&IONS
+/
+&cell
+  cell_dofree="2Dxy"
+  cell_dynamics = "bfgs"
+/
+ATOMIC_SPECIES
+S        32.07    S.upf
+Mo       95.95    Mo.upf
+CELL_PARAMETERS (alat)
+   6.018846169  -0.000000000   0.000000000
+  -3.009423085   5.212473684   0.000000000
+   0.000000000   0.000000000  32.125300000
+
+ATOMIC_POSITIONS (crystal)
+Mo               0.3333333333        0.6666666667        0.0000000000
+S                0.6666666667        0.3333333333        0.0919797650
+S                0.6666666667        0.3333333333       -0.0919797650
+K_POINTS { automatic }
+    12    12     1     0     0     0

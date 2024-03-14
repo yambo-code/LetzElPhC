@@ -1,0 +1,15 @@
+phonons on a grid 
+ &inputph 
+  nq1 = 2, 
+  nq2 = 2, 
+  nq3 = 2, 
+  fildyn = 'NiO.dyn', 
+  tr2_ph = 1e-15, 
+  prefix = 'NiO', 
+  trans = .true., 
+  electron_phonon = 'dvscf', 
+  fildvscf = 'dvscf', 
+  ldisp = .true., 
+  reduce_io = .true.
+  diagonalization = 'cg'
+/ 

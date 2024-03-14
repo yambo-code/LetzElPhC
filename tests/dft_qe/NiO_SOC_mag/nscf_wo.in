@@ -1,0 +1,54 @@
+&CONTROL
+  calculation = 'nscf'
+  etot_conv_thr =   1.0000000000d-05
+  forc_conv_thr =   1.0000000000d-05
+  outdir = '.'
+  prefix = 'NiO'
+  pseudo_dir = '../../pseudos_dojo'
+  tprnfor = .true.
+  tstress = .true.
+  verbosity = 'high'
+/
+&SYSTEM
+  ecutwfc = 100 
+  ibrav = 0
+  nat = 4
+  ntyp = 3
+  celldm(1) = 9.67155000
+  lspinorb = .true.
+  noncolin = .true.
+  starting_magnetization(1) =  1.0 
+  starting_magnetization(2) = -0.5 
+  starting_magnetization(3) =  0.0 
+  occupations = 'fixed'
+  nbnd = 60
+  force_symmorphic = .true.
+  noinv = .true.
+  nosym = .true.
+/
+&ELECTRONS
+  conv_thr =   1.000000000d-12
+  electron_maxstep = 100000
+  !mixing_beta =   1.0000000000d-01
+/
+&IONS
+/
+&cell
+  cell_dynamics = "bfgs"
+/
+ATOMIC_SPECIES
+Ni1     58.6934    Ni.upf 
+Ni2     58.6934    Ni.upf
+O       15.9994    O.upf
+CELL_PARAMETERS (alat)
+   0.290140853  -0.167512899   0.940843305
+   0.000000000   0.335025799   0.940843305
+  -0.290140853  -0.167512899   0.940843305
+
+ATOMIC_POSITIONS (crystal)
+Ni1              0.0000000000       -0.0000000000       -0.0000000000
+Ni2              0.5000000000        0.5000000000        0.5000000000
+O               -0.2500000957       -0.2500000957       -0.2500000957
+O                0.2500000957        0.2500000957        0.2500000957
+K_POINTS automatic
+4 4 4 0 0 0

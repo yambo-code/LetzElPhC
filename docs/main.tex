@@ -1,0 +1,298 @@
+\documentclass[12pt,twoside,openany]{book}
+% PACKAGE
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsfonts,textcomp,latexsym}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[font=footnotesize,labelfont=bf]{caption}
+\usepackage{siunitx}
+\usepackage{varioref}           
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=blue,citecolor=blue,bookmarksopen=true,bookmarksnumbered=true,pdfpagemode=FullScreen,pdfstartview=FitH}
+\usepackage{cleveref} 
+\usepackage{fancyhdr}
+\usepackage{theorem}
+\usepackage{booktabs}
+\usepackage[export]{adjustbox}
+\usepackage{lmodern}
+\usepackage{multicol}
+\usepackage{changepage}
+\usepackage{subfigure}
+\usepackage{listings}
+% GEOMETRY 
+\addtolength{\parskip}{\baselineskip}
+\pagestyle{myheadings}
+\oddsidemargin=1.24mm
+\evensidemargin=-5.4mm
+\topmargin=-23pt
+\headheight=13.59999pt
+\headsep=25pt
+\textheight=674pt
+\textwidth=426pt
+\marginparsep=10pt
+\marginparwidth=50pt
+\marginparpush=5pt
+\voffset=0pt
+\paperheight=845pt
+\footskip=30pt
+\hoffset=0pt
+\paperwidth=597pt
+\brokenpenalty=10000
+% FANCY STYLE
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\lhead[\fancyplain{}{\nouppercase{\thepage}}]{\fancyplain{}{\nouppercase{\rightmark}}}
+\rhead[\fancyplain{}{\nouppercase{\leftmark}}]{\fancyplain{}{\nouppercase{\thepage}}}
+\cfoot{}
+%%%%
+\newcommand{\SubItem}[1]{
+    {\setlength\itemindent{15pt} \item[-] #1}
+}
+
+\newcommand{\prefrontmatter}{\thispagestyle{empty}
+   \begin{center}
+        \huge\projecttitle\\
+        \vspace{10pt}
+        \large{\projectauthor}\\
+        \vspace{10pt}
+        \small{\projectmonth}\\
+   \end{center}
+    \clearpage
+   \thispagestyle{empty}
+}
+%% CHAPTER STYLE
+\def\@makechapterhead#1{
+  {\parindent \z@ \raggedright \normalfont
+   \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        %\Large\scshape\space\Large\upshape\bf\thechapter
+        \par\nobreak
+        \vskip 20\p@
+      \fi
+    \fi
+    \interlinepenalty\@M
+    \flushleft\parbox{\textwidth}{\raggedright\huge #1}
+     \par\nobreak
+     \vskip 15pt
+     \hrule height 0.4pt
+  }}
+\def\@makeschapterhead#1{
+  {\parindent \z@ \raggedright \normalfont
+    \interlinepenalty\@M
+      \huge  #1
+     \par\nobreak
+     \vskip 15pt
+     \hrule height 0.4pt
+  }}
+
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4
+}
+\lstset{style=mystyle}
+\addto\captionsenglish{\renewcommand{\figurename}{Fig.}}
+\renewcommand*{\lstlistlistingname}{List of Programs}
+\def\projectauthor{Muralidhar Nalabothula}
+\def\projecttitle{LetzElPhC Documentation}
+\def\projectmonth{\today}
+\def\projectdepartment{-}
+\usepackage[scaled]{helvet}
+\renewcommand\familydefault{\sfdefault} 
+\usepackage[T1]{fontenc}
+% SECTION STYLE
+\setcounter{tocdepth}{2}                            
+\setcounter{secnumdepth}{3}
+\begin{document}
+\prefrontmatter
+\pagenumbering{arabic}
+\pdfbookmark{\contentsname}{toc}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\addtolength{\parskip}{-\baselineskip}  
+\tableofcontents
+\addtolength{\parskip}{\baselineskip}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\clearpage
+%%%% MAIN BODY starts from here
+%
+%
+%
+%
+%
+%
+%
+%%
+%
+%
+%
+%
+% ABout the code
+\chapter{About the Code}
+LetzElPhC is a C code, which computes electron-phonon coupling matrix elements from the outputs of standard DFT and DFPT calculations. It currently only supports the Quantum Espresso code with plans to extend it to the Abinit code. The primary objective of this project is to support electron-phonon related calculations in the YAMBO code (>=5.2)  and works only with \emph{norm-conserving} pseudo-potentials. It is currently released under MIT license and is hosted on \href{https://github.com/muralidhar-nalabothula/LetzElPhC}{github}.
+%
+\section{Main features}
+\begin{itemize}
+    \item Exploits full crystal symmetries and the output quantities are fully compatible with the YAMBO code without any phase issues.
+    \item Has multiple levels of parallelization: OpenMP, plane-wave, k-point and q-point.
+    \item Fully parallel IO using parallel NetCDF-4/HDF5 libraries.
+    \item Highly portable. The code can be compiled more or less on any CPU architecture and operating system with minimal/no changes.
+    
+\end{itemize}
+
+
+% Installing the code
+\chapter{Installing the Code}
+\section{Mandatory requirements}
+\begin{itemize}
+        \item GNU Make
+	\item Your favourite C99 compiler with complex number support. \\Ex : GCC,         Clang, ICC, AMD C-Compiler, MinGW (for windows), PGI, Arm C compilers etc.
+	\item MPI implementation (must support at least MPI-standard 2.1 standard)\\
+            Ex: Open-MPI, MPICH and its flavours, Intel MPI compiler, Microsoft MPI (for windows) etc.
+	\item FFTW-3 or Intel-MKL
+	\item HDF5 and NETCDF-4 libraries with Parallel IO support \\(must be compiled with MPI)
+	\item Your favourite BLAS library.\\
+            Ex : Openblas, Blis, Intel-MKL, Atlas etc.
+\end{itemize}
+
+\section{Installing}
+LetzElPhC employs standard make build system. There are some sample make files in {{\textcolor{blue}{\emph{sample\_config}}}} directory. Copy it to the {{\textcolor{blue}{\emph{src}}}} directory and rename it as {\textcolor{teal}{\emph{make.inc}}}. Now, go to the {{\textcolor{blue}{\emph{src}}}} folder and edit the {\textcolor{teal}{\emph{make.inc}}} file according to your needs and type (in the same {{\textcolor{blue}{\emph{src}}}} directory)
+\begin{lstlisting}[language=bash]
+$ make
+#### You can also compile the code in parallel with -j option
+$ make -j n 
+#### where n is number of processess.
+\end{lstlisting}
+If you successfully compile the code, you should find "{\bf \textcolor{red}{\emph{lelphc}}}" executable in the {{\textcolor{blue}{\emph{src}}}} directory.
+
+
+If you have hard time finding the libraries, you can go the YAMBO code installation directory, and open the {\textcolor{teal}{\emph{report}}} file in the {\textcolor{blue}{\emph{config}}} directory (of course after successfully installing YAMBO). This will list all the required libraries and include paths.
+
+Here are the list of variables in the {\textcolor{teal}{\emph{make.inc}}} file with 
+explanations.
+\begin{lstlisting}[language=make]
+CC                  :=  mpicc
+#### MPI C compiler mpicc/mpiicc (for intel), 
+CFLAGS              := -O3
+#### -O3 is to activate compiler optimizations
+LD_FLAGS            := 
+#### use this to pass any flags to linker
+
+#### **** OPENMP BUILD ***
+#### If you wish to build the code with openmp support
+#### uncomment the below line 
+# OPENMP_FLAGS   	:= -DELPH_OMP_PARALLEL_BUILD 
+#### Aditionally, you need to add openmp compiler flag to 
+#### CFLAGS and LD_FLAGS.
+#### Just uncomment the below two lines
+# CFLAGS            += -fopenmp ## use -qopenmp for intel
+# LD_FLAGS          += -fopenmp ## use -qopenmp for intel
+
+#### FFTW3 include and libs (see FFT flag in yambo config/report)
+FFTW_INC 	        :=  -I/opt/homebrew/include 
+FFTW3_LIB           :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
+#### Note if using FFTW
+#### Yambo uses double precision FFTW regardless of the precision with which Yambo is built. In contrast, you need to link single (double) precision FFTW for single (double) precision LetzElPhC. please refer to https://www.fftw.org/fftw3_doc/Precision.html . Also you refer to https://www.fftw.org/fftw3_doc/Multi_002dthreaded-FFTW.html  if compiling with openmp support.
+
+
+
+#### Blas and lapack libs (see BLAS and LAPACK flag in yambo config/report)
+BLAS_LIB 	        :=  -L/opt/homebrew/opt/openblas/lib -lopenblas 
+#### you need to add both blas and lapack libs for ex : -lblas -llapack
+
+#### netcdf libs and include
+#### (see NETCDF flag in yambo config/report)
+NETCDF_INC          :=  -I/Users/murali/softwares/core/include 
+NETCDF_LIB 	        :=  -L/Users/murali/softwares/core/lib -lnetcdf
+
+#### hdf5 lib (see HDF5 flag in yambo config/report)
+HDF5_LIB            :=  -L/opt/homebrew/lib  -lhdf5
+
+#### incase if you want to add additional include dir and libs
+INC_DIRS            := 
+LIBS                := 
+
+
+#### Notes Extra CFLAGS
+### add -DCOMPILE_ELPH_DOUBLE if you want to compile the code in double precession
+### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
+### for openmp use -DELPH_OMP_PARALLEL_BUILD in CFLAGS and set -fopenmp in LD_FLAGS and CFLAGS
+\end{lstlisting}
+%
+%
+%
+%
+%
+%
+%
+%%
+%
+%
+%
+%
+%%%% BODY ends here 
+
+%\section{Installing the Code}
+% The author must take the following general rules into account when preparing the document:
+% \begin{itemize}
+% 	\item The document should be written in Portuguese or English with an appropriate and grammatically correct style (both syntactically and semantically);
+% 	\item Be especially careful with the use of adjectives (they easily lead to exaggeration), adverbs (they add nothing or almost nothing), and punctuation marks (especially the correct use of commas);
+% 	\item The style adopted for writing should be consistent with the requirements of a scientific paper found in printed publications;
+% 	\item You should generally use the 3rd person singular (possibly plural), except where this is inappropriate, for example in the acknowledgments section;
+% 	\item Use the \textit{it\'{a}lic} style whenever terms are used in languages other than the language adopted in the report, to write mathematical symbols
+%     	\item The correct use of units, their multiples and submultiples;
+% 	\item Images and Tables should, as a rule, appear at the top or bottom of the page. Figure legends should appear immediately after the Figures and, in the case of Tables, the legends should precede them;
+% 	\item All Figures, Tables, and other Listings should be mentioned in the text so that they fit in with the ideas conveyed by the author. As a general rule, this reference should be made before the figure, table or list occurs;
+% 	\item Indicate the documentary references used throughout the text, especially in quotations (pure or literal), marked with quotation marks, as well as in the case of the reuse of graphs, Figures, Tables, formulas, etc. from other sources;
+% \end{itemize}
+% More specifically, in this first compulsory chapter,  the author should \footnote{It is recommended to use a section for each item}:
+% \begin{itemize}
+% 	\item Contextualize the work proposal in the context of the company, other work already carried out, from a scientific and/or technological point of view, etc;
+% 	\item Clearly present the objectives you intend to achieve;
+% 	\item Briefly but objectively describe the recommended solution or hypothesis;
+% 	\item Briefly but present the developments made;
+% 	\item Identify how the solution was validated and evaluated;
+% 	\item Describe the organization of the document.
+% \end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+    
+\cleardoublepage
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{splncs04.bst}
+\bibliography{refs}
+\pretocmd{\chapter}{\pagenumbering{arabic}
+\renewcommand*{\thepage}{\thechapter.\arabic{page}}}{}{} 
+\end{document}
