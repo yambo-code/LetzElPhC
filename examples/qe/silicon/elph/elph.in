@@ -1,0 +1,26 @@
+nkpool          = 1 
+# k point parallelization
+
+nqpool          = 1
+# q point parallelization
+
+start_bnd       = 2
+# starting band
+
+end_bnd         = 6
+# last band
+
+save_dir        = ../nscf/si.save/SAVE
+# save dir
+
+ph_save_dir     = ../ph/ph_save
+#ph_save directory which contains all phonon files 
+
+kernel          = dfpt
+
+convention      = standard 
+# standard/yambo, If standard (default) 
+# <k+q|dV|k> is computed. if yambo, <k|dV|k-q> is outputed 
+
+
+###  ##, !, ; are considered as comments

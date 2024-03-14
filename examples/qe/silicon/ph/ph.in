@@ -1,0 +1,11 @@
+phonons on a grid 
+ &inputph 
+  nq1 = 2, nq2 = 2, nq3 = 2, 
+  fildyn = 'si.dyn', 
+  tr2_ph = 1e-12, 
+  prefix = 'si', 
+  trans = .true., 
+  fildvscf = 'dvscf', 
+  ldisp = .true., 
+  reduce_io = .true.
+/ 
