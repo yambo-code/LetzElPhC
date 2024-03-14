@@ -31,6 +31,7 @@ NCPUS=$SLURM_NTASKS
 NKpool=1
 
 test_systems=(\
+    Si_bulk_spin \
     Si_bulk \
     hBN_bulk \
     NiO_SOC_mag \

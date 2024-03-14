@@ -24,10 +24,12 @@ cd si.save
 $P2Y
 $YAMBO
 cd ../..
-## now create ph_save
+######### lets start LetzElPhC 
+## first create ph_save in ph directory
 cd ph
 $LELPH -pp --code=qe -F ph.in
 cd ..
+## now compute the elph matrix elements
 cd elph
 $LELPH -F elph.in
 cd ..
