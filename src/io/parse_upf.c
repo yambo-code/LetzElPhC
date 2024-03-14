@@ -270,7 +270,7 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
 
     length += 15; // to add root elements and one for null terminator
 
-    xml_buf = malloc(length+1);
+    xml_buf = malloc(length + 1);
     CHECK_ALLOC(xml_buf);
 
     xml_buf[length] = '\0';
