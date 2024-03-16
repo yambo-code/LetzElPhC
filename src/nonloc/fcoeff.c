@@ -65,10 +65,10 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
         int j = rint(
             PP_table[ntype * 3 * lidx + itype * 3 + 1]); // Careful, this is 2j
 
-        if (l < 0)
+        if (l < 0 || j ==0 )
         {
             continue;
-        } // skip fake entries
+        } // skip fake entries or j ==0 (j =0 if one of the pseudo does not have soc)
 
         ND_int two_lp1 = 2 * l + 1;
         ND_int coeff_len = two_lp1 * two_lp1 * nspinor * nspinor;

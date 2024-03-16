@@ -461,7 +461,7 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                         // in case of nspinor = 1, only 1st element is read, for
                         // nspinor =2 it is 2x2 identity.
                         ELPH_cmplx* flmm = temp_flmm;
-                        if (fCoeff)
+                        if (ifCoeff)
                         {
                             flmm = ifCoeff + (two_lp1 * im1 + im2) * nspinor * nspinor;
                         }
