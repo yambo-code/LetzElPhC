@@ -48,7 +48,7 @@ void elph_driver(const char* ELPH_input_file,
     // a) COmpute the D_mats and store them in the netcdf file
     // ============= Dmats =====================
     compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym,
-                                phonon->ph_syms, mpi_comms);
+                            phonon->ph_syms, mpi_comms);
     // b) Compute elph
     // ============= ELPH iBZ computation =============
     ND_int nmodes = lattice->nmodes;
@@ -85,7 +85,7 @@ void elph_driver(const char* ELPH_input_file,
         }
 
         // create elph file. Note: we overwrite any existing file
-        if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4|NC_CLOBBER, mpi_comms->commR,
+        if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4 | NC_CLOBBER, mpi_comms->commR,
                                     MPI_INFO_NULL, &ncid_elph)))
         {
             fprintf(stderr, "Error creating ndb.elph file.");

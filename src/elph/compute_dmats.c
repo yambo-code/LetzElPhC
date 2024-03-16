@@ -31,12 +31,10 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
         nk_chunk_size = nk_totalBZ;
     }
 
-
-
     if (Comm->commK_rank == 0)
     {
         // we overwrite any existing file
-        if ((nc_err = nc_create_par(file_name, NC_NETCDF4|NC_CLOBBER, Comm->commR,
+        if ((nc_err = nc_create_par(file_name, NC_NETCDF4 | NC_CLOBBER, Comm->commR,
                                     MPI_INFO_NULL, &ncid)))
         {
             fprintf(stderr, "Error creating Dmat file");
