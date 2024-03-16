@@ -34,8 +34,40 @@ void write_basic_data(const int ncid, struct Lattice* lattice,
     {
         ERR(nc_err);
     }
+    
+    // qpoints in iBZ
+    def_ncVar(ncid, &varid, 2, ELPH_NC4_IO_FLOAT,
+              (ND_int[]) { phonon->nq_iBZ, 3 }, "qpoints_iBZ", (char*[]) { "nq_iBZ", "pol" },
+              NULL);
+    if ((nc_err = nc_put_var(ncid, varid, phonon->qpts_iBZ)))
+    {
+        ERR(nc_err);
+    }
 
-    // write stant and end band indices
+
+    // write qmap for qpoints (for each qpt in BZ, it gives corresponding iBZ and symm used)
+    def_ncVar(ncid, &varid, 2, NC_INT,
+              (ND_int[]) { phonon->nq_BZ, 2 }, "qmap", (char*[]) { "nq", "dim_two" },
+              NULL);
+    if ((nc_err = nc_put_var(ncid, varid, phonon->qmap)))
+    {
+        ERR(nc_err);
+    }
+
+
+    // write kmap for kpoints (for each kpt in BZ, it gives corresponding iBZ and symm used)
+    // This is internally available in yambo, it can be used to cross check if rotation is 
+    // done in same way
+    
+    def_ncVar(ncid, &varid, 2, NC_INT,
+              (ND_int[]) { lattice->nkpts_BZ, 2 }, "kmap", (char*[]) { "nk", "dim_two" },
+              NULL);
+    if ((nc_err = nc_put_var(ncid, varid, lattice->kmap)))
+    {
+        ERR(nc_err);
+    }
+
+    // write start and end band indices
     int bands_tmp[2] = { lattice->start_band, lattice->end_band };
     def_ncVar(ncid, &varid, 1, NC_INT,
               (ND_int[]) { 2 }, "bands", (char*[]) { "two_scalars" },

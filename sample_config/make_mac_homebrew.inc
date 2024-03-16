@@ -1,4 +1,4 @@
-## brew install openmpi hdf5-mpi fftw3 
+## brew install openmpi hdf5-mpi fftw 
 # install netcdf manually. See at the end
 #
 CC                  :=  mpicc
