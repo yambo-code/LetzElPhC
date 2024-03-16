@@ -34,7 +34,7 @@ void write_basic_data(const int ncid, struct Lattice* lattice,
     {
         ERR(nc_err);
     }
-    
+
     // qpoints in iBZ
     def_ncVar(ncid, &varid, 2, ELPH_NC4_IO_FLOAT,
               (ND_int[]) { phonon->nq_iBZ, 3 }, "qpoints_iBZ", (char*[]) { "nq_iBZ", "pol" },
@@ -43,7 +43,6 @@ void write_basic_data(const int ncid, struct Lattice* lattice,
     {
         ERR(nc_err);
     }
-
 
     // write qmap for qpoints (for each qpt in BZ, it gives corresponding iBZ and symm used)
     def_ncVar(ncid, &varid, 2, NC_INT,
@@ -54,11 +53,10 @@ void write_basic_data(const int ncid, struct Lattice* lattice,
         ERR(nc_err);
     }
 
-
     // write kmap for kpoints (for each kpt in BZ, it gives corresponding iBZ and symm used)
-    // This is internally available in yambo, it can be used to cross check if rotation is 
+    // This is internally available in yambo, it can be used to cross check if rotation is
     // done in same way
-    
+
     def_ncVar(ncid, &varid, 2, NC_INT,
               (ND_int[]) { lattice->nkpts_BZ, 2 }, "kmap", (char*[]) { "nk", "dim_two" },
               NULL);
