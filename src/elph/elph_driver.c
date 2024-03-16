@@ -47,12 +47,8 @@ void elph_driver(const char* ELPH_input_file,
     //======= Now start the real computation =========
     // a) COmpute the D_mats and store them in the netcdf file
     // ============= Dmats =====================
-    bool dmat_file_found = false; /// FIX ME
-    if (!dmat_file_found)
-    {
-        compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym,
+    compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym,
                                 phonon->ph_syms, mpi_comms);
-    }
     // b) Compute elph
     // ============= ELPH iBZ computation =============
     ND_int nmodes = lattice->nmodes;
@@ -88,8 +84,8 @@ void elph_driver(const char* ELPH_input_file,
             ERR(nc_err);
         }
 
-        // create elph file
-        if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4, mpi_comms->commR,
+        // create elph file. Note: we overwrite any existing file
+        if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4|NC_CLOBBER, mpi_comms->commR,
                                     MPI_INFO_NULL, &ncid_elph)))
         {
             fprintf(stderr, "Error creating ndb.elph file.");
@@ -113,13 +109,26 @@ void elph_driver(const char* ELPH_input_file,
                   (ND_int[]) { phonon->nq_BZ, nmodes }, "FREQ",
                   (char*[]) { "nq", "nmodes" }, NULL);
 
+        ND_int nk_chunk_size = NC4_DEFAULT_CHUCK_KB * 1024; // now this is in bytes
+        // scale with complex number size to get the number of elements
+        nk_chunk_size /= (sizeof(ELPH_cmplx) * nmodes * lattice->nspin * lattice->nbnds * lattice->nbnds);
+        // chuck the varaible elph_mat with atmost default size
+        if (nk_chunk_size == 0)
+        {
+            nk_chunk_size = 1;
+        }
+        else if (nk_chunk_size > lattice->nkpts_BZ)
+        {
+            nk_chunk_size = lattice->nkpts_BZ;
+        }
+
         def_ncVar(
             ncid_elph, &varid_elph, 7, ELPH_NC4_IO_FLOAT,
             (ND_int[]) { phonon->nq_BZ, lattice->nkpts_BZ, nmodes,
                          lattice->nspin, lattice->nbnds, lattice->nbnds, 2 },
             "elph_mat",
             (char*[]) { "nq", "nk", "nmodes", "nspin", "initial_band", "final_band_PH_abs", "re_im" },
-            (size_t[]) { 1, 1, nmodes, lattice->nspin, lattice->nbnds,
+            (size_t[]) { 1, nk_chunk_size, nmodes, lattice->nspin, lattice->nbnds,
                          lattice->nbnds, 2 });
     }
 

@@ -18,9 +18,25 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
     size_t startp[6] = { 0, 0, 0, 0, 0, 0 };
     size_t countp[6] = { 1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2 };
 
+    ND_int nk_chunk_size = NC4_DEFAULT_CHUCK_KB * 1024; // now this is in bytes
+    // scale with complex number size to get the number of elements
+    nk_chunk_size /= (sizeof(ELPH_cmplx) * lattice->nspin * lattice->nbnds * lattice->nbnds);
+    // chuck the varaible elph_mat with atmost default size
+    if (nk_chunk_size == 0)
+    {
+        nk_chunk_size = 1;
+    }
+    else if (nk_chunk_size > nk_totalBZ)
+    {
+        nk_chunk_size = nk_totalBZ;
+    }
+
+
+
     if (Comm->commK_rank == 0)
     {
-        if ((nc_err = nc_create_par(file_name, NC_NETCDF4, Comm->commR,
+        // we overwrite any existing file
+        if ((nc_err = nc_create_par(file_name, NC_NETCDF4|NC_CLOBBER, Comm->commR,
                                     MPI_INFO_NULL, &ncid)))
         {
             fprintf(stderr, "Error creating Dmat file");
@@ -39,7 +55,7 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
                          lattice->nbnds, 2 },
             "Dmats",
             (char*[]) { "nsym_ph", "nkpts", "nspin", "Rk_band", "k_band", "re_im" },
-            (size_t[]) { 1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2 });
+            (size_t[]) { 1, nk_chunk_size, lattice->nspin, lattice->nbnds, lattice->nbnds, 2 });
 
         // Make the access INDEPENDENT as not all can call the put_var function
         // simultaneously
