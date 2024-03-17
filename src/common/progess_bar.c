@@ -35,7 +35,7 @@ void start_progressbar(struct progress_bar* pbar, int mpi_rank, ND_int niter)
     {
         fprintf(stdout, PROGRESS_BAR_SPACE);
     }
-    fprintf(stdout, "] %6.2f%%  ETC: %4dh %2dm %2ds\n", 0.0, 0, 0, 0);
+    fprintf(stdout, "] %6.2f%% \n", 0.0);
     fflush(stdout);
 }
 

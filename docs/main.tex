@@ -242,6 +242,126 @@ LIBS                :=
 %
 %
 %
+\chapter{Running the code}
+\section{Running DFT and DFPT (Step 0)}
+First and foremost, we need to obtain the following ingreadiants
+\begin{itemize}
+\item Kohn-Sham wavefunctions (These are obtained by doing a non-selfconsistant calculation after obtaining
+the ground state density of the system.)
+\item Phonon eigenvectors and perturbed Hatree and Exchange potentials due to phonon modes 
+(obtained by performing a DFPT run after finding the ground state)
+\end{itemize}
+
+With Quantum Espresso code, we do the following (you can find an example in \textcolor{blue}{\bf{examples/qe/silicon}}),
+\begin{itemize}
+    \item Do a scf calculation to get the ground state.
+    \item Now perform a DFPT calculation with ph.x executable to obtain dynamical matrices and change in potentials on 
+    uniform q-point grid
+    \item And finally, perform a nscf calculation to obtain the wavefunctions on uniform kpoint grid
+\end{itemize}
+
+{\bf{Note}} : It is very importart to set the \textcolor{red}{\emph{dvscf}} flag in ph.x input, else you need to rerun the whole calculation again.
+Also, \textcolor{red}{q-grid must be commensate with the k-grid used in the nscf calculation} (use whatever for scf, it does not matter).
+
+Once you performed all these steps, go to the nscf folder and enter into \textcolor{red}{\emph{prefix.save}} directory, where the wavefunctions 
+are stored. Then run \textcolor{red}{\emph{p2y}} and \textcolor{red}{\emph{yambo}} to obtain the \textcolor{blue}{\bf{SAVE}} folder
+\begin{lstlisting}[language=bash]
+$ p2y
+#### this will create yambo SAVE directory
+$ yambo
+#### This will additonally create some more files
+\end{lstlisting}
+If you finished the above steps successfully, you are ready to start using the LetzElPhC code.
+
+\section{Running the preprocessor (Step 1)}
+Once we have the SAVE directory, we need to create \textcolor{blue}{\bf{ph\_save}} folder. To create this we need 
+to go the phonon calculation directory and run the preprocessor with the flag  \textcolor{blue}{\emph{-pp}}.
+\begin{lstlisting}[language=bash]
+$ cd /path/to/phonon calculation directory
+#### run the preprocessor
+$ lelphc -pp --code=qe -F PH.X_input_file
+#### where PH.X_input_file is input file of ph.x code that was used to compute phonons
+\end{lstlisting}
+After successfully running the preprocessor, you should see ph\_save directory. This directory contains all the change in 
+potentials, dynamical matrices and pattern files.
+
+If you wish to create a soft symlink instead of copying these files, you need to set an environment variable
+\begin{lstlisting}[language=bash]
+$ export ELPH_COPY_CMD="ln -s"
+\end{lstlisting}
+and run the preprocessor.
+
+Similarly, you can also change the name of the ph\_save directory by the another environment variable
+\begin{lstlisting}[language=bash]
+$ export ELPH_SAVE_DIR=ph_save_name_you_want
+\end{lstlisting}
+
+{\bf{Remarks}}:
+\begin{itemize}
+\item The \underline{new format XML dynamical matrix files are currently \bf{not} supported.}
+\item The preprocessor currently \underline{{\bf{does not}} work with image parallelization}. If you want 
+to use image parallelization, you have to copy all the phonon files to \_ph0 directory and run the 
+preprocessor.
+\end{itemize}
+
+
+\section{Performing the elph calculation (Final step)}
+Once you have SAVE and ph\_save folders, you are all set to go. Run the following command with LetzElPhC input file in 
+any directory where you want to perform the calculation
+\begin{lstlisting}[language=bash]
+$ mpirun -n 4 lelphc -F LetzElPhC_input_file
+#### here we are running with 4 mpi processess.
+\end{lstlisting}
+
+Below is detailed description of input file
+\begin{lstlisting}[language=make]
+    nkpool          = 1 
+    # k point parallelization (number of kpools)
+    
+    nqpool          = 1
+    # q point parallelization (number of qpools)
+
+    ## note (nkpool*nqpool) must divide total number of cpus.
+    
+    ## For example, if you run the code on 12 processess, 
+    ## and set nkpool = 3 and nqpool = 2
+    ## then, we have 2 sets of cpus working subset of qpoints 
+    ## with each group having 3 sub groups which that work on 
+    ## subset of kpoints. So in total, we have 6 subgroups, each 
+    ## having 2 cpus that distribute plane waves 
+
+    ##  {1,2,3,4,5,6,7,8,9,10,11,12} (total cpus)
+    ##   ____________|________________
+    ##  |    divided in to 2 qpools   |
+    ## (qpool 1) {1,2,3,4,5,6}    (qpool 2) {7,8,9,10,11,12}
+    ## ________|________    ________|_________
+    ## |        |       |   |       |        |
+    ## kp1     kp2     kp3  kp1     kp2      kp3
+    ## where kp1 are kpools each containg 2 
+    ## cpus work on subset of plane waves
+
+    start_bnd       = 1
+    # starting band to consider in elph calculation
+    
+    end_bnd         = 40
+    # last band to consider in elph calculation
+    
+    save_dir        = /Users/murali/phd/one_phonon_raman/wse2/SAVE
+    # SAVE dir you create 
+    
+    ph_save_dir     = /Users/murali/phd/one_phonon_raman/wse2/ph_save
+    # ph_save directory that was created with preprocessor
+    
+    kernel          = dfpt
+    ## type of kernel, only dfpt supported right Now
+
+    convention      = standard 
+    # standard/yambo, If standard (default) 
+    # <k+q|dV|k> is computed. if yambo, <k|dV|k-q> is outputed 
+    
+    ###  ##, !, ; are considered as comments
+\end{lstlisting}
+
 %
 %
 %
