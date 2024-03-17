@@ -1,4 +1,5 @@
 #include "elph.h"
+#include "../common/progess_bar.h"
 
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              struct Pseudo* pseudo, struct Phonon* phonon,
@@ -90,6 +91,10 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         CHECK_ALLOC(D_mat_r);
     }
 
+    // start the progress bar
+    struct progress_bar pbar[1];
+    start_progressbar(pbar, Comm->commW_rank, nk_this_pool);
+    // compute electron-phonon matrix elements for each kpoint
     for (ND_int ii = 0; ii < nk_this_pool; ++ii)
     {
         /* compute the global k index */
@@ -189,6 +194,8 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         }
         mpi_error = MPI_Barrier(Comm->commK);
         MPI_error_msg(mpi_error);
+        // update the progress bar
+        print_progressbar(pbar);
     }
     // free wfc buffers
     if (Comm->commK_rank == 0)

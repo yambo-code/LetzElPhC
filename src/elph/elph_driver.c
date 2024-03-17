@@ -2,6 +2,7 @@
 THe starting point for the entire code
 */
 #include "elph.h"
+#include "../common/print_info.h"
 
 void elph_driver(const char* ELPH_input_file,
                  enum ELPH_dft_code dft_code,
@@ -27,6 +28,10 @@ void elph_driver(const char* ELPH_input_file,
     create_parallel_comms(input_data->nqpool, input_data->nkpool,
                           comm_world, mpi_comms);
 
+    print_info_msg(mpi_comms->commW_rank, "********** Program started **********");
+    print_input_info(input_data->save_dir, input_data->ph_save_dir,
+                     input_data->kernel_str, input_data->kminusq, dft_code, mpi_comms);
+
     struct Lattice* lattice = malloc(sizeof(struct Lattice));
     CHECK_ALLOC(lattice);
 
@@ -44,9 +49,14 @@ void elph_driver(const char* ELPH_input_file,
                              input_data->ph_save_dir, lattice, pseudo, phonon,
                              dft_code);
 
+    // print info about lattice and phonons
+    print_lattice_info(mpi_comms, lattice);
+    print_phonon_info(mpi_comms, phonon);
     //======= Now start the real computation =========
     // a) COmpute the D_mats and store them in the netcdf file
     // ============= Dmats =====================
+    print_info_msg(mpi_comms->commW_rank, "");
+    print_info_msg(mpi_comms->commW_rank, "=== Computing Dmats for phonon symmetries ===");
     compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym,
                             phonon->ph_syms, mpi_comms);
     // b) Compute elph
@@ -140,8 +150,13 @@ void elph_driver(const char* ELPH_input_file,
         CHECK_ALLOC(eig_Sq);
     }
 
+    print_info_msg(mpi_comms->commW_rank, "=== Computing Electron-phonon matrix elements ===");
+    print_info_msg(mpi_comms->commW_rank, "");
     for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
     {
+        print_info_msg(mpi_comms->commW_rank, "### q-point : %d/%d",
+                       (int)(iqpt + 1), (int)phonon->nq_iBZ_loc);
+
         ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
         // read dynamical matrix and dvscf for the iBZ qpt
         if (dft_code == DFT_CODE_QE)
@@ -264,6 +279,7 @@ void elph_driver(const char* ELPH_input_file,
         }
     }
 
+    int World_rank_tmp = mpi_comms->commW_rank;
     // ELPH_cmplx Ry2Ha = pow(2,-1.5);
     free(omega_ph);
     free(eigVec);
@@ -279,4 +295,7 @@ void elph_driver(const char* ELPH_input_file,
     free_parallel_comms(mpi_comms);
     free(mpi_comms);
     fftw_fun(cleanup)();
+
+    // done with the calculation
+    print_info_msg(World_rank_tmp, "********** Program ended **********");
 }

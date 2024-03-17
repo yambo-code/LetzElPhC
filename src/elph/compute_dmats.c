@@ -1,4 +1,5 @@
 #include "elph.h"
+#include "../common/progess_bar.h"
 
 /*
  * This function contain the wrapper functions to compute and
@@ -73,6 +74,10 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
     ND_int ndmats = distribute_to_grps(nph_sym * nk_totalBZ, Comm->nqpools * Comm->nkpools,
                                        Comm->commW_rank / Comm->commK_size, &dmat_shift);
 
+    // start the progress bar for dmats
+    struct progress_bar pbar[1];
+    start_progressbar(pbar, Comm->commW_rank, ndmats);
+
     for (ND_int idmat = 0; idmat < ndmats; ++idmat)
     {
         ND_int isym = (idmat + dmat_shift) / nk_totalBZ;
@@ -93,6 +98,9 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
                 ERR(nc_err);
             }
         }
+
+        // update the progress bar
+        print_progressbar(pbar);
     }
     if (Comm->commK_rank == 0)
     {
