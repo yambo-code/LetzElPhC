@@ -10,7 +10,8 @@ static int gsort_cmp(const void* a, const void* b);
 void Sorted_gvecs_idxs(const ND_int npw, ELPH_float* gvecs, ND_int* indices)
 {
     /*
-    Sort gvecs and group all gvecs with same (x,y).
+    Sort gvecs into groups(zcoloumns with same (x,y)).
+    return sorted indices (like np.argsort)
 
     // gvecs in crystal coordinates
     */
