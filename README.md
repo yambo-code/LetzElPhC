@@ -2,8 +2,10 @@ The main prototype of the code is done but there are some minor issues.
 
 
 # TODO 
-1) Prepare test cases
-2) Improve OPENMP
+1) Support XML format for dynamical matrices
+2) Work on suporting image parallelization of ph.x (preprocessor)
+3) Prepare test cases
+4) Improve OPENMP
 
 
 # Some Uncertain improvements 
