@@ -241,7 +241,7 @@ LIBS                :=
 
 \chapter{Running the Code}
 \section{Running DFT and DFPT (Step 0)}
-Before using LetzElPhC, ensure you have obtained the following ingredients:
+Before using LetzElPhC, ensure you have obtained the following quantities: 
 \begin{itemize}
 \item Kohn-Sham wavefunctions (obtained from a non-self-consistent calculation after obtaining the ground state density of the system).
 \item Phonon eigenvectors and perturbed Hatree and Exchange potentials due to phonon modes (obtained from a DFPT run after finding the ground state).
@@ -250,10 +250,12 @@ With the Quantum Espresso code, follow these steps (an example is provided in \t
 \begin{itemize}
 \item Perform a self-consistent field (SCF) calculation to obtain the ground state.
 \item Perform a DFPT calculation using the \textbf{ph.x} executable to obtain dynamical matrices and changes in potentials on a uniform q-point grid.
-\item Perform a non-self-consistent field (NSCF) calculation to obtain the wavefunctions on a uniform k-point grid.
+\item Perform a non-self-consistent field (NSCF) calculation to obtain the wavefunctions on a uniform k-point grid. The k-grid and q-grid of phonons 
+must be commensurate.
 \end{itemize}
-\textbf{Note}: Set the \textcolor{red}{\emph{dvscf}} flag in the \textbf{ph.x} input to avoid rerunning the entire calculation. 
-Additionally, make sure that the q-grid is commensurate with the k-grid used in the NSCF calculation (the choice of kgrid for the SCF calculation is irrelevant).
+\textbf{Note}: Set the \textcolor{red}{\emph{dvscf}} flag in the \textbf{ph.x} input to save the change in potentials. If you forget to set this varaible,
+you have to rerun the entire calculation. 
+Additionally, make sure that the q-grid is commensurate with the k-grid used in the NSCF calculation (Although, the choice of kgrid to converge the SCF calculation is irrelevant).
 Once these steps are completed successfully, go to the NSCF folder and enter the \textcolor{red}{\emph{prefix.save}} directory, 
 where the wavefunctions are stored. Then, execute \textcolor{red}{\emph{p2y}} followed by \textcolor{red}{\emph{yambo}} to generate the \textcolor{blue}{\bf{SAVE}} folder:
 \begin{lstlisting}[language=bash]
@@ -264,7 +266,7 @@ $ yambo
 \end{lstlisting}
 Upon successful completion of these steps, we are ready to use LetzElPhC.
 \section{Running the Preprocessor (Step 1)}
-Once the \textcolor{blue}{\bf{SAVE}} directory is obtained, create the \textcolor{blue}{\bf{ph\_save}} folder. Navigate to the phonon calculation directory and run the preprocessor with the \textcolor{blue}{\emph{-pp}} flag:
+Once the \textcolor{blue}{\bf{SAVE}} directory is obtained, we need to create the \textcolor{blue}{\bf{ph\_save}} folder. Navigate to the phonon calculation directory and run the preprocessor with the \textcolor{blue}{\emph{-pp}} flag:
 \begin{lstlisting}[language=bash]
 $ cd /path/to/phonon calculation directory
 #### Run the preprocessor
@@ -276,7 +278,7 @@ If you wish to create soft symlinks instead of copying these files, set the foll
 \begin{lstlisting}[language=bash]
 $ export ELPH_COPY_CMD="ln -s"
 \end{lstlisting}
-and then running the preprocessor.
+and then run the preprocessor.
 Additionally, the name of the \textcolor{blue}{\bf{ph\_save}} directory can be changed using another environment variable:
 \begin{lstlisting}[language=bash]
 $ export ELPH_SAVE_DIR=ph_save_name_you_want
