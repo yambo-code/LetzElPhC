@@ -150,46 +150,44 @@
 %
 % ABout the code
 \chapter{About the Code}
-LetzElPhC is a C code, which computes electron-phonon coupling matrix elements from the outputs of standard DFT and DFPT calculations. It currently only supports the Quantum Espresso code with long term plans to extend it to the Abinit code. The primary objective of this project is to support electron-phonon related calculations in the YAMBO code (>=5.2)  and works only with \emph{norm-conserving} pseudo-potentials. It is currently released under MIT license and is hosted on \href{https://github.com/muralidhar-nalabothula/LetzElPhC}{github}.
-%
-\section{Main features}
+LetzElPhC is a C code designed to compute electron-phonon coupling matrix elements from the outputs of standard Density Functional Theory (DFT) and Density Functional Perturbation Theory (DFPT) calculations. 
+Currently, it only supports the Quantum Espresso code, with long plans to support the Abinit code. 
+The main objective of this project is to facilitate electron-phonon related calculations 
+within the YAMBO code (version 5.2 and above), and it works only with norm-conserving pseudo-potentials. 
+The code is released under the MIT license and hosted on GitHub [\href{https://github.com/muralidhar-nalabothula/LetzElPhC}{link}].
+\section{Main Features}
 \begin{itemize}
-    \item Exploits full crystal symmetries and the output quantities are fully compatible with the YAMBO code without any phase issues.
-    \item Has multiple levels of parallelization: OpenMP, plane-wave, k-point and q-point.
-    \item Fully parallel IO using parallel NetCDF-4/HDF5 libraries.
-    \item Highly portable. The code can be compiled more or less on any CPU architecture and operating system with minimal/no changes.
-    
+\item Utilizes full crystal symmetries, ensuring compatibility with the YAMBO code without encountering phase issues.
+\item Implements multiple levels of parallelization, including OpenMP, plane-wave, k-point, and q-point parallelization.
+\item Utilizes fully parallel Input/Output (IO) via parallel NetCDF-4/HDF5 libraries.
+\item Exhibits high portability, as the code can be compiled on various CPU architectures and operating systems with minimal to no adjustments.
 \end{itemize}
-
-
-% Installing the code
 \chapter{Installing the Code}
-\section{Mandatory requirements}
+\section{Mandatory Requirements}
 \begin{itemize}
-        \item GNU Make
-	\item Your favourite C99 compiler with complex number support. \\Ex : GCC,         Clang, ICC, AMD C-Compiler, MinGW (for windows), PGI, Arm C compilers etc.
-	\item MPI implementation (must support at least MPI-standard 2.1 standard)\\
-            Ex: Open-MPI, MPICH and its flavours, Intel MPI compiler, Microsoft MPI (for windows) etc.
-	\item FFTW-3 or Intel-MKL
-	\item HDF5 and NETCDF-4 libraries with Parallel IO support \\(must be compiled with MPI)
-	\item Your favourite BLAS library.\\
-            Ex : Openblas, Blis, Intel-MKL, Atlas etc.
+\item GNU Make
+\item C99 compiler with complex number support, such as GCC, Clang, ICC, AMD C-Compiler, MinGW (for Windows), PGI, or Arm C compilers.
+\item MPI implementation supporting at least MPI-standard 2.1 standard, such as Open-MPI, MPICH and its variants, Intel MPI compiler, or Microsoft MPI (for Windows).
+\item FFTW-3 or Intel-MKL.
+\item HDF5 and NETCDF-4 libraries with Parallel IO support (compiled with MPI).
+\item A BLAS library, such as OpenBLAS, BLIS, Intel-MKL, or Atlas.
 \end{itemize}
-
-\section{Installing}
-LetzElPhC employs standard make build system. There are some sample make files in {{\textcolor{blue}{\emph{sample\_config}}}} directory. Copy it to the {{\textcolor{blue}{\emph{src}}}} directory and rename it as {\textcolor{teal}{\emph{make.inc}}}. Now, go to the {{\textcolor{blue}{\emph{src}}}} folder and edit the {\textcolor{teal}{\emph{make.inc}}} file according to your needs and type (in the same {{\textcolor{blue}{\emph{src}}}} directory)
+\section{Installation Process}
+LetzElPhC employs a standard make build system. Sample make files are available in the \textcolor{blue}{\emph{sample\_config}} directory. 
+Copy one to the \textcolor{blue}{\emph{src}} directory and rename it as \textcolor{teal}{\emph{make.inc}}. 
+Navigate to the \textcolor{blue}{\emph{src}} directory and edit \textcolor{teal}{\emph{make.inc}} according to your requirements. 
+Then, in the same directory, execute the following commands:
 \begin{lstlisting}[language=bash]
 $ make
-#### You can also compile the code in parallel with -j option
-$ make -j n 
-#### where n is number of processess.
+#### To compile the code in parallel, use the -j option
+$ make -j n
+#### where n is the number of processes.
 \end{lstlisting}
-If you successfully compile the code, you should find "{\bf \textcolor{red}{\emph{lelphc}}}" executable in the {{\textcolor{blue}{\emph{src}}}} directory.
+Upon successful compilation, you should find the \textbf{\textcolor{red}{\emph{lelphc}}} executable located in the \textcolor{blue}{\emph{src}} directory.
+If you encounter difficulties in locating the required libraries, go to the YAMBO code installation directory and 
+open the \textcolor{teal}{\emph{report}} file in the \textcolor{blue}{\emph{config}} directory, which lists all necessary libraries and include paths.
 
-
-If you have hard time finding the libraries, you can go the YAMBO code installation directory, and open the {\textcolor{teal}{\emph{report}}} file in the {\textcolor{blue}{\emph{config}}} directory (of course after successfully installing YAMBO). This will list all the required libraries and include paths.
-
-Here are the list of variables in the {\textcolor{teal}{\emph{make.inc}}} file with 
+Below are the list of variables in the {\textcolor{teal}{\emph{make.inc}}} file with 
 explanations.
 \begin{lstlisting}[language=make]
 CC                  :=  mpicc
@@ -239,81 +237,66 @@ LIBS                :=
 ### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
 ### for openmp use -DELPH_OMP_PARALLEL_BUILD in CFLAGS and set -fopenmp in LD_FLAGS and CFLAGS
 \end{lstlisting}
-%
-%
-%
-\chapter{Running the code}
+
+
+\chapter{Running the Code}
 \section{Running DFT and DFPT (Step 0)}
-First and foremost, we need to obtain the following ingreadiants
+Before using LetzElPhC, ensure you have obtained the following ingredients:
 \begin{itemize}
-\item Kohn-Sham wavefunctions (These are obtained by doing a non-selfconsistant calculation after obtaining
-the ground state density of the system.)
-\item Phonon eigenvectors and perturbed Hatree and Exchange potentials due to phonon modes 
-(obtained by performing a DFPT run after finding the ground state)
+\item Kohn-Sham wavefunctions (obtained from a non-self-consistent calculation after obtaining the ground state density of the system).
+\item Phonon eigenvectors and perturbed Hatree and Exchange potentials due to phonon modes (obtained from a DFPT run after finding the ground state).
 \end{itemize}
-
-With Quantum Espresso code, we do the following (you can find an example in \textcolor{blue}{\bf{examples/qe/silicon}}),
+With the Quantum Espresso code, follow these steps (an example is provided in \textcolor{blue}{\bf{examples/qe/silicon}}):
 \begin{itemize}
-    \item Do a scf calculation to get the ground state.
-    \item Now perform a DFPT calculation with ph.x executable to obtain dynamical matrices and change in potentials on 
-    uniform q-point grid
-    \item And finally, perform a nscf calculation to obtain the wavefunctions on uniform kpoint grid
+\item Perform a self-consistent field (SCF) calculation to obtain the ground state.
+\item Perform a DFPT calculation using the \textbf{ph.x} executable to obtain dynamical matrices and changes in potentials on a uniform q-point grid.
+\item Perform a non-self-consistent field (NSCF) calculation to obtain the wavefunctions on a uniform k-point grid.
 \end{itemize}
-
-{\bf{Note}} : It is very importart to set the \textcolor{red}{\emph{dvscf}} flag in ph.x input, else you need to rerun the whole calculation again.
-Also, \textcolor{red}{q-grid must be commensate with the k-grid used in the nscf calculation} (use whatever for scf, it does not matter).
-
-Once you performed all these steps, go to the nscf folder and enter into \textcolor{red}{\emph{prefix.save}} directory, where the wavefunctions 
-are stored. Then run \textcolor{red}{\emph{p2y}} and \textcolor{red}{\emph{yambo}} to obtain the \textcolor{blue}{\bf{SAVE}} folder
+\textbf{Note}: Set the \textcolor{red}{\emph{dvscf}} flag in the \textbf{ph.x} input to avoid rerunning the entire calculation. 
+Additionally, make sure that the q-grid is commensurate with the k-grid used in the NSCF calculation (the choice of kgrid for the SCF calculation is irrelevant).
+Once these steps are completed successfully, go to the NSCF folder and enter the \textcolor{red}{\emph{prefix.save}} directory, 
+where the wavefunctions are stored. Then, execute \textcolor{red}{\emph{p2y}} followed by \textcolor{red}{\emph{yambo}} to generate the \textcolor{blue}{\bf{SAVE}} folder:
 \begin{lstlisting}[language=bash]
 $ p2y
-#### this will create yambo SAVE directory
+#### Generates the YAMBO SAVE directory
 $ yambo
-#### This will additonally create some more files
+#### Further processing creates additional files
 \end{lstlisting}
-If you finished the above steps successfully, you are ready to start using the LetzElPhC code.
-
-\section{Running the preprocessor (Step 1)}
-Once we have the SAVE directory, we need to create \textcolor{blue}{\bf{ph\_save}} folder. To create this we need 
-to go the phonon calculation directory and run the preprocessor with the flag  \textcolor{blue}{\emph{-pp}}.
+Upon successful completion of these steps, we are ready to use LetzElPhC.
+\section{Running the Preprocessor (Step 1)}
+Once the \textcolor{blue}{\bf{SAVE}} directory is obtained, create the \textcolor{blue}{\bf{ph\_save}} folder. Navigate to the phonon calculation directory and run the preprocessor with the \textcolor{blue}{\emph{-pp}} flag:
 \begin{lstlisting}[language=bash]
 $ cd /path/to/phonon calculation directory
-#### run the preprocessor
+#### Run the preprocessor
 $ lelphc -pp --code=qe -F PH.X_input_file
-#### where PH.X_input_file is input file of ph.x code that was used to compute phonons
+#### Where PH.X_input_file is the input file of ph.x code used for computing phonons
 \end{lstlisting}
-After successfully running the preprocessor, you should see ph\_save directory. This directory contains all the change in 
-potentials, dynamical matrices and pattern files.
-
-If you wish to create a soft symlink instead of copying these files, you need to set an environment variable
+Upon successful execution, the \textcolor{blue}{\bf{ph\_save}} directory will be created, containing all necessary files.
+If you wish to create soft symlinks instead of copying these files, set the following environment variable:
 \begin{lstlisting}[language=bash]
 $ export ELPH_COPY_CMD="ln -s"
 \end{lstlisting}
-and run the preprocessor.
-
-Similarly, you can also change the name of the ph\_save directory by the another environment variable
+and then running the preprocessor.
+Additionally, the name of the \textcolor{blue}{\bf{ph\_save}} directory can be changed using another environment variable:
 \begin{lstlisting}[language=bash]
 $ export ELPH_SAVE_DIR=ph_save_name_you_want
 \end{lstlisting}
-
-{\bf{Remarks}}:
+\textbf{Remarks}:
 \begin{itemize}
-\item The \underline{new format XML dynamical matrix files are currently \bf{not} supported.}
-\item The preprocessor currently \underline{{\bf{does not}} work with image parallelization}. If you want 
-to use image parallelization, you have to copy all the phonon files to \_ph0 directory and run the 
-preprocessor.
+\item The new format XML dynamical matrix files are currently not supported.
+\item The preprocessor does not work with image parallelization. For image parallelization, copy all phonon files to the \_ph0 directory 
+and run the preprocessor.
 \end{itemize}
 
-
-\section{Performing the elph calculation (Final step)}
-Once you have SAVE and ph\_save folders, you are all set to go. Run the following command with LetzElPhC input file in 
-any directory where you want to perform the calculation
+\section{Performing the ELPH Calculation (Final Step)}
+Once both the \textcolor{blue}{\bf{SAVE}} and \textcolor{blue}{\bf{ph\_save}} folders are created, 
+the ELPH calculation can be executed. Run the following command with the LetzElPhC input file in any 
+directory where you wish to perform the calculation:
 \begin{lstlisting}[language=bash]
 $ mpirun -n 4 lelphc -F LetzElPhC_input_file
-#### here we are running with 4 mpi processess.
+## Here, we are using 4 MPI processes.
 \end{lstlisting}
-
-Below is detailed description of input file
+A detailed description of the input file is provided below:
 \begin{lstlisting}[language=make]
     nkpool          = 1 
     # k point parallelization (number of kpools)
@@ -347,7 +330,7 @@ Below is detailed description of input file
     # last band to consider in elph calculation
     
     save_dir        = /Users/murali/phd/one_phonon_raman/wse2/SAVE
-    # SAVE dir you create 
+    # SAVE dir you created with yambo
     
     ph_save_dir     = /Users/murali/phd/one_phonon_raman/wse2/ph_save
     # ph_save directory that was created with preprocessor
