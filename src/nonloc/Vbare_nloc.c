@@ -442,7 +442,7 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                 // incase relativistic pseudo is used in a non-SOC calc, we need to do a j-avg
                 if (j != 0 && !lattice->is_soc_present)
                 {
-                    soc_fac = (j+1.0)/(4.0*l + 2.0);
+                    soc_fac = (j + 1.0) / (4.0 * l + 2.0);
                 }
 
                 int two_lp1 = 2 * l + 1;
