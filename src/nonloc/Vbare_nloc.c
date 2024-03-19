@@ -431,11 +431,19 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
             for (ND_int lidx = 0; lidx < nltimesj; ++lidx)
             {
                 int l = rint(PP_table[ntype * 3 * lidx + itype * 3] - 1); // PP_table[lidx,itype,0]
+                int j = rint(PP_table[ntype * 3 * lidx + itype * 3 + 1]); // Careful, this is 2j
 
                 if (l < 0)
                 {
                     continue;
                 } // skip fake entries
+
+                ELPH_float soc_fac = 1.0;
+                // incase relativistic pseudo is used in a non-SOC calc, we need to do a j-avg
+                if (j != 0 && !lattice->is_soc_present)
+                {
+                    soc_fac = (j+1.0)/(4.0*l + 2.0);
+                }
 
                 int two_lp1 = 2 * l + 1;
 
@@ -452,12 +460,12 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                     {
                         ELPH_cmplx* betaPsi_Kp = bandbufferKp + (il_counter + im2) * bandbuffer_stride;
 
-                        if (!fCoeff && im1 != im2)
+                        if (!ifCoeff && im1 != im2)
                         {
                             continue;
                         } // if no soc, diagonal in m's and spins
 
-                        ELPH_cmplx temp_flmm[4] = { 1.0, 0.0, 0.0, 1.0 };
+                        ELPH_cmplx temp_flmm[4] = { soc_fac, 0.0, 0.0, soc_fac };
                         // in case of nspinor = 1, only 1st element is read, for
                         // nspinor =2 it is 2x2 identity.
                         ELPH_cmplx* flmm = temp_flmm;
