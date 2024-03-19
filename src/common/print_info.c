@@ -61,7 +61,7 @@ void print_input_info(const char* save_dir, const char* ph_save_dir,
     char* omp_n_threads = getenv("OMP_NUM_THREADS");
     if (omp_n_threads)
     {
-        print_info_msg(Comm->commW_rank, "Openmp Threads    = %s", omp_n_threads);
+        print_info_msg(Comm->commW_rank, "Openmp Threads          : %s", omp_n_threads);
     }
     else
     {
