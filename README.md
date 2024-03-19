@@ -1,7 +1,7 @@
 The main prototype of the code is done but there are some minor issues. 
 
 
-# TODO 
+# TODO  
 1) Support XML format for dynamical matrices
 2) Work on suporting image parallelization of ph.x (preprocessor)
 3) Prepare test cases
