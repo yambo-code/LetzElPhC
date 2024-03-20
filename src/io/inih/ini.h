@@ -98,7 +98,7 @@ typedef int (*ini_handler)(void* user, const char* section, const char* name,
    configparser. If allowed, ini_parse() will call the handler with the same
    name for each subsequent line parsed. */
 #ifndef INI_ALLOW_MULTILINE
-#define INI_ALLOW_MULTILINE 1
+#define INI_ALLOW_MULTILINE 0
 #endif
 
 /* Nonzero to allow a UTF-8 BOM sequence (0xEF 0xBB 0xBF) at the start of
