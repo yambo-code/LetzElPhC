@@ -1,3 +1,5 @@
+Please read docs/main.pdf for installing and usage
+
 The main prototype of the code is done but there are some minor issues. 
 
 
