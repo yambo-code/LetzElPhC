@@ -157,10 +157,10 @@ within the YAMBO code (version 5.2 and above), and it works only with norm-conse
 The code is released under the MIT license and hosted on GitHub [\href{https://github.com/muralidhar-nalabothula/LetzElPhC}{link}].
 \section{Main Features}
 \begin{itemize}
-\item Utilizes full crystal symmetries, ensuring compatibility with the YAMBO code without encountering phase issues.
+\item Utilizes full crystal symmetries, ensuring compatibility with the YAMBO code, without encountering phase issues.
 \item Implements multiple levels of parallelization, including OpenMP, plane-wave, k-point, and q-point parallelization.
-\item Utilizes fully parallel Input/Output (IO) via parallel NetCDF-4/HDF5 libraries.
-\item Exhibits high portability, as the code can be compiled on various CPU architectures and operating systems with minimal to no adjustments.
+\item Utilizes fully parallel IO via parallel NetCDF-4/HDF5 libraries.
+\item Highly portable. The code can be compiled on various CPU architectures and operating systems with minimal to no changes in the source code.
 \end{itemize}
 \chapter{Installing the Code}
 \section{Mandatory Requirements}
@@ -203,7 +203,7 @@ LD_FLAGS            :=
 # OPENMP_FLAGS   	:= -DELPH_OMP_PARALLEL_BUILD 
 #### Aditionally, you need to add openmp compiler flag to 
 #### CFLAGS and LD_FLAGS.
-#### Just uncomment the below two lines
+#### Also uncomment the below two lines
 # CFLAGS            += -fopenmp ## use -qopenmp for intel
 # LD_FLAGS          += -fopenmp ## use -qopenmp for intel
 
@@ -213,7 +213,8 @@ FFTW3_LIB           :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_om
 #### Note if using FFTW
 #### Yambo uses double precision FFTW regardless of the precision with which Yambo is built. In contrast, you need to link single (double) precision FFTW for single (double) precision LetzElPhC. please refer to https://www.fftw.org/fftw3_doc/Precision.html . Also you refer to https://www.fftw.org/fftw3_doc/Multi_002dthreaded-FFTW.html  if compiling with openmp support.
 
-
+#### If you want to compile the code in double precession, uncomment the below
+#CFLAGS              += -DCOMPILE_ELPH_DOUBLE 
 
 #### Blas and lapack libs (see BLAS and LAPACK flag in yambo config/report)
 BLAS_LIB 	        :=  -L/opt/homebrew/opt/openblas/lib -lopenblas 
@@ -286,7 +287,7 @@ $ export ELPH_SAVE_DIR=ph_save_name_you_want
 \textbf{Remarks}:
 \begin{itemize}
 \item The new format XML dynamical matrix files are currently not supported.
-\item The preprocessor does not work with image parallelization. For image parallelization, copy all phonon files to the \_ph0 directory 
+\item The preprocessor does not directly work with the image parallelization. In case if you use image parallelization,, copy all prefix.q\_* in each \_ph* folder (other than \_ph0) to the \_ph0 directory 
 and run the preprocessor.
 \end{itemize}
 
@@ -331,10 +332,10 @@ A detailed description of the input file is provided below:
     end_bnd         = 40
     # last band to consider in elph calculation
     
-    save_dir        = /Users/murali/phd/one_phonon_raman/wse2/SAVE
+    save_dir        = SAVE
     # SAVE dir you created with yambo
     
-    ph_save_dir     = /Users/murali/phd/one_phonon_raman/wse2/ph_save
+    ph_save_dir     = ph_save
     # ph_save directory that was created with preprocessor
     
     kernel          = dfpt
