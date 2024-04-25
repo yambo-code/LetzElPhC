@@ -98,8 +98,15 @@ ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec)
     ELPH_float norm = sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 
     if (norm < ELPH_EPS)
-    {
-        return 0; // error ?
+    {   
+        if (l_val != 0)
+        {
+            return 0; 
+        }
+        else 
+        {
+            return 1.0/sqrt(4*ELPH_PI);
+        }
     }
 
     cost = vec[2] / norm; // z/r
