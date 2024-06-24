@@ -7,6 +7,8 @@ void fft3D(struct ELPH_fft_plan* plan, const ND_int nsets, ELPH_cmplx* wfcr,
            ELPH_cmplx* wfcG, const bool conjugate)
 {
     /*
+    Note: if conjugate is true, then the output of FFT is conjugated
+
     a) FFT along xy and  (Nx,Ny,Nz_loc)-> (Gx, Gy, Nz_loc)
 
     b) scatter Gx,Gy to different cpus to perform fft along x and y.

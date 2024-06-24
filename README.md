@@ -1,7 +1,14 @@
-Please read docs/main.pdf for installing and usage
+Please read docs/main.pdf for installing and usage. A simple example can
+be found in ```examples/qe/silicon``` folder
 
-The main prototype of the code is done but there are some minor issues. 
+This code is currently under development. please use at your 
+own risk.
 
+# Acknowledgments
+Ludger Wirtz (Supervisor)
+Fulvio Paleari (beta tester)
+University of Luxembourg (Funding)
+HPC @ Uni.lu (Computing resources)
 
 # TODO  
 1) Support XML format for dynamical matrices
@@ -10,10 +17,8 @@ The main prototype of the code is done but there are some minor issues.
 4) Improve OPENMP
 5) Implement basic Acoustic sum rule
 6) Turn on different kernel options for the user
-
-
-# Some Uncertain improvements 
-1) dVloc routines needs to be slightly rewritten to avoid multiple array allocations
+7) Frohlich Interpolation
+8) DFT + U
 
 
 

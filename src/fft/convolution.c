@@ -9,6 +9,8 @@ void fft_convolution3D(struct ELPH_fft_plan* plan, const ND_int nspinor,
                        const bool conjugate)
 {
     /*
+    Note: if conjugate is true, then the output of convolution is conjugated.
+
     a) FFt along X for V(r)*psi(r) followed by fft along z
 
     if nmag = 1 or 2, "i,si=>si"

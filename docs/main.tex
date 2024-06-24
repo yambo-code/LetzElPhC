@@ -275,9 +275,9 @@ $ lelphc -pp --code=qe -F PH.X_input_file
 #### Where PH.X_input_file is the input file of ph.x code used for computing phonons
 \end{lstlisting}
 Upon successful execution, the \textcolor{blue}{\bf{ph\_save}} directory will be created, containing all necessary files.
-If you wish to create soft symlinks instead of copying these files, set the following environment variable:
+If you wish to create soft symlinks instead of copying these files, set the following environment variable (works only on linux):
 \begin{lstlisting}[language=bash]
-$ export ELPH_COPY_CMD="ln -s"
+$ export ELPH_COPY_CMD="ln -sr"
 \end{lstlisting}
 and then run the preprocessor.
 Additionally, the name of the \textcolor{blue}{\bf{ph\_save}} directory can be changed using another environment variable:
