@@ -5,10 +5,10 @@ This code is currently under development. please use at your
 own risk.
 
 # Acknowledgments
-Ludger Wirtz (Supervisor)
-Fulvio Paleari (beta tester)
-University of Luxembourg (Funding)
-HPC @ Uni.lu (Computing resources)
+Ludger Wirtz (Supervisor)  
+Fulvio Paleari (beta tester)  
+University of Luxembourg (Funding)  
+HPC @ Uni.lu (Computing resources)  
 
 # TODO  
 1) Support XML format for dynamical matrices
