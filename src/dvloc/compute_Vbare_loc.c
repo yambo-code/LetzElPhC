@@ -213,11 +213,11 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
         ELPH_cmplx* wfcSkr_tmp = wfcSk_r + iset * nspinor * nfft_loc;
 
-        // conjugate (only incase of timerev) and the perform invervse FFT afterwards
+        // conjugate (only incase of timerevk is true) and then perform inverse FFT.
         invfft3D(&fft_plan, nspinor, wfcSk_tmp, wfcSkr_tmp, timerevk);
-        // Note that the input is conjugated inside invfft3D incase of 
-        // time reversal symmetry and then inverse fft is performed. 
-        // Inputs are never altered !
+        // Note that incase of time reversal symmetry,  
+        // inverse fft of the conjugate of input is performed. 
+        // Inputs are never altered in invfft3D function !
     }
 
     // free some buffers

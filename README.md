@@ -6,7 +6,7 @@ own risk.
 
 # Acknowledgments
 Ludger Wirtz (Supervisor)  
-Fulvio Paleari (beta tester)  
+Fulvio Paleari (Testing and Yambopy interface)  
 University of Luxembourg (Funding)  
 HPC @ Uni.lu (Computing resources)  
 
