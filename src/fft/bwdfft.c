@@ -9,7 +9,7 @@ void invfft3D(struct ELPH_fft_plan* plan, const ND_int nsets, ELPH_cmplx* wfcG,
     /*
     Note: if conjugate is true, then the input is conjugated and then FFT is performed!
     please note that the input wfcG is not alterned even when conjugate is set to true.
-    
+
     a) sphere to box
 
     b) inv FFT along Z

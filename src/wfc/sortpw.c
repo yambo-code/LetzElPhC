@@ -16,6 +16,9 @@ void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int* fft_dims,
     First gather wfc and gvecs
 
     return local number of pws after sorting
+
+    Note that buffers gvec_out and wfc_out must be
+    freed outside of this function manually !
     */
 
     int my_rank, Comm_size, mpi_error;

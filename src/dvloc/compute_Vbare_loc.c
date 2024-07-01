@@ -150,8 +150,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     ND_int nGxySkq, nGxySk;
 
-    // npwkq and npwk are overwritten by number of gvecs in gvecSGkq and gvecSGk
-    // respectively.
+    // Note : npwkq and npwk are overwritten by number of gvecs in gvecSGkq and gvecSGk
+    // respectively. Sort_pw internally allocates buffer that must be freed out side of the function
     Sort_pw(npwkq_total, npwkq, lattice->fft_dims, gSkq_buf, wfc_kq,
             nspin * nspinor * nbnds, &npwkq, &nGxySkq, &gvecSGkq, &wfcSkq,
             Comm->commK);
@@ -159,6 +159,9 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     Sort_pw(npwk_total, npwk, lattice->fft_dims, gSk_buf, wfc_k,
             nspin * nspinor * nbnds, &npwk, &nGxySk, &gvecSGk, &wfcSk,
             Comm->commK);
+
+    // Note that we need to free gvecSGkq, gvecSGk, wfcSkq, wfcSk in this function
+    // when no longer need
 
     free(gSkq_buf);
     free(gSk_buf);
@@ -215,8 +218,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
         // conjugate (only incase of timerevk is true) and then perform inverse FFT.
         invfft3D(&fft_plan, nspinor, wfcSk_tmp, wfcSkr_tmp, timerevk);
-        // Note that incase of time reversal symmetry,  
-        // inverse fft of the conjugate of input is performed. 
+        // Note that incase of time reversal symmetry,
+        // inverse fft of the conjugate of input is performed.
         // Inputs are never altered in invfft3D function !
     }
 
