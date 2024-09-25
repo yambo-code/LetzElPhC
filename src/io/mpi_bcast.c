@@ -2,6 +2,12 @@
 
 #include "io.h"
 
+#ifdef MPI_Aint_diff
+#define MPI_Aint_diff_stub(addr1, addr2) MPI_Aint_diff(addr1, addr2)
+#else
+#define MPI_Aint_diff_stub(addr1, addr2) ((MPI_Aint)((char*)(addr1) - (char*)(addr2)))
+#endif
+
 void Bcast_wfc(struct WFC* wfc, const struct Lattice* lattice,
                const struct Pseudo* pseudo, bool alloc_mem, int root,
                MPI_Comm comm)
@@ -82,7 +88,7 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
 
     for (int i = 0; i < 4; ++i)
     {
-        displacements[i] = MPI_Aint_diff(displacements[i], base_address);
+        displacements[i] = MPI_Aint_diff_stub(displacements[i], base_address);
     }
 
     MPI_Datatype types[4] = { ELPH_MPI_float, ELPH_MPI_float, ELPH_MPI_ND_INT,

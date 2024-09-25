@@ -8,6 +8,7 @@ SUBDIR = nonloc io/ezxml io/inih io \
 		 io/qe common dvloc elph wfc \
 		 symmetries fft common/cwalk preprocessor
 
+.SUFFIXES :
 
 INCS = $(wildcard *.h $(foreach fd, $(SUBDIR), $(fd)/*.h))
 SRCS = $(wildcard *.c $(foreach fd, $(SUBDIR), $(fd)/*.c))
