@@ -1,6 +1,27 @@
 /* This function reads all the lattice, pseudo and wfcs data from SAVE DIR */
 
+#include "../common/constants.h"
+#include "../common/cwalk/cwalk.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../common/parallel.h"
+#include "../dvloc/dvloc.h"
+#include "../elphC.h"
+#include "../nonloc/fcoeff.h"
+#include "../symmetries/symmetries.h"
 #include "io.h"
+#include "mpi_bcast.h"
+#include "qe/qe_io.h"
+#include <math.h>
+#include <mpi.h>
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*static functions */
 static void quick_read(const int ncid, char* var_name, void* data_out);

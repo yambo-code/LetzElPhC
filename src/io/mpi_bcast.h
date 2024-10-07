@@ -1,10 +1,8 @@
 #pragma once
 #include "../common/dtypes.h"
-#include "../common/numerical_func.h"
-#include "../common/parallel.h"
-#include "../common/string_func.h"
 #include "../elphC.h"
-#include "../symmetries/symmetries.h"
+#include <mpi.h>
+#include <stdbool.h>
 
 // mpi_bcast.c
 // Bcast functions

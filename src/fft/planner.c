@@ -1,6 +1,13 @@
+#include "../common/error.h"
 #include "../common/parallel.h"
+#include "../elphC.h"
 #include "fft.h"
-#include "string.h"
+#include <complex.h>
+#include <fftw3.h>
+#include <mpi.h>
+#include <stdlib.h>
+#include <string.h>
+
 /*
 Create plan creation function for FFTs
 */

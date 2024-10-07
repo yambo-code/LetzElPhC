@@ -2,7 +2,22 @@
 This routine computes the non local part to
 bare electron-phonon mat elements.
 */
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
+#include "../wfc/wfc.h"
 #include "Vnonloc.h"
+#include "fcoeff.h"
+#include <complex.h>
+#include <limits.h>
+#include <math.h>
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*
 **** Yambo stores <K|X^a_{lm}>sqrt(E_l) with out spherical harmonics i.e

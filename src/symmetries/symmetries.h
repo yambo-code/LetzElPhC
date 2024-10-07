@@ -1,7 +1,7 @@
 #pragma once
-#include "../common/numerical_func.h"
-#include "../common/parallel.h"
+#include "../common/dtypes.h"
 #include "../elphC.h"
+#include <stdbool.h>
 
 ND_int bz_expand(const ND_int Nibz, const ND_int Nsym,
                  const ELPH_float* ibz_kpts, const struct symmetry* symms,

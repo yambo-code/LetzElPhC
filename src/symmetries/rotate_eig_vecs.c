@@ -2,7 +2,14 @@
 This file contains function that rotates eigen vectors
 q -> Sq
 */
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../elphC.h"
 #include "symmetries.h"
+#include <complex.h>
+#include <stdlib.h>
 
 void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
                      const ELPH_float* qpt, const ELPH_cmplx* eig_q,

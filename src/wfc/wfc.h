@@ -3,12 +3,9 @@ This is the header for functions related to wfcs
 */
 
 #pragma once
-#include "../common/dtypes.h"
-#include "../common/numerical_func.h"
-#include "../common/parallel.h"
 #include "../elphC.h"
-#include "../fft/fft.h"
-#include "gsort.h"
+#include <mpi.h>
+#include <stdbool.h>
 
 void rotateGvecs(const ELPH_float* Gvecs, const ELPH_float* sym,
                  const ND_int ngvecs, const ELPH_float* lat_vec,

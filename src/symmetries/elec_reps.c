@@ -1,5 +1,15 @@
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../elphC.h"
+#include "../wfc/gsort.h"
 #include "../wfc/wfc.h"
 #include "symmetries.h"
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
                      const ELPH_float* Rsym_mat, const ELPH_float* tauR,

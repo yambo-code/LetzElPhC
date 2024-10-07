@@ -1,7 +1,13 @@
 /*
 This is a routine to perform 3D FFT in parallel
 */
+#include "../common/error.h"
+#include "../elphC.h"
 #include "fft.h"
+#include <complex.h>
+#include <fftw3.h>
+#include <stdbool.h>
+#include <string.h>
 
 void fft3D(struct ELPH_fft_plan* plan, const ND_int nsets, ELPH_cmplx* wfcr,
            ELPH_cmplx* wfcG, const bool conjugate)

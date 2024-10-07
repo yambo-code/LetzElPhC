@@ -1,5 +1,7 @@
+#include "../elphC.h"
+#include "error.h"
 #include "numerical_func.h"
-
+#include <stdlib.h>
 /*
 This file contains functions related to cublic spline interpolation
 https://en.wikipedia.org/wiki/Spline_interpolation

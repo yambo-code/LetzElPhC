@@ -3,7 +3,9 @@
  * version number
  *
  */
+#include "../elphC.h"
 #include "preprocessor.h"
+#include <stdio.h>
 
 void ELPH_print_version(void)
 {
@@ -52,7 +54,7 @@ void ELPH_print_help(void)
     fprintf(stdout, "\n");
     fprintf(stdout, "ELPH_COPY_CMD : Default (\"cp\") In case if you want to \n"
                     "create a softlink to dfpt data, use can set this varibale\n");
-    fprintf(stdout, "To use symlinks (instead of copy), use export ELPH_COPY_CMD=\"ln -s\" \n");
+    fprintf(stdout, "To use symlinks (instead of copy), use export ELPH_COPY_CMD=\"ln -sr\". Symlinks work only on linux \n");
     fprintf(stdout, "\n");
     fprintf(stdout, "ELPH_SAVE_DIR : Default (ph_save). In case if you want to"
                     "change the name of the ph_save folder \n");

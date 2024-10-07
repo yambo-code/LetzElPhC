@@ -1,4 +1,14 @@
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
+#include "../fft/fft.h"
+#include "../wfc/wfc.h"
 #include "dvloc.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 /* Compute the electron phonon matrix elements i.e sandwich for Local part of KS
  * potential */

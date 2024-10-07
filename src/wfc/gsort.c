@@ -1,4 +1,8 @@
 #include "gsort.h"
+#include "../common/error.h"
+#include "../elphC.h"
+#include <math.h>
+#include <stdlib.h>
 /*
 This file contain g vectors sorting functions
 */

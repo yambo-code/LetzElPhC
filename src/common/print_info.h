@@ -1,6 +1,6 @@
 #pragma once
 #include "../elphC.h"
-#include "../common/dtypes.h"
+#include "dtypes.h"
 
 void print_info_msg(int mpi_rank, const char* fmt, ...);
 

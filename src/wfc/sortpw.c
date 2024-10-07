@@ -1,8 +1,14 @@
 /*
 This file contains function which sorts gvectors
 */
+#include "../common/error.h"
+#include "../common/parallel.h"
+#include "../elphC.h"
 #include "gsort.h"
 #include "wfc.h"
+#include <math.h>
+#include <mpi.h>
+#include <stdlib.h>
 
 void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int* fft_dims,
              const ELPH_float* gvec_in, const ELPH_cmplx* wfc_in,

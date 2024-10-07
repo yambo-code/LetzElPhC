@@ -1,4 +1,9 @@
+#include "../common/error.h"
 #include "io.h"
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /* ND_function to create a varible to netCDF */
 void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,

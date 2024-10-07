@@ -1,5 +1,6 @@
 #pragma once
-#include "../wfc/wfc.h"
+#include "../common/dtypes.h"
+#include "../elphC.h"
 
 ELPH_float Vloc_Gspace(ELPH_float* work_arr, const char cutoff,
                        const ELPH_float Gnorm, const ND_int ngrid,

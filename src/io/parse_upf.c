@@ -4,8 +4,16 @@ Only Local part, grids , valance electron info are read rest are available in
 yambo
 */
 
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/string_func.h"
+#include "../elphC.h"
 #include "ezxml/ezxml.h"
 #include "io.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static void parse_upf2(FILE* fp, struct local_pseudo* loc_pseudo);
 

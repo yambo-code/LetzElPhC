@@ -1,7 +1,8 @@
 /* This file contains functions common for all types*/
 #include "error.h"
-
 #include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 void elph_error_msg(const char* error_msg, const char* file,
                     const long long int line, const char* func_name)

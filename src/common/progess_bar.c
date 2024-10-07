@@ -1,10 +1,11 @@
 #include "progess_bar.h"
-#include <stdio.h>
 #include <math.h>
-#include <time.h>
-#include <stdint.h>
 #include <mpi.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 void start_progressbar(struct progress_bar* pbar, int mpi_rank, ND_int niter)
 {

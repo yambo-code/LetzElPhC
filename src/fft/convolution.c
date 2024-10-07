@@ -1,7 +1,13 @@
 /* This is a routine to perform 3D FFT convolution of potential and wavefunction
     i.e FFT(V(r)*psi(r)). */
 
+#include "../common/error.h"
+#include "../elphC.h"
 #include "fft.h"
+#include <complex.h>
+#include <fftw3.h>
+#include <stdbool.h>
+#include <string.h>
 
 void fft_convolution3D(struct ELPH_fft_plan* plan, const ND_int nspinor,
                        ND_int nmag, const ELPH_cmplx* Vpotr,

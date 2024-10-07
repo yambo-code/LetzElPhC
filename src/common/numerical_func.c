@@ -3,7 +3,14 @@ This file contains numerical functions used in the code.
 These functions are called with high frequency, so need a good optimization
 */
 #include "numerical_func.h"
-
+#include "../elphC.h"
+#include "constants.h"
+#include "error.h"
+#include "omp_pragma_def.h"
+#include <complex.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdlib.h>
 /*
 Most of the modern compilers will auto vectorize most parts of the code if
 compiled with -O3 -march=native
@@ -153,14 +160,18 @@ ELPH_float simpson(const ELPH_float* restrict func_vals, const ELPH_float* restr
     ELPH_float sum = func_vals[0] * dx[0];
 
 /* Odd terms*/
+#ifdef ELPH_OMP_PARALLEL_BUILD
 #pragma omp simd reduction(+ : sum)
+#endif
     for (ND_int i = 1; i < npts - 1; i += 2)
     {
         sum += 4.0 * func_vals[i] * dx[i];
     }
 
 /* even terms*/
+#ifdef ELPH_OMP_PARALLEL_BUILD
 #pragma omp simd reduction(+ : sum)
+#endif
     for (ND_int i = 2; i < npts - 1; i += 2)
     {
         sum += 2.0 * func_vals[i] * dx[i];

@@ -1,6 +1,11 @@
+#include "mpi_bcast.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../elphC.h"
 #include <limits.h>
-
-#include "io.h"
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 #ifdef MPI_Aint_diff
 #define MPI_Aint_diff_stub(addr1, addr2) MPI_Aint_diff(addr1, addr2)

@@ -1,9 +1,13 @@
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/string_func.h"
+#include "inih/ini.h"
+#include "io.h"
+#include <mpi.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "inih/ini.h"
-#include "io.h"
 
 #define MAX_STR_INPUT 1400
 

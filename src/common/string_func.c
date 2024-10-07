@@ -1,4 +1,8 @@
 #include "string_func.h"
+#include "error.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 /*
 This file contains some useful string functions
 */

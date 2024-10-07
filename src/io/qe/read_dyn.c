@@ -1,12 +1,23 @@
+#include "../../common/constants.h"
+#include "../../common/dtypes.h"
+#include "../../common/error.h"
+#include "../../common/string_func.h"
+#include "../../elphC.h"
 #include "qe_io.h"
+#include <complex.h>
+#include <ctype.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /*
 File contains function to read dynamical matrix file (in the old format)
 and outputs phonon polarization vectors
 */
 
-void zheev_(char* jobz, char* uplo, int* n, double complex* a, int* lda,
-            double* w, double complex* work, int* lwork, double* rwork,
+void zheev_(char* jobz, char* uplo, int* n, double _Complex* a, int* lda,
+            double* w, double _Complex* work, int* lwork, double* rwork,
             int* info);
 
 // only one cpu calls the routine
@@ -101,7 +112,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     }
 
     // allocate a tmp buffer for diagonalization
-    double complex* dyn_mat_tmp = malloc(sizeof(double complex) * nmodes * nmodes);
+    double _Complex* dyn_mat_tmp = malloc(sizeof(double _Complex) * nmodes * nmodes);
     CHECK_ALLOC(dyn_mat_tmp);
 
     // allocate workspace for zheev
@@ -111,7 +122,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     double* rwork = omega2 + nmodes;
 
     int info_z, lwork;
-    double complex tmp_work_var;
+    double _Complex tmp_work_var;
     lwork = -1; // set up a query request
     zheev_("V", "U", &nmodes, dyn_mat_tmp, &nmodes, omega2, &tmp_work_var,
            &lwork, rwork, &info_z);
@@ -122,7 +133,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     }
     lwork = (int)rint(creal(tmp_work_var));
 
-    double complex* work_array = malloc(sizeof(double complex) * lwork);
+    double _Complex* work_array = malloc(sizeof(double _Complex) * lwork);
     CHECK_ALLOC(work_array);
 
     // start reading the dynamical matrices
@@ -219,7 +230,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
             }
 
             ELPH_cmplx* eig_tmp_ptr = eig + imode * nmodes;
-            double complex* dyn_tmp_ptr = dyn_mat_tmp + imode * nmodes;
+            double _Complex* dyn_tmp_ptr = dyn_mat_tmp + imode * nmodes;
             for (ND_int jmode = 0; jmode < nmodes; ++jmode)
             {
                 ND_int ia = jmode / 3;

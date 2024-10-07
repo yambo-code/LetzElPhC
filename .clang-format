@@ -1,5 +1,4 @@
 BasedOnStyle: WebKit
-SortIncludes: false
 IndentWidth: 4
 BreakBeforeBraces: Allman
 AlignAfterOpenBracket: Align

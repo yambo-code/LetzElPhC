@@ -5,6 +5,9 @@
 #include "elphC.h"
 #include "preprocessor/preprocessor.h"
 #include "elph/elph.h"
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 int main(int argc, char* argv[])
 {

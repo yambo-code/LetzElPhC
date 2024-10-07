@@ -1,5 +1,15 @@
-#include "elph.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/parallel.h"
 #include "../common/progess_bar.h"
+#include "../elphC.h"
+#include "../io/io.h"
+#include "../symmetries/symmetries.h"
+#include "elph.h"
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /*
  * This function contain the wrapper functions to compute and

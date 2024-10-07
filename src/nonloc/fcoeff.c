@@ -5,6 +5,14 @@ These routines contain functions related the pseudo potentials.
 */
 
 #include "fcoeff.h"
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../elphC.h"
+#include <complex.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 /** Static declarations*/
 static ELPH_cmplx Cmat(int m1, int m2);

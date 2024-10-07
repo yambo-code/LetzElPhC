@@ -3,7 +3,11 @@
  to the wavefunction
 */
 
+#include "../common/constants.h"
+#include "../elphC.h"
 #include "wfc.h"
+#include <complex.h>
+#include <stdbool.h>
 
 #define dot3_macro(a, b) ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2])
 

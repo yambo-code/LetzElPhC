@@ -1,7 +1,22 @@
 #pragma once
-#include "../common/error.h"
-#include "../common/numerical_func.h"
 #include "../elphC.h"
+// complex.h must be before fftw3.h
+#include <complex.h>
+#include <fftw3.h>
+#include <mpi.h>
+#include <stdbool.h>
+
+// ===================================
+// fftw function
+#if defined(COMPILE_ELPH_DOUBLE)
+#define fftw_fun(FUN_NAME) fftw3_fun_HIDDEN(FUN_NAME)
+#define fftw3_fun_HIDDEN(FUN_NAME) fftw_##FUN_NAME
+// ===================================
+#else
+#define fftw_fun(FUN_NAME) fftw3_fun_HIDDEN(FUN_NAME)
+#define fftw3_fun_HIDDEN(FUN_NAME) fftwf_##FUN_NAME
+
+#endif
 
 // plan for fft
 typedef fftw_fun(plan) fftw_generic_plan;

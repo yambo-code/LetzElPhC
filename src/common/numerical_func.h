@@ -1,10 +1,6 @@
 #pragma once
 #include "../elphC.h"
-#include "dtypes.h"
-#include "error.h"
-
-#define Function(FUN_NAME, TYPE_SMALL) Function_HIDDEN(FUN_NAME, TYPE_SMALL)
-#define Function_HIDDEN(FUN_NAME, TYPE_SMALL) ELPH_##TYPE_SMALL##FUN_NAME
+#include <stdbool.h>
 
 ND_int find_kidx_in_list(ND_int nkpts, const ELPH_float* kpts_list,
                          const ELPH_float* kpt);

@@ -1,11 +1,17 @@
 /*
 This file contains functions which are system dependent
 */
+#include "../common/cwalk/cwalk.h"
 #include "../common/error.h"
 #include "../common/string_func.h"
 #include "../elphC.h"
 #include "../io/ezxml/ezxml.h"
 #include "preprocessor.h"
+#include <errno.h>
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if defined(_WIN32)
 #include <direct.h>

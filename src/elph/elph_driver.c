@@ -1,8 +1,25 @@
 /*
 THe starting point for the entire code
 */
-#include "elph.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/parallel.h"
 #include "../common/print_info.h"
+#include "../dvloc/dvloc.h"
+#include "../elphC.h"
+#include "../fft/fft.h"
+#include "../io/io.h"
+#include "../io/qe/qe_io.h"
+#include "../symmetries/symmetries.h"
+#include "elph.h"
+#include <complex.h>
+#include <fftw3.h>
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void elph_driver(const char* ELPH_input_file,
                  enum ELPH_dft_code dft_code,

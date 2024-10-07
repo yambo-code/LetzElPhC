@@ -1,6 +1,4 @@
 #pragma once
-#include <stdio.h>
-#include <stdlib.h>
 
 /* Function to print error message to the the file */
 #define MPI_error_msg(err_code)                              \
@@ -21,6 +19,13 @@
         {                                                    \
             error_msg("Failed to allocate " #ptr " buffer"); \
         }                                                    \
+    }
+
+// Netcdf error macro
+#define ERR(e)                                          \
+    {                                                   \
+        fprintf(stderr, "Error: %s\n", nc_strerror(e)); \
+        error_msg("netcdf_error");                      \
     }
 
 void elph_error_msg(const char* error_msg, const char* file,

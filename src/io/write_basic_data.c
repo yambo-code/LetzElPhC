@@ -1,4 +1,13 @@
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../elphC.h"
 #include "io.h"
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 // write basic data related to the dft and ph
 //

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../elphC.h"
 #include "../common/dtypes.h"
+#include "../elphC.h"
 
 #define PH_X_INP_READ_BUF_SIZE 512
 #define ELPH_MAX_ENV_SIZE 64

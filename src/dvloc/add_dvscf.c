@@ -2,7 +2,11 @@
 This file contains function which adds local part of pseudo potential to
 d/dR(Ha + Vxc) i.e induced potential
 */
+#include "../common/dtypes.h"
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
 #include "dvloc.h"
+#include <complex.h>
 
 void add_dvscf_qe(ELPH_cmplx* restrict dVscf, const ELPH_cmplx* dVloc,
                   const struct Lattice* lattice)

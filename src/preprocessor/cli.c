@@ -1,5 +1,11 @@
-#include "preprocessor.h"
+#include "../elphC.h"
 #include "ELPH_getopt.h"
+#include "preprocessor.h"
+#include <mpi.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
 {

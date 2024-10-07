@@ -1,8 +1,6 @@
 #pragma once
-#include <ctype.h>
-#include <stdlib.h>
-
 #include "../elphC.h"
+#include <stdbool.h>
 
 // lower case a string
 void lowercase_str(char* str);

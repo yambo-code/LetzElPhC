@@ -1,7 +1,8 @@
 #pragma once
-#include "../dvloc/dvloc.h"
-#include "../io/io.h"
-#include "../nonloc/Vnonloc.h"
+#include "../common/dtypes.h"
+#include "../elphC.h"
+#include <mpi.h>
+#include <stdbool.h>
 
 void elph_driver(const char* ELPH_input_file,
                  enum ELPH_dft_code dft_code,

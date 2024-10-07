@@ -2,7 +2,14 @@
 This file contains SU2mat functions which computes spinor rotation matrix for a
 given symmetry matrix
 */
+#include "../common/constants.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../elphC.h"
 #include "wfc.h"
+#include <complex.h>
+#include <math.h>
+#include <stdbool.h>
 
 /* SU2 mat */
 void SU2mat(const ELPH_float* sym_in, const ND_int nspinor,

@@ -1,7 +1,14 @@
 /*
 This file contains helper functions that are use in wfc routines
 */
+#include "../common/numerical_func.h"
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
 #include "wfc.h"
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* rotate Gvectors */
 void rotateGvecs(const ELPH_float* Gvecs, const ELPH_float* sym,

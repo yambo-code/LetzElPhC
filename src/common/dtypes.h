@@ -16,6 +16,8 @@ Some comments :
 #pragma once
 #include "../elphC.h"
 #include "error.h"
+#include <mpi.h>
+#include <stdbool.h>
 
 enum ELPH_dft_code
 {
@@ -272,4 +274,18 @@ struct ELPH_MPI_Comms
     the division commRq contains {0,2} , {1,3}, in 1st commQ and {4,5} and {5,7}
     in 2nd commQ
     */
+};
+
+/* This struct contains all the input file details */
+struct usr_input
+{
+    // system varibles
+    int nkpool; // k point parallelization
+    int nqpool; // q point parallelization
+    int start_bnd; // starting band
+    int end_bnd; // last band
+    char* save_dir; // save dir
+    char* ph_save_dir; // ph_save directory
+    char* kernel_str; // level of screening to include
+    bool kminusq; // true if convention is "yambo" else false
 };
