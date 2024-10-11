@@ -5,7 +5,7 @@
 #error Your compiler does not support C99 complex numbers, Please use a supported compiler.
 #endif
 #else
-#error Your compiler does support C99 standard.
+#error Your compiler does not support C99 standard.
 #endif
 
 typedef long long int ND_int;
