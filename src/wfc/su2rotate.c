@@ -23,7 +23,7 @@ void su2rotate(const int nspinor, const ND_int npw, const ND_int nsets,
         return;
     }
 
-    ND_int stride_wfc = nspinor * npw; // i.e 2*npw
+    ND_int stride_wfc = nspinor * npw;  // i.e 2*npw
 
     for (ND_int iset = 0; iset < nsets; ++iset)
     {

@@ -1,14 +1,15 @@
-#include "../../common/dtypes.h"
-#include "../../common/error.h"
-#include "../../common/numerical_func.h"
-#include "../../elphC.h"
-#include "qe_io.h"
 #include <complex.h>
 #include <limits.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../../common/dtypes.h"
+#include "../../common/error.h"
+#include "../../common/numerical_func.h"
+#include "../../elphC.h"
+#include "qe_io.h"
 /*
 This file contains routines to read dvscf/drho from qe output files
 */
@@ -48,14 +49,14 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
         error_msg("Buffer overflow in mpi count argument");
     }
 
-    double complex* read_buf = malloc(sizeof(double complex) * read_buffer_count);
+    double complex* read_buf =
+        malloc(sizeof(double complex) * read_buffer_count);
     CHECK_ALLOC(read_buf);
 
     MPI_File handle;
 
     if (MPI_File_open(commK, dvscf_file, MPI_MODE_RDONLY, MPI_INFO_NULL,
-                      &handle)
-        != MPI_SUCCESS)
+                      &handle) != MPI_SUCCESS)
     {
         if (my_rank == 0)
         {
@@ -73,10 +74,12 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
     {
         ELPH_cmplx* dvscf_tmp = dvscf_out + iset * read_buffer_count;
 
-        MPI_Offset offset = sizeof(double complex) * fft_dims[0] * fft_dims[1] * (iset * fft_dims[2] + lattice->nfftz_loc_shift);
+        MPI_Offset offset = sizeof(double complex) * fft_dims[0] * fft_dims[1] *
+                            (iset * fft_dims[2] + lattice->nfftz_loc_shift);
 
-        mpi_error = MPI_File_read_at_all(handle, offset, read_buf, read_buffer_count,
-                                         MPI_C_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
+        mpi_error =
+            MPI_File_read_at_all(handle, offset, read_buf, read_buffer_count,
+                                 MPI_C_DOUBLE_COMPLEX, MPI_STATUS_IGNORE);
         MPI_error_msg(mpi_error);
         // transpose from (FFTz, FFTy, FFTx)->(FFTx, FFTy, FFTz)
         ND_int ld_read_buf = fft_dims[0] * fft_dims[1];
@@ -91,7 +94,8 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
             {
                 for (ND_int iz = 0; iz < lattice->nfftz_loc; ++iz)
                 {
-                    dvscf_y_ptr[ix * ld_dvscf_buf + iz] = read_buf_y_ptr[iz * ld_read_buf + ix];
+                    dvscf_y_ptr[ix * ld_dvscf_buf + iz] =
+                        read_buf_y_ptr[iz * ld_read_buf + ix];
                 }
             }
         }
@@ -127,14 +131,17 @@ void read_dvscf_qe(const char* dvscf_file, struct Lattice* lattice,
     // we do not want to create a another large buffer, so we create a
     // relatively smaller buffer and do multiple matmuls (nmodes, FFTy,
     // FFTz_loc)
-    ELPH_cmplx* dvscf_mode = calloc(nmodes * fft_dims[1] * lattice->nfftz_loc, sizeof(ELPH_cmplx));
+    ELPH_cmplx* dvscf_mode =
+        calloc(nmodes * fft_dims[1] * lattice->nfftz_loc, sizeof(ELPH_cmplx));
     CHECK_ALLOC(dvscf_mode);
 
-    ND_int niter = lattice->nmag * fft_dims[0]; // FFTx*nmag
-    ND_int ld_mode = niter * fft_dims[1] * lattice->nfftz_loc; // nmag*FFTx*FFTy*FFTz_loc
+    ND_int niter = lattice->nmag * fft_dims[0];  // FFTx*nmag
+    ND_int ld_mode =
+        niter * fft_dims[1] * lattice->nfftz_loc;  // nmag*FFTx*FFTy*FFTz_loc
     for (ND_int iter = 0; iter < niter; ++iter)
     {
-        ELPH_cmplx* dvscf_pat_tmp = dvscf_out + iter * fft_dims[1] * lattice->nfftz_loc;
+        ELPH_cmplx* dvscf_pat_tmp =
+            dvscf_out + iter * fft_dims[1] * lattice->nfftz_loc;
 
         matmul_cmplx('N', 'N', eig_pat, dvscf_pat_tmp, dvscf_mode, 1.0, 0.0,
                      nmodes, ld_mode, fft_dims[1] * lattice->nfftz_loc, nmodes,

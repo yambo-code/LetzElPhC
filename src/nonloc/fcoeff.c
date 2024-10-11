@@ -5,14 +5,16 @@ These routines contain functions related the pseudo potentials.
 */
 
 #include "fcoeff.h"
-#include "../common/constants.h"
-#include "../common/dtypes.h"
-#include "../common/error.h"
-#include "../elphC.h"
+
 #include <complex.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../elphC.h"
 
 /** Static declarations*/
 static ELPH_cmplx Cmat(int m1, int m2);
@@ -49,7 +51,7 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
     }
 
     ND_int nltimesj = pseudo->nltimesj;
-    ND_int ntype = pseudo->ntype; // number of atomic types
+    ND_int ntype = pseudo->ntype;  // number of atomic types
     ND_int nproj = ntype * nltimesj;
 
     ELPH_float* PP_table = pseudo->PP_table;
@@ -69,18 +71,21 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
         ND_int lidx = i / ntype;
         ND_int itype = i % ntype;
         // (l*j,ntype,3) [ntype*3,3,1]
-        int l = rint(PP_table[ntype * 3 * lidx + itype * 3] - 1); // PP_table[lidx,itype,0]
+        int l = rint(PP_table[ntype * 3 * lidx + itype * 3] -
+                     1);  // PP_table[lidx,itype,0]
         int j = rint(
-            PP_table[ntype * 3 * lidx + itype * 3 + 1]); // Careful, this is 2j
+            PP_table[ntype * 3 * lidx + itype * 3 + 1]);  // Careful, this is 2j
 
         if (l < 0 || j == 0)
         {
             continue;
-        } // skip fake entries or j ==0 (j =0 if one of the pseudo does not have soc)
+        }  // skip fake entries or j ==0 (j =0 if one of the pseudo does not
+           // have soc)
 
         ND_int two_lp1 = 2 * l + 1;
         ND_int coeff_len = two_lp1 * two_lp1 * nspinor * nspinor;
-        Coeff[i] = malloc(sizeof(ELPH_cmplx) * coeff_len); //(two_lp1,two_lp1,nspinor,nspinor)
+        Coeff[i] = malloc(sizeof(ELPH_cmplx) *
+                          coeff_len);  //(two_lp1,two_lp1,nspinor,nspinor)
         CHECK_ALLOC(Coeff[i]);
         // zero out the buffer
         for (ND_int inum = 0; inum < coeff_len; ++inum)
@@ -88,7 +93,7 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
             Coeff[i][inum] = 0;
         }
 
-        bool jp1 = true; // This is true when j = l + 1/2 else false
+        bool jp1 = true;  // This is true when j = l + 1/2 else false
 
         if (j == 2 * l + 1)
         {
@@ -103,13 +108,13 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
             error_msg("Inconsistant j value in Pseudo potential.");
         }
 
-        for (ND_int il1 = 0; il1 < 2 * l + 1; ++il1) // m
+        for (ND_int il1 = 0; il1 < 2 * l + 1; ++il1)  // m
         {
-            for (ND_int il2 = 0; il2 < 2 * l + 1; ++il2) // m'
+            for (ND_int il2 = 0; il2 < 2 * l + 1; ++il2)  // m'
             {
-                for (ND_int is1 = 0; is1 < nspinor; ++is1) // sigma
+                for (ND_int is1 = 0; is1 < nspinor; ++is1)  // sigma
                 {
-                    for (ND_int is2 = 0; is2 < nspinor; ++is2) // sigma'
+                    for (ND_int is2 = 0; is2 < nspinor; ++is2)  // sigma'
                     {
                         int im1 = il1 - l;
                         int im2 = il2 - l;
@@ -120,10 +125,14 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
 
                         for (int mj = -j; mj <= j; mj += 2)
                         { /** Careful ! mj has a factor 2*/
-                            sum += CGCoeff(jp1, is1, l, mj) * CGCoeff(jp1, is2, l, mj) * Umat(jp1, is1, l, mj, im1) * conj(Umat(jp1, is2, l, mj, im2));
+                            sum += CGCoeff(jp1, is1, l, mj) *
+                                   CGCoeff(jp1, is2, l, mj) *
+                                   Umat(jp1, is1, l, mj, im1) *
+                                   conj(Umat(jp1, is2, l, mj, im2));
                         }
 
-                        Coeff[i][nspinor * nspinor * (il1 * two_lp1 + il2) + is1 * nspinor + is2] = sum;
+                        Coeff[i][nspinor * nspinor * (il1 * two_lp1 + il2) +
+                                 is1 * nspinor + is2] = sum;
                         // Coeff[i][il1,il2,is1,is2] = sum
                     }
                 }
@@ -141,7 +150,7 @@ void free_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
     }
 
     ND_int nltimesj = pseudo->nltimesj;
-    ND_int ntype = pseudo->ntype; // number of atomic types
+    ND_int ntype = pseudo->ntype;  // number of atomic types
     ND_int nproj = ntype * nltimesj;
 
     ELPH_cmplx** Coeff = pseudo->fCoeff;

@@ -2,14 +2,15 @@
 This file contains SU2mat functions which computes spinor rotation matrix for a
 given symmetry matrix
 */
+#include <complex.h>
+#include <math.h>
+#include <stdbool.h>
+
 #include "../common/constants.h"
 #include "../common/error.h"
 #include "../common/numerical_func.h"
 #include "../elphC.h"
 #include "wfc.h"
-#include <complex.h>
-#include <math.h>
-#include <stdbool.h>
 
 /* SU2 mat */
 void SU2mat(const ELPH_float* sym_in, const ND_int nspinor,
@@ -37,10 +38,10 @@ void SU2mat(const ELPH_float* sym_in, const ND_int nspinor,
         sym[i] = sym_in[i] / det;
     }
 
-    ELPH_cmplx pauli0[4] = { 1, 0, 0, 1 };
-    ELPH_cmplx paulix[4] = { 0, 1, 1, 0 };
-    ELPH_cmplx pauliy[4] = { 0, -I, I, 0 };
-    ELPH_cmplx pauliz[4] = { 1, 0, 0, -1 };
+    ELPH_cmplx pauli0[4] = {1, 0, 0, 1};
+    ELPH_cmplx paulix[4] = {0, 1, 1, 0};
+    ELPH_cmplx pauliy[4] = {0, -I, I, 0};
+    ELPH_cmplx pauliz[4] = {1, 0, 0, -1};
 
     ELPH_float alpha, beta, delta;
 

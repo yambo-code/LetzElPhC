@@ -3,14 +3,16 @@ This file contains numerical functions used in the code.
 These functions are called with high frequency, so need a good optimization
 */
 #include "numerical_func.h"
-#include "../elphC.h"
-#include "constants.h"
-#include "error.h"
-#include "omp_pragma_def.h"
+
 #include <complex.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include "../elphC.h"
+#include "constants.h"
+#include "error.h"
+#include "omp_pragma_def.h"
 /*
 Most of the modern compilers will auto vectorize most parts of the code if
 compiled with -O3 -march=native
@@ -49,7 +51,8 @@ ELPH_float legendre(int l_val, int m_val, ELPH_float x_in)
 
     else if (m_val < 0)
     {
-        return legendre(l_val, -m_val, x_in) * pow(-1, -m_val) * factorial(l_val + m_val) / factorial(l_val - m_val);
+        return legendre(l_val, -m_val, x_in) * pow(-1, -m_val) *
+               factorial(l_val + m_val) / factorial(l_val - m_val);
     }
     else
     {
@@ -80,7 +83,8 @@ ELPH_float legendre(int l_val, int m_val, ELPH_float x_in)
         for (int im = m_val + 2; im <= l_val; ++im)
         {
             ELPH_float legendre_temp = legendre_val;
-            legendre_val = (2 * im - 1) * x_in * legendre_val - (im + m_val - 1) * legendre_val_mm;
+            legendre_val = (2 * im - 1) * x_in * legendre_val -
+                           (im + m_val - 1) * legendre_val_mm;
             legendre_val = legendre_val / (im - m_val);
             legendre_val_mm = legendre_temp;
         }
@@ -98,7 +102,7 @@ ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec)
     */
     if (l_val < 0)
     {
-        return 0.0; // error
+        return 0.0;  // error
     }
 
     ELPH_float cost, phi;
@@ -116,7 +120,7 @@ ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec)
         }
     }
 
-    cost = vec[2] / norm; // z/r
+    cost = vec[2] / norm;  // z/r
     phi = atan2(vec[1], vec[0]);
 
     ELPH_float sh = 0.0;
@@ -133,28 +137,29 @@ ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec)
     }
     else
     {
-        sh = 1; // 1 for m =0
+        sh = 1;  // 1 for m =0
     }
 
     /* Multiply with legendre polynomial */
     sh *= legendre(l_val, m_val, cost);
 
     /* Multiply with normalization factor*/
-    sh *= sqrt(factorial(l_val - m_val) * (2 * l_val + 1) / (4 * ELPH_PI * factorial(l_val + m_val)));
+    sh *= sqrt(factorial(l_val - m_val) * (2 * l_val + 1) /
+               (4 * ELPH_PI * factorial(l_val + m_val)));
 
     return sh;
 }
 
 /* Function for simpson integration*/
-ELPH_float simpson(const ELPH_float* restrict func_vals, const ELPH_float* restrict dx,
-                   ND_int npts)
+ELPH_float simpson(const ELPH_float* restrict func_vals,
+                   const ELPH_float* restrict dx, ND_int npts)
 {
     /*
     Compute the integral using simpson 1/3 rules i.e /int f(x) dx
     */
     if (npts < 3)
     {
-        return 0; // Need atleast 3 points . Return an error instead
+        return 0;  // Need atleast 3 points . Return an error instead
     }
 
     ELPH_float sum = func_vals[0] * dx[0];
@@ -196,14 +201,17 @@ ELPH_float cos_angle_bw_Vec(const ELPH_float* vec1, const ELPH_float* vec2)
     /*
     This function returns Cos(w) where w is angle between vec1 and vec2
     */
-    ELPH_float norm1 = vec1[0] * vec1[0] + vec1[1] * vec1[1] + vec1[2] * vec1[2];
-    ELPH_float norm2 = vec2[0] * vec2[0] + vec2[1] * vec2[1] + vec2[2] * vec2[2];
+    ELPH_float norm1 =
+        vec1[0] * vec1[0] + vec1[1] * vec1[1] + vec1[2] * vec1[2];
+    ELPH_float norm2 =
+        vec2[0] * vec2[0] + vec2[1] * vec2[1] + vec2[2] * vec2[2];
     ELPH_float norm = sqrt(norm1 * norm2);
     if (norm < ELPH_EPS)
     {
         return 0;
     }
-    ELPH_float dot_12 = vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2];
+    ELPH_float dot_12 =
+        vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2];
     return dot_12 / norm;
 }
 
@@ -214,7 +222,7 @@ static ELPH_float factorial(ND_int n)
 {
     if (n < 0)
     {
-        return 0.0; // error
+        return 0.0;  // error
     }
     if (n == 0 || n == 1)
     {

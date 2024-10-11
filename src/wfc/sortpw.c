@@ -1,14 +1,15 @@
 /*
 This file contains function which sorts gvectors
 */
+#include <math.h>
+#include <mpi.h>
+#include <stdlib.h>
+
 #include "../common/error.h"
 #include "../common/parallel.h"
 #include "../elphC.h"
 #include "gsort.h"
 #include "wfc.h"
-#include <math.h>
-#include <mpi.h>
-#include <stdlib.h>
 
 void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int* fft_dims,
              const ELPH_float* gvec_in, const ELPH_cmplx* wfc_in,
@@ -47,7 +48,7 @@ void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int* fft_dims,
 
     ND_int* start_xy = NULL;
     ND_int* indices = NULL;
-    ND_int* gxy_loc_comm = NULL; // local number of gxy in each cpu
+    ND_int* gxy_loc_comm = NULL;  // local number of gxy in each cpu
 
     if (npw_loc != get_mpi_local_size_idx(npw_tot, NULL, mpi_comm))
     {
@@ -96,8 +97,9 @@ void Sort_pw(const ND_int npw_tot, const ND_int npw_loc, const ND_int* fft_dims,
     }
 
     // gather to the root node
-    mpi_error = MPI_Gatherv(gvec_in, 3 * npw_loc, ELPH_MPI_float, all_Gvecs,
-                            counts_recv, displacements, ELPH_MPI_float, 0, mpi_comm);
+    mpi_error =
+        MPI_Gatherv(gvec_in, 3 * npw_loc, ELPH_MPI_float, all_Gvecs,
+                    counts_recv, displacements, ELPH_MPI_float, 0, mpi_comm);
     MPI_error_msg(mpi_error);
 
     Sorted_gvecs_idxs(npw_tot, all_Gvecs, indices);

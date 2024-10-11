@@ -1,4 +1,4 @@
-BasedOnStyle: WebKit
+BasedOnStyle: Google 
 IndentWidth: 4
 BreakBeforeBraces: Allman
 AlignAfterOpenBracket: Align

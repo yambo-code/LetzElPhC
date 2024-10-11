@@ -1,3 +1,8 @@
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "../common/constants.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
@@ -6,10 +11,6 @@
 #include "../wfc/gsort.h"
 #include "../wfc/wfc.h"
 #include "symmetries.h"
-#include <mpi.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 
 void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
                      const ELPH_float* Rsym_mat, const ELPH_float* tauR,
@@ -28,15 +29,16 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
     // note this has 2*pi in blat//
 
     // compute the Rk vector and find it in the list of k-points
-    ELPH_float Rk_vec[3] = { 0, 0, 0 };
-    ELPH_float Rk_tmp[3] = { 0, 0, 0 };
+    ELPH_float Rk_vec[3] = {0, 0, 0};
+    ELPH_float Rk_tmp[3] = {0, 0, 0};
     MatVec3f(Rsym_mat, lattice->kpt_fullBZ + 3 * ikBZ, false, Rk_tmp);
     // convert to crystal coordinates
     MatVec3f(alat, Rk_tmp, true, Rk_vec);
 
     ND_int nkpts_BZ = lattice->nkpts_BZ;
     // now find the index of the rotated k point
-    ND_int iRkBZ = find_kidx_in_list(nkpts_BZ, lattice->kpt_fullBZ_crys, Rk_vec);
+    ND_int iRkBZ =
+        find_kidx_in_list(nkpts_BZ, lattice->kpt_fullBZ_crys, Rk_vec);
 
     if (iRkBZ < 0)
     {
@@ -114,32 +116,35 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
     const ND_int npw_k2_total = (wfcs + ik2)->npw_total;
 
     // compute the SU(2) mats for spinor rotation
-    ELPH_cmplx SU2_S1[4] = { 1, 0, 0, 1 };
-    ELPH_cmplx SU2_R[4] = { 1, 0, 0, 1 };
-    ELPH_cmplx SU2_S2[4] = { 1, 0, 0, 1 };
+    ELPH_cmplx SU2_S1[4] = {1, 0, 0, 1};
+    ELPH_cmplx SU2_R[4] = {1, 0, 0, 1};
+    ELPH_cmplx SU2_S2[4] = {1, 0, 0, 1};
 
     SU2mat(Sym1, lattice->nspinor, false, tr1, SU2_S1);
     SU2mat(Rsym_mat, lattice->nspinor, false, tim_revR, SU2_R);
     SU2mat(Sym2, lattice->nspinor, false, tr2, SU2_S2);
 
     // compute the rotated gvecs in crystal coordinates
-    ELPH_float* G_S1k1 = calloc(3 * npw_k1_loc, sizeof(ELPH_float)); // S1*k1 gvecs
+    ELPH_float* G_S1k1 =
+        calloc(3 * npw_k1_loc, sizeof(ELPH_float));  // S1*k1 gvecs
     CHECK_ALLOC(G_S1k1);
 
-    ELPH_float* G_RS1k1 = calloc(3 * npw_k1_loc, sizeof(ELPH_float)); // R*S1*k1 gvecs
+    ELPH_float* G_RS1k1 =
+        calloc(3 * npw_k1_loc, sizeof(ELPH_float));  // R*S1*k1 gvecs
     CHECK_ALLOC(G_RS1k1);
 
-    ELPH_float* G_S2k2 = calloc(3 * npw_k2_loc, sizeof(ELPH_float)); // S2*k2 gvecs
+    ELPH_float* G_S2k2 =
+        calloc(3 * npw_k2_loc, sizeof(ELPH_float));  // S2*k2 gvecs
     CHECK_ALLOC(G_S2k2);
 
     // compute the ulm vec i.e S2K2 + G = R*S1*k1 = > G = R*S1*k1-S2K2
     // C'_G-G0 = C_G. we need to add -G0 = S2*k2-R*S1*k1;
 
-    ELPH_float SymRS1[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // R@S1 matrix
+    ELPH_float SymRS1[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};  // R@S1 matrix
     Gemm3x3f(Rsym_mat, 'N', Sym1, 'N', SymRS1);
 
     // Compute the ulmvec i.e -G0 = S2*k2-R*S1*k1
-    ELPH_float ulm_vec[3] = { 0, 0, 0 }; // (in cart)
+    ELPH_float ulm_vec[3] = {0, 0, 0};  // (in cart)
     MatVec3f(Sym2, k2_vec, false, ulm_vec);
     // first compute and store S2K2 in ulm_vec
     // we store Rk = R*S1*k1 in Rk_vec (in cart)
@@ -203,7 +208,8 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
 
     // collect R*S1*G on root
     int pw_loc_int = 3 * npw_k1_loc;
-    mpi_error = MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, Comm->commK);
+    mpi_error =
+        MPI_Gather(&pw_loc_int, 1, MPI_INT, counts, 1, MPI_INT, 0, Comm->commK);
     MPI_error_msg(mpi_error);
 
     if (Comm->commK_rank == 0)
@@ -260,8 +266,9 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
 
     // now we map the wavefunctions
     // allocate memory for rearranged space
-    ELPH_cmplx* wfc_k2_root = NULL; // gather ik2 wavefunctions on root for sorting
-    ELPH_cmplx* wfc_k2_sort_root = NULL; // store sorted ik2 on root
+    ELPH_cmplx* wfc_k2_root =
+        NULL;  // gather ik2 wavefunctions on root for sorting
+    ELPH_cmplx* wfc_k2_sort_root = NULL;  // store sorted ik2 on root
 
     if (Comm->commK_rank == 0)
     {
@@ -272,23 +279,27 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
         CHECK_ALLOC(wfc_k2_sort_root);
     }
 
-    ND_int nsets = lattice->nspin * lattice->nbnds; // nbands * nspin
-    ND_int npw_spinor_k1 = lattice->nspinor * npw_k1_loc; // nspinor * npw
+    ND_int nsets = lattice->nspin * lattice->nbnds;        // nbands * nspin
+    ND_int npw_spinor_k1 = lattice->nspinor * npw_k1_loc;  // nspinor * npw
 
-    ELPH_cmplx* wfc_RS1k = malloc(nsets * npw_spinor_k1 * sizeof(ELPH_cmplx)); // R*Sym1*k1 wfc
+    ELPH_cmplx* wfc_RS1k =
+        malloc(nsets * npw_spinor_k1 * sizeof(ELPH_cmplx));  // R*Sym1*k1 wfc
     CHECK_ALLOC(wfc_RS1k);
 
-    ELPH_cmplx* wfc_S2k2 = malloc(nsets * npw_spinor_k1 * sizeof(ELPH_cmplx)); // Sym2*k2 wfc
+    ELPH_cmplx* wfc_S2k2 =
+        malloc(nsets * npw_spinor_k1 * sizeof(ELPH_cmplx));  // Sym2*k2 wfc
     CHECK_ALLOC(wfc_S2k2);
 
     // create a tmp buffer
-    ELPH_cmplx* Dkmn_rep_tmp = calloc(lattice->nbnds * lattice->nbnds, sizeof(ELPH_cmplx));
+    ELPH_cmplx* Dkmn_rep_tmp =
+        calloc(lattice->nbnds * lattice->nbnds, sizeof(ELPH_cmplx));
     CHECK_ALLOC(Dkmn_rep_tmp);
 
     // Now rearrage the wavefunctin, and compute the sandwitch
     for (ND_int iset = 0; iset < nsets; ++iset)
     {
-        const ELPH_cmplx* wfc_k2_tmp = wfc_k2 + iset * lattice->nspinor * npw_k2_loc;
+        const ELPH_cmplx* wfc_k2_tmp =
+            wfc_k2 + iset * lattice->nspinor * npw_k2_loc;
         ELPH_cmplx* wfc_S2k2_tmp = wfc_S2k2 + iset * npw_spinor_k1;
         ELPH_cmplx* wfc_RS1k1_tmp = wfc_RS1k + iset * npw_spinor_k1;
 
@@ -335,15 +346,16 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
                     ND_int idx_tmp = idx_arr[ii];
                     if (idx_tmp < 0)
                     {
-                        continue; // set the missing ones to 0
+                        continue;  // set the missing ones to 0
                     }
                     wfc_k2_sort_root[idx_tmp] = wfc_k2_root[ii];
                 }
             }
             // scatter back the wfc to each process
-            mpi_error = MPI_Scatterv(wfc_k2_sort_root, counts, disp, ELPH_MPI_cmplx,
-                                     wfc_S2k2_tmp + ispinor * npw_k1_loc, npw_k1_loc,
-                                     ELPH_MPI_cmplx, 0, Comm->commK);
+            mpi_error =
+                MPI_Scatterv(wfc_k2_sort_root, counts, disp, ELPH_MPI_cmplx,
+                             wfc_S2k2_tmp + ispinor * npw_k1_loc, npw_k1_loc,
+                             ELPH_MPI_cmplx, 0, Comm->commK);
             MPI_error_msg(mpi_error);
         }
 

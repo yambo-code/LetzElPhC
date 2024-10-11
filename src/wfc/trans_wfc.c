@@ -3,11 +3,12 @@
  to the wavefunction
 */
 
+#include <complex.h>
+#include <stdbool.h>
+
 #include "../common/constants.h"
 #include "../elphC.h"
 #include "wfc.h"
-#include <complex.h>
-#include <stdbool.h>
 
 #define dot3_macro(a, b) ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2])
 
@@ -37,7 +38,8 @@ void apply_trans_wfc(const ELPH_float* trans_vec, const ELPH_float* kvec,
         {
             const ELPH_float* gvec_tmp = gvecs + 3 * ig;
 
-            ELPH_cmplx gphase = kphase * cexp(-I * 2 * ELPH_PI * dot3_macro(gvec_tmp, trans_vec));
+            ELPH_cmplx gphase = kphase * cexp(-I * 2 * ELPH_PI *
+                                              dot3_macro(gvec_tmp, trans_vec));
 
             wfc_G_tmp[ig] *= gphase;
 

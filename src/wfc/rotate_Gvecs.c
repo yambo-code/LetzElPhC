@@ -1,14 +1,15 @@
 /*
 This file contains helper functions that are use in wfc routines
 */
-#include "../common/numerical_func.h"
-#include "../common/omp_pragma_def.h"
-#include "../elphC.h"
-#include "wfc.h"
 #include <mpi.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../common/numerical_func.h"
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
+#include "wfc.h"
 
 /* rotate Gvectors */
 void rotateGvecs(const ELPH_float* Gvecs, const ELPH_float* sym,
@@ -40,8 +41,8 @@ void rotateGvecs(const ELPH_float* Gvecs, const ELPH_float* sym,
         Gvec_out[i] = 0;
     }
 
-    ELPH_float sym_temp[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    const ELPH_float Iden3x3[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+    ELPH_float sym_temp[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    const ELPH_float Iden3x3[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
 
     char transsym = 'N';
     if (inverse)

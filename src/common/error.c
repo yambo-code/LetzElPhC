@@ -1,5 +1,6 @@
 /* This file contains functions common for all types*/
 #include "error.h"
+
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>

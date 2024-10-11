@@ -1,4 +1,5 @@
 #include "cwalk.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -9,7 +10,8 @@
  * We try to default to a different path style depending on the operating
  * system. So this should detect whether we should use windows or unix paths.
  */
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) || defined(_WIN32) || \
+    defined(__WIN32) && !defined(__CYGWIN__)
 static enum cwk_path_style path_style = CWK_STYLE_WINDOWS;
 #else
 static enum cwk_path_style path_style = CWK_STYLE_UNIX;
@@ -21,8 +23,8 @@ static enum cwk_path_style path_style = CWK_STYLE_UNIX;
  * will always use the first character for the output.
  */
 static const char* separators[] = {
-    "\\/", // CWK_STYLE_WINDOWS
-    "/" // CWK_STYLE_UNIX
+    "\\/",  // CWK_STYLE_WINDOWS
+    "/"     // CWK_STYLE_UNIX
 };
 
 /**
@@ -38,14 +40,15 @@ struct cwk_segment_joined
 };
 
 static size_t cwk_path_output_sized(char* buffer, size_t buffer_size,
-                                    size_t position, const char* str, size_t length)
+                                    size_t position, const char* str,
+                                    size_t length)
 {
     size_t amount_written;
 
     // First we determine the amount which we can write to the buffer. There are
-    // three cases. In the first case we have enough to store the whole string in
-    // it. In the second one we can only store a part of it, and in the third we
-    // have no space left.
+    // three cases. In the first case we have enough to store the whole string
+    // in it. In the second one we can only store a part of it, and in the third
+    // we have no space left.
     if (buffer_size > position + length)
     {
         amount_written = length;
@@ -60,15 +63,15 @@ static size_t cwk_path_output_sized(char* buffer, size_t buffer_size,
     }
 
     // If we actually want to write out something we will do that here. We will
-    // always append a '\0', this way we are guaranteed to have a valid string at
-    // all times.
+    // always append a '\0', this way we are guaranteed to have a valid string
+    // at all times.
     if (amount_written > 0)
     {
         memmove(&buffer[position], str, amount_written);
     }
 
-    // Return the theoretical length which would have been written when everything
-    // would have fit in the buffer.
+    // Return the theoretical length which would have been written when
+    // everything would have fit in the buffer.
     return length;
 }
 
@@ -99,7 +102,8 @@ static size_t cwk_path_output_separator(char* buffer, size_t buffer_size,
 static size_t cwk_path_output_dot(char* buffer, size_t buffer_size,
                                   size_t position)
 {
-    // We output a dot, which is a single character. This is used for extensions.
+    // We output a dot, which is a single character. This is used for
+    // extensions.
     return cwk_path_output_sized(buffer, buffer_size, position, ".", 1);
 }
 
@@ -156,7 +160,8 @@ static bool cwk_path_is_string_equal(const char* first, const char* second,
         // We can consider the string to be not equal if the two lowercase
         // characters are not equal. The two chars may also be separators, which
         // means they would be equal.
-        are_both_separators = strchr(separators[path_style], *first) != NULL && strchr(separators[path_style], *second) != NULL;
+        are_both_separators = strchr(separators[path_style], *first) != NULL &&
+                              strchr(separators[path_style], *second) != NULL;
 
         if (tolower(*first) != tolower(*second) && !are_both_separators)
         {
@@ -176,8 +181,8 @@ static bool cwk_path_is_string_equal(const char* first, const char* second,
 
 static const char* cwk_path_find_next_stop(const char* c)
 {
-    // We just move forward until we find a '\0' or a separator, which will be our
-    // next "stop".
+    // We just move forward until we find a '\0' or a separator, which will be
+    // our next "stop".
     while (*c != '\0' && !cwk_path_is_separator(c))
     {
         ++c;
@@ -209,7 +214,8 @@ static const char* cwk_path_find_previous_stop(const char* begin, const char* c)
 }
 
 static bool cwk_path_get_first_segment_without_root(const char* path,
-                                                    const char* segments, struct cwk_segment* segment)
+                                                    const char* segments,
+                                                    struct cwk_segment* segment)
 {
     // Let's remember the path. We will move the path pointer afterwards, that's
     // why this has to be done first.
@@ -226,8 +232,8 @@ static bool cwk_path_get_first_segment_without_root(const char* path,
         return false;
     }
 
-    // If the string starts with separators, we will jump over those. If there is
-    // only a slash and a '\0' after it, we can't determine the first segment
+    // If the string starts with separators, we will jump over those. If there
+    // is only a slash and a '\0' after it, we can't determine the first segment
     // since there is none.
     while (cwk_path_is_separator(segments))
     {
@@ -241,12 +247,12 @@ static bool cwk_path_get_first_segment_without_root(const char* path,
     // So this is the beginning of our segment.
     segment->begin = segments;
 
-    // Now let's determine the end of the segment, which we do by moving the path
-    // pointer further until we find a separator.
+    // Now let's determine the end of the segment, which we do by moving the
+    // path pointer further until we find a separator.
     segments = cwk_path_find_next_stop(segments);
 
-    // And finally, calculate the size of the segment by subtracting the position
-    // from the end.
+    // And finally, calculate the size of the segment by subtracting the
+    // position from the end.
     segment->size = (size_t)(segments - segment->begin);
     segment->end = segments;
 
@@ -257,9 +263,9 @@ static bool cwk_path_get_first_segment_without_root(const char* path,
 static bool cwk_path_get_last_segment_without_root(const char* path,
                                                    struct cwk_segment* segment)
 {
-    // Now this is fairly similar to the normal algorithm, however, it will assume
-    // that there is no root in the path. So we grab the first segment at this
-    // position, assuming there is no root.
+    // Now this is fairly similar to the normal algorithm, however, it will
+    // assume that there is no root in the path. So we grab the first segment at
+    // this position, assuming there is no root.
     if (!cwk_path_get_first_segment_without_root(path, path, segment))
     {
         return false;
@@ -281,16 +287,18 @@ static bool cwk_path_get_first_segment_joined(const char** paths,
 {
     bool result;
 
-    // Prepare the first segment. We position the joined segment on the first path
-    // and assign the path array to the struct.
+    // Prepare the first segment. We position the joined segment on the first
+    // path and assign the path array to the struct.
     sj->path_index = 0;
     sj->paths = paths;
 
-    // We loop through all paths until we find one which has a segment. The result
-    // is stored in a variable, so we can let the caller know whether we found one
-    // or not.
+    // We loop through all paths until we find one which has a segment. The
+    // result is stored in a variable, so we can let the caller know whether we
+    // found one or not.
     result = false;
-    while (paths[sj->path_index] != NULL && (result = cwk_path_get_first_segment(paths[sj->path_index], &sj->segment)) == false)
+    while (paths[sj->path_index] != NULL &&
+           (result = cwk_path_get_first_segment(paths[sj->path_index],
+                                                &sj->segment)) == false)
     {
         ++sj->path_index;
     }
@@ -323,18 +331,20 @@ static bool cwk_path_get_next_segment_joined(struct cwk_segment_joined* sj)
     {
         ++sj->path_index;
 
-        // And we obviously have to stop this loop if there are no more paths left.
+        // And we obviously have to stop this loop if there are no more paths
+        // left.
         if (sj->paths[sj->path_index] == NULL)
         {
             break;
         }
 
-        // Grab the first segment of the next path and determine whether this path
-        // has anything useful in it. There is one more thing we have to consider
-        // here - for the first time we do this we want to skip the root, but
-        // afterwards we will consider that to be part of the segments.
-        result = cwk_path_get_first_segment_without_root(sj->paths[sj->path_index],
-                                                         sj->paths[sj->path_index], &sj->segment);
+        // Grab the first segment of the next path and determine whether this
+        // path has anything useful in it. There is one more thing we have to
+        // consider here - for the first time we do this we want to skip the
+        // root, but afterwards we will consider that to be part of the
+        // segments.
+        result = cwk_path_get_first_segment_without_root(
+            sj->paths[sj->path_index], sj->paths[sj->path_index], &sj->segment);
 
     } while (!result);
 
@@ -349,14 +359,15 @@ static bool cwk_path_get_previous_segment_joined(struct cwk_segment_joined* sj)
     if (*sj->paths == NULL)
     {
         // It's possible that there is no initialized segment available in the
-        // struct since there are no paths. In that case we can return false, since
-        // there is no previous segment.
+        // struct since there are no paths. In that case we can return false,
+        // since there is no previous segment.
         return false;
     }
     else if (cwk_path_get_previous_segment(&sj->segment))
     {
-        // Now we try to get the previous segment from the current path. If we can
-        // do that successfully, we can let the caller know that we found one.
+        // Now we try to get the previous segment from the current path. If we
+        // can do that successfully, we can let the caller know that we found
+        // one.
         return true;
     }
 
@@ -371,12 +382,12 @@ static bool cwk_path_get_previous_segment_joined(struct cwk_segment_joined* sj)
             break;
         }
 
-        // There is another path which we have to inspect. So we decrease the path
-        // index.
+        // There is another path which we have to inspect. So we decrease the
+        // path index.
         --sj->path_index;
 
-        // If this is the first path we will have to consider that this path might
-        // include a root, otherwise we just treat is as a segment.
+        // If this is the first path we will have to consider that this path
+        // might include a root, otherwise we just treat is as a segment.
         if (sj->path_index == 0)
         {
             result = cwk_path_get_last_segment(sj->paths[sj->path_index],
@@ -384,8 +395,8 @@ static bool cwk_path_get_previous_segment_joined(struct cwk_segment_joined* sj)
         }
         else
         {
-            result = cwk_path_get_last_segment_without_root(sj->paths[sj->path_index],
-                                                            &sj->segment);
+            result = cwk_path_get_last_segment_without_root(
+                sj->paths[sj->path_index], &sj->segment);
         }
 
     } while (!result);
@@ -399,8 +410,8 @@ static bool cwk_path_segment_back_will_be_removed(struct cwk_segment_joined* sj)
     int counter;
 
     // We are handling back segments here. We must verify how many back segments
-    // and how many normal segments come before this one to decide whether we keep
-    // or remove it.
+    // and how many normal segments come before this one to decide whether we
+    // keep or remove it.
 
     // The counter determines how many normal segments are our current segment,
     // which will popped off before us. If the counter goes above zero it means
@@ -408,19 +419,19 @@ static bool cwk_path_segment_back_will_be_removed(struct cwk_segment_joined* sj)
     counter = 0;
 
     // We loop over all previous segments until we either reach the beginning,
-    // which means our segment will not be dropped or the counter goes above zero.
+    // which means our segment will not be dropped or the counter goes above
+    // zero.
     while (cwk_path_get_previous_segment_joined(sj))
     {
-
         // Now grab the type. The type determines whether we will increase or
-        // decrease the counter. We don't handle a CWK_CURRENT frame here since it
-        // has no influence.
+        // decrease the counter. We don't handle a CWK_CURRENT frame here since
+        // it has no influence.
         type = cwk_path_get_segment_type(&sj->segment);
         if (type == CWK_NORMAL)
         {
-            // This is a normal segment. The normal segment will increase the counter
-            // since it neutralizes one back segment. If we go above zero we can
-            // return immediately.
+            // This is a normal segment. The normal segment will increase the
+            // counter since it neutralizes one back segment. If we go above
+            // zero we can return immediately.
             ++counter;
             if (counter > 0)
             {
@@ -429,14 +440,15 @@ static bool cwk_path_segment_back_will_be_removed(struct cwk_segment_joined* sj)
         }
         else if (type == CWK_BACK)
         {
-            // A CWK_BACK segment will reduce the counter by one. We can not remove a
-            // back segment as long we are not above zero since we don't have the
-            // opposite normal segment which we would remove.
+            // A CWK_BACK segment will reduce the counter by one. We can not
+            // remove a back segment as long we are not above zero since we
+            // don't have the opposite normal segment which we would remove.
             --counter;
         }
     }
 
-    // We never got a count larger than zero, so we will keep this segment alive.
+    // We never got a count larger than zero, so we will keep this segment
+    // alive.
     return false;
 }
 
@@ -455,21 +467,20 @@ static bool cwk_path_segment_normal_will_be_removed(
     // means our segment will not be dropped or the counter goes below zero.
     while (cwk_path_get_next_segment_joined(sj))
     {
-
         // First, grab the type. The type determines whether we will increase or
-        // decrease the counter. We don't handle a CWK_CURRENT frame here since it
-        // has no influence.
+        // decrease the counter. We don't handle a CWK_CURRENT frame here since
+        // it has no influence.
         type = cwk_path_get_segment_type(&sj->segment);
         if (type == CWK_NORMAL)
         {
-            // This is a normal segment. The normal segment will increase the counter
-            // since it will be removed by a "../" before us.
+            // This is a normal segment. The normal segment will increase the
+            // counter since it will be removed by a "../" before us.
             ++counter;
         }
         else if (type == CWK_BACK)
         {
-            // A CWK_BACK segment will reduce the counter by one. If we are below zero
-            // we can return immediately.
+            // A CWK_BACK segment will reduce the counter by one. If we are
+            // below zero we can return immediately.
             --counter;
             if (counter < 0)
             {
@@ -482,9 +493,8 @@ static bool cwk_path_segment_normal_will_be_removed(
     return false;
 }
 
-static bool
-cwk_path_segment_will_be_removed(const struct cwk_segment_joined* sj,
-                                 bool absolute)
+static bool cwk_path_segment_will_be_removed(
+    const struct cwk_segment_joined* sj, bool absolute)
 {
     enum cwk_segment_type type;
     struct cwk_segment_joined sjc;
@@ -509,9 +519,8 @@ cwk_path_segment_will_be_removed(const struct cwk_segment_joined* sj,
     }
 }
 
-static bool
-cwk_path_segment_joined_skip_invisible(struct cwk_segment_joined* sj,
-                                       bool absolute)
+static bool cwk_path_segment_joined_skip_invisible(
+    struct cwk_segment_joined* sj, bool absolute)
 {
     while (cwk_path_segment_will_be_removed(sj, absolute))
     {
@@ -544,40 +553,41 @@ static void cwk_path_get_root_windows(const char* path, size_t* length)
     {
         ++c;
 
-        // Check whether the path starts with a single backslash, which means this
-        // is not a network path - just a normal path starting with a backslash.
+        // Check whether the path starts with a single backslash, which means
+        // this is not a network path - just a normal path starting with a
+        // backslash.
         if (!cwk_path_is_separator(c))
         {
-            // Okay, this is not a network path but we still use the backslash as a
-            // root.
+            // Okay, this is not a network path but we still use the backslash
+            // as a root.
             ++(*length);
             return;
         }
 
-        // A device path is a path which starts with "\\." or "\\?". A device path
-        // can be a UNC path as well, in which case it will take up one more
-        // segment. So, this is a network or device path. Skip the previous
+        // A device path is a path which starts with "\\." or "\\?". A device
+        // path can be a UNC path as well, in which case it will take up one
+        // more segment. So, this is a network or device path. Skip the previous
         // separator. Now we need to determine whether this is a device path. We
-        // might advance one character here if the server name starts with a '?' or
-        // a '.', but that's fine since we will search for a separator afterwards
-        // anyway.
+        // might advance one character here if the server name starts with a '?'
+        // or a '.', but that's fine since we will search for a separator
+        // afterwards anyway.
         ++c;
         is_device_path = (*c == '?' || *c == '.') && cwk_path_is_separator(++c);
         if (is_device_path)
         {
-            // That's a device path, and the root must be either "\\.\" or "\\?\"
-            // which is 4 characters long. (at least that's how Windows
+            // That's a device path, and the root must be either "\\.\" or
+            // "\\?\" which is 4 characters long. (at least that's how Windows
             // GetFullPathName behaves.)
             *length = 4;
             return;
         }
 
-        // We will grab anything up to the next stop. The next stop might be a '\0'
-        // or another separator. That will be the server name.
+        // We will grab anything up to the next stop. The next stop might be a
+        // '\0' or another separator. That will be the server name.
         c = cwk_path_find_next_stop(c);
 
-        // If this is a separator and not the end of a string we wil have to include
-        // it. However, if this is a '\0' we must not skip it.
+        // If this is a separator and not the end of a string we wil have to
+        // include it. However, if this is a '\0' we must not skip it.
         while (cwk_path_is_separator(c))
         {
             ++c;
@@ -587,8 +597,8 @@ static void cwk_path_get_root_windows(const char* path, size_t* length)
         // next stop.
         c = cwk_path_find_next_stop(c);
 
-        // Then there might be a separator at the end. We will include that as well,
-        // it will mark the path as absolute.
+        // Then there might be a separator at the end. We will include that as
+        // well, it will mark the path as absolute.
         if (cwk_path_is_separator(c))
         {
             ++c;
@@ -604,10 +614,11 @@ static void cwk_path_get_root_windows(const char* path, size_t* length)
     {
         *length = 2;
 
-        // Now check whether this is a backslash (or slash). If it is not, we could
-        // assume that the next character is a '\0' if it is a valid path. However,
-        // we will not assume that - since ':' is not valid in a path it must be a
-        // mistake by the caller than. We will try to understand it anyway.
+        // Now check whether this is a backslash (or slash). If it is not, we
+        // could assume that the next character is a '\0' if it is a valid path.
+        // However, we will not assume that - since ':' is not valid in a path
+        // it must be a mistake by the caller than. We will try to understand it
+        // anyway.
         if (cwk_path_is_separator(++c))
         {
             *length = 3;
@@ -637,8 +648,8 @@ static bool cwk_path_is_root_absolute(const char* path, size_t length)
         return false;
     }
 
-    // If there is a separator at the end of the root, we can safely consider this
-    // to be an absolute path.
+    // If there is a separator at the end of the root, we can safely consider
+    // this to be an absolute path.
     return cwk_path_is_separator(&path[length - 1]);
 }
 
@@ -670,7 +681,8 @@ static void cwk_path_fix_root(char* buffer, size_t buffer_size, size_t length)
 }
 
 static size_t cwk_path_join_and_normalize_multiple(const char** paths,
-                                                   char* buffer, size_t buffer_size)
+                                                   char* buffer,
+                                                   size_t buffer_size)
 {
     size_t pos;
     bool absolute, has_segment_output;
@@ -695,8 +707,8 @@ static size_t cwk_path_join_and_normalize_multiple(const char** paths,
         goto done;
     }
 
-    // Let's assume that we don't have any segment output for now. We will toggle
-    // this flag once there is some output.
+    // Let's assume that we don't have any segment output for now. We will
+    // toggle this flag once there is some output.
     has_segment_output = false;
 
     do
@@ -709,17 +721,17 @@ static size_t cwk_path_join_and_normalize_multiple(const char** paths,
         }
 
         // We add a separator if we previously wrote a segment. The last segment
-        // must not have a trailing separator. This must happen before the segment
-        // output, since we would override the null terminating character with
-        // reused buffers if this was done afterwards.
+        // must not have a trailing separator. This must happen before the
+        // segment output, since we would override the null terminating
+        // character with reused buffers if this was done afterwards.
         if (has_segment_output)
         {
             pos += cwk_path_output_separator(buffer, buffer_size, pos);
         }
 
-        // Remember that we have segment output, so we can handle the trailing slash
-        // later on. This is necessary since we might have segments but they are all
-        // removed.
+        // Remember that we have segment output, so we can handle the trailing
+        // slash later on. This is necessary since we might have segments but
+        // they are all removed.
         has_segment_output = true;
 
         // Write out the segment but keep in mind that we need to follow the
@@ -734,8 +746,8 @@ static size_t cwk_path_join_and_normalize_multiple(const char** paths,
     if (!has_segment_output && pos == 0)
     {
         // This may happen if the path is absolute and all segments have been
-        // removed. We can not have an empty output - and empty output means we stay
-        // in the current directory. So we will output a ".".
+        // removed. We can not have an empty output - and empty output means we
+        // stay in the current directory. So we will output a ".".
         assert(absolute == false);
         pos += cwk_path_output_current(buffer, buffer_size, pos);
     }
@@ -776,15 +788,15 @@ size_t cwk_path_get_absolute(const char* base, const char* path, char* buffer,
 
     if (cwk_path_is_absolute(path))
     {
-        // If the submitted path is not relative the base path becomes irrelevant.
-        // We will only normalize the submitted path instead.
+        // If the submitted path is not relative the base path becomes
+        // irrelevant. We will only normalize the submitted path instead.
         paths[i++] = path;
         paths[i] = NULL;
     }
     else
     {
-        // Otherwise we append the relative path to the base path and normalize it.
-        // The result will be a new absolute path.
+        // Otherwise we append the relative path to the base path and normalize
+        // it. The result will be a new absolute path.
         paths[i++] = base;
         paths[i++] = path;
         paths[i] = NULL;
@@ -795,30 +807,33 @@ size_t cwk_path_get_absolute(const char* base, const char* path, char* buffer,
 }
 
 static void cwk_path_skip_segments_until_diverge(struct cwk_segment_joined* bsj,
-                                                 struct cwk_segment_joined* osj, bool absolute, bool* base_available,
+                                                 struct cwk_segment_joined* osj,
+                                                 bool absolute,
+                                                 bool* base_available,
                                                  bool* other_available)
 {
     // Now looping over all segments until they start to diverge. A path may
     // diverge if two segments are not equal or if one path reaches the end.
     do
     {
-
-        // Check whether there is anything available after we skip everything which
-        // is invisible. We do that for both paths, since we want to let the caller
-        // know which path has some trailing segments after they diverge.
+        // Check whether there is anything available after we skip everything
+        // which is invisible. We do that for both paths, since we want to let
+        // the caller know which path has some trailing segments after they
+        // diverge.
         *base_available = cwk_path_segment_joined_skip_invisible(bsj, absolute);
-        *other_available = cwk_path_segment_joined_skip_invisible(osj, absolute);
+        *other_available =
+            cwk_path_segment_joined_skip_invisible(osj, absolute);
 
-        // We are done if one or both of those paths reached the end. They either
-        // diverge or both reached the end - but in both cases we can not continue
-        // here.
+        // We are done if one or both of those paths reached the end. They
+        // either diverge or both reached the end - but in both cases we can not
+        // continue here.
         if (!*base_available || !*other_available)
         {
             break;
         }
 
-        // Compare the content of both segments. We are done if they are not equal,
-        // since they diverge.
+        // Compare the content of both segments. We are done if they are not
+        // equal, since they diverge.
         if (!cwk_path_is_string_equal(bsj->segment.begin, osj->segment.begin,
                                       bsj->segment.size, osj->segment.size))
         {
@@ -826,8 +841,8 @@ static void cwk_path_skip_segments_until_diverge(struct cwk_segment_joined* bsj,
         }
 
         // We keep going until one of those segments reached the end. The next
-        // segment might be invisible, but we will check for that in the beginning
-        // of the loop once again.
+        // segment might be invisible, but we will check for that in the
+        // beginning of the loop once again.
         *base_available = cwk_path_get_next_segment_joined(bsj);
         *other_available = cwk_path_get_next_segment_joined(osj);
     } while (*base_available && *other_available);
@@ -848,14 +863,16 @@ size_t cwk_path_get_relative(const char* base_directory, const char* path,
     // different roots.
     cwk_path_get_root(base_directory, &base_root_length);
     cwk_path_get_root(path, &path_root_length);
-    if (base_root_length != path_root_length || !cwk_path_is_string_equal(base_directory, path, base_root_length, path_root_length))
+    if (base_root_length != path_root_length ||
+        !cwk_path_is_string_equal(base_directory, path, base_root_length,
+                                  path_root_length))
     {
         cwk_path_terminate_output(buffer, buffer_size, pos);
         return pos;
     }
 
-    // Verify whether this is an absolute path. We need to know that since we can
-    // remove all back-segments if it is.
+    // Verify whether this is an absolute path. We need to know that since we
+    // can remove all back-segments if it is.
     absolute = cwk_path_is_root_absolute(base_directory, base_root_length);
 
     // Initialize our joined segments. This will allow us to use the internal
@@ -868,8 +885,8 @@ size_t cwk_path_get_relative(const char* base_directory, const char* path,
     cwk_path_get_first_segment_joined(base_paths, &bsj);
     cwk_path_get_first_segment_joined(other_paths, &osj);
 
-    // Okay, now we skip until the segments diverge. We don't have anything to do
-    // with the segments which are equal.
+    // Okay, now we skip until the segments diverge. We don't have anything to
+    // do with the segments which are equal.
     cwk_path_skip_segments_until_diverge(&bsj, &osj, absolute, &base_available,
                                          &other_available);
 
@@ -878,25 +895,25 @@ size_t cwk_path_get_relative(const char* base_directory, const char* path,
     // current-segment.
     has_output = false;
 
-    // So if we still have some segments left in the base path we will now output
-    // a back segment for all of them.
+    // So if we still have some segments left in the base path we will now
+    // output a back segment for all of them.
     if (base_available)
     {
         do
         {
-            // Skip any invisible segment. We don't care about those and we don't need
-            // to navigate back because of them.
+            // Skip any invisible segment. We don't care about those and we
+            // don't need to navigate back because of them.
             if (!cwk_path_segment_joined_skip_invisible(&bsj, absolute))
             {
                 break;
             }
 
-            // Toggle the flag if we have output. We need to remember that, since we
-            // want to remove the trailing slash.
+            // Toggle the flag if we have output. We need to remember that,
+            // since we want to remove the trailing slash.
             has_output = true;
 
-            // Output the back segment and a separator. No need to worry about the
-            // superfluous segment since it will be removed later on.
+            // Output the back segment and a separator. No need to worry about
+            // the superfluous segment since it will be removed later on.
             pos += cwk_path_output_back(buffer, buffer_size, pos);
             pos += cwk_path_output_separator(buffer, buffer_size, pos);
         } while (cwk_path_get_next_segment_joined(&bsj));
@@ -908,30 +925,30 @@ size_t cwk_path_get_relative(const char* base_directory, const char* path,
     {
         do
         {
-            // Again, skip any invisible segments since we don't need to navigate into
-            // them.
+            // Again, skip any invisible segments since we don't need to
+            // navigate into them.
             if (!cwk_path_segment_joined_skip_invisible(&osj, absolute))
             {
                 break;
             }
 
-            // Toggle the flag if we have output. We need to remember that, since we
-            // want to remove the trailing slash.
+            // Toggle the flag if we have output. We need to remember that,
+            // since we want to remove the trailing slash.
             has_output = true;
 
-            // Output the current segment and a separator. No need to worry about the
-            // superfluous segment since it will be removed later on.
-            pos += cwk_path_output_sized(buffer, buffer_size, pos, osj.segment.begin,
-                                         osj.segment.size);
+            // Output the current segment and a separator. No need to worry
+            // about the superfluous segment since it will be removed later on.
+            pos += cwk_path_output_sized(buffer, buffer_size, pos,
+                                         osj.segment.begin, osj.segment.size);
             pos += cwk_path_output_separator(buffer, buffer_size, pos);
         } while (cwk_path_get_next_segment_joined(&osj));
     }
 
-    // If we have some output by now we will have to remove the trailing slash. We
-    // simply do that by moving back one character. The terminate output function
-    // will then place the '\0' on this position. Otherwise, if there is no
-    // output, we will have to output a "current directory", since the target path
-    // points to the base path.
+    // If we have some output by now we will have to remove the trailing slash.
+    // We simply do that by moving back one character. The terminate output
+    // function will then place the '\0' on this position. Otherwise, if there
+    // is no output, we will have to output a "current directory", since the
+    // target path points to the base path.
     if (has_output)
     {
         --pos;
@@ -990,7 +1007,8 @@ size_t cwk_path_change_root(const char* path, const char* new_root,
                             char* buffer, size_t buffer_size)
 {
     const char* tail;
-    size_t root_length, path_length, tail_length, new_root_length, new_path_size;
+    size_t root_length, path_length, tail_length, new_root_length,
+        new_path_size;
 
     // First we need to determine the actual size of the root which we will
     // change.
@@ -1012,8 +1030,8 @@ size_t cwk_path_change_root(const char* path, const char* new_root,
                           tail_length);
     cwk_path_output_sized(buffer, buffer_size, 0, new_root, new_root_length);
 
-    // Finally we calculate the size o the new path and terminate the output with
-    // a '\0'.
+    // Finally we calculate the size o the new path and terminate the output
+    // with a '\0'.
     new_path_size = tail_length + new_root_length;
     cwk_path_terminate_output(buffer, buffer_size, new_path_size);
 
@@ -1044,8 +1062,8 @@ void cwk_path_get_basename(const char* path, const char** basename,
     struct cwk_segment segment;
 
     // We get the last segment of the path. The last segment will contain the
-    // basename if there is any. If there are no segments we will set the basename
-    // to NULL and the length to 0.
+    // basename if there is any. If there are no segments we will set the
+    // basename to NULL and the length to 0.
     if (!cwk_path_get_last_segment(path, &segment))
     {
         *basename = NULL;
@@ -1076,14 +1094,13 @@ size_t cwk_path_change_basename(const char* path, const char* new_basename,
     // segments, in which case we will create one.
     if (!cwk_path_get_last_segment(path, &segment))
     {
-
-        // So there is no segment in this path. First we grab the root and output
-        // that. We are not going to modify the root in any way.
+        // So there is no segment in this path. First we grab the root and
+        // output that. We are not going to modify the root in any way.
         cwk_path_get_root(path, &root_size);
         pos = cwk_path_output_sized(buffer, buffer_size, 0, path, root_size);
 
-        // We have to trim the separators from the beginning of the new basename.
-        // This is quite easy to do.
+        // We have to trim the separators from the beginning of the new
+        // basename. This is quite easy to do.
         while (cwk_path_is_separator(new_basename))
         {
             ++new_basename;
@@ -1097,9 +1114,10 @@ size_t cwk_path_change_basename(const char* path, const char* new_basename,
             ++new_basename_size;
         }
 
-        // And then we trim the separators at the end of the basename until we reach
-        // the first valid character.
-        while (new_basename_size > 0 && cwk_path_is_separator(&new_basename[new_basename_size - 1]))
+        // And then we trim the separators at the end of the basename until we
+        // reach the first valid character.
+        while (new_basename_size > 0 &&
+               cwk_path_is_separator(&new_basename[new_basename_size - 1]))
         {
             --new_basename_size;
         }
@@ -1108,7 +1126,8 @@ size_t cwk_path_change_basename(const char* path, const char* new_basename,
         pos += cwk_path_output_sized(buffer, buffer_size, pos, new_basename,
                                      new_basename_size);
 
-        // And finally terminate the output and return the total size of the path.
+        // And finally terminate the output and return the total size of the
+        // path.
         cwk_path_terminate_output(buffer, buffer_size, pos);
         return pos;
     }
@@ -1149,9 +1168,9 @@ bool cwk_path_get_extension(const char* path, const char** extension,
         return false;
     }
 
-    // Now we search for a dot within the segment. If there is a dot, we consider
-    // the rest of the segment the extension. We do this from the end towards the
-    // beginning, since we want to find the last dot.
+    // Now we search for a dot within the segment. If there is a dot, we
+    // consider the rest of the segment the extension. We do this from the end
+    // towards the beginning, since we want to find the last dot.
     for (c = segment.end; c >= segment.begin; --c)
     {
         if (*c == '.')
@@ -1187,10 +1206,10 @@ size_t cwk_path_change_extension(const char* path, const char* new_extension,
     // segments, in which case we will create one.
     if (!cwk_path_get_last_segment(path, &segment))
     {
-
-        // So there is no segment in this path. First we grab the root and output
-        // that. We are not going to modify the root in any way. If there is no
-        // root, this will end up with a root size 0, and nothing will be written.
+        // So there is no segment in this path. First we grab the root and
+        // output that. We are not going to modify the root in any way. If there
+        // is no root, this will end up with a root size 0, and nothing will be
+        // written.
         cwk_path_get_root(path, &root_size);
         pos = cwk_path_output_sized(buffer, buffer_size, 0, path, root_size);
 
@@ -1200,15 +1219,16 @@ size_t cwk_path_change_extension(const char* path, const char* new_extension,
             pos += cwk_path_output_dot(buffer, buffer_size, pos);
         }
 
-        // And finally terminate the output and return the total size of the path.
+        // And finally terminate the output and return the total size of the
+        // path.
         pos += cwk_path_output(buffer, buffer_size, pos, new_extension);
         cwk_path_terminate_output(buffer, buffer_size, pos);
         return pos;
     }
 
     // Now we seek the old extension in the last segment, which we will replace
-    // with the new one. If there is no old extension, it will point to the end of
-    // the segment.
+    // with the new one. If there is no old extension, it will point to the end
+    // of the segment.
     old_extension = segment.end;
     for (c = segment.begin; c < segment.end; ++c)
     {
@@ -1229,10 +1249,10 @@ size_t cwk_path_change_extension(const char* path, const char* new_extension,
         ++new_extension;
     }
 
-    // We calculate the size of the new extension, including the dot, in order to
-    // output the trail - which is any part of the path coming after the
-    // extension. We must output this first, since the buffer may overlap with the
-    // submitted path - and it would be overridden by longer extensions.
+    // We calculate the size of the new extension, including the dot, in order
+    // to output the trail - which is any part of the path coming after the
+    // extension. We must output this first, since the buffer may overlap with
+    // the submitted path - and it would be overridden by longer extensions.
     new_extension_size = strlen(new_extension) + 1;
     trail_size = cwk_path_output(buffer, buffer_size, pos + new_extension_size,
                                  segment.end);
@@ -1272,9 +1292,9 @@ size_t cwk_path_get_intersection(const char* path_base, const char* path_other)
     const char *paths_base[2], *paths_other[2];
     struct cwk_segment_joined base, other;
 
-    // We first compare the two roots. We just return zero if they are not equal.
-    // This will also happen to return zero if the paths are mixed relative and
-    // absolute.
+    // We first compare the two roots. We just return zero if they are not
+    // equal. This will also happen to return zero if the paths are mixed
+    // relative and absolute.
     cwk_path_get_root(path_base, &base_root_length);
     cwk_path_get_root(path_other, &other_root_length);
     if (!cwk_path_is_string_equal(path_base, path_other, base_root_length,
@@ -1289,17 +1309,19 @@ size_t cwk_path_get_intersection(const char* path_base, const char* path_other)
     paths_other[0] = path_other;
     paths_other[1] = NULL;
 
-    // So we get the first segment of both paths. If one of those paths don't have
-    // any segment, we will return 0.
-    if (!cwk_path_get_first_segment_joined(paths_base, &base) || !cwk_path_get_first_segment_joined(paths_other, &other))
+    // So we get the first segment of both paths. If one of those paths don't
+    // have any segment, we will return 0.
+    if (!cwk_path_get_first_segment_joined(paths_base, &base) ||
+        !cwk_path_get_first_segment_joined(paths_other, &other))
     {
         return base_root_length;
     }
 
     // We now determine whether the path is absolute or not. This is required
     // because if will ignore removed segments, and this behaves differently if
-    // the path is absolute. However, we only need to check the base path because
-    // we are guaranteed that both paths are either relative or absolute.
+    // the path is absolute. However, we only need to check the base path
+    // because we are guaranteed that both paths are either relative or
+    // absolute.
     absolute = cwk_path_is_root_absolute(path_base, base_root_length);
 
     // We must keep track of the end of the previous segment. Initially, this is
@@ -1311,9 +1333,10 @@ size_t cwk_path_get_intersection(const char* path_base, const char* path_other)
     // contents are not equal.
     do
     {
-        // We skip all segments which will be removed in each path, since we want to
-        // know about the true path.
-        if (!cwk_path_segment_joined_skip_invisible(&base, absolute) || !cwk_path_segment_joined_skip_invisible(&other, absolute))
+        // We skip all segments which will be removed in each path, since we
+        // want to know about the true path.
+        if (!cwk_path_segment_joined_skip_invisible(&base, absolute) ||
+            !cwk_path_segment_joined_skip_invisible(&other, absolute))
         {
             break;
         }
@@ -1321,17 +1344,19 @@ size_t cwk_path_get_intersection(const char* path_base, const char* path_other)
         if (!cwk_path_is_string_equal(base.segment.begin, other.segment.begin,
                                       base.segment.size, other.segment.size))
         {
-            // So the content of those two segments are not equal. We will return the
-            // size up to the beginning.
+            // So the content of those two segments are not equal. We will
+            // return the size up to the beginning.
             return (size_t)(end - path_base);
         }
 
-        // Remember the end of the previous segment before we go to the next one.
+        // Remember the end of the previous segment before we go to the next
+        // one.
         end = base.segment.end;
-    } while (cwk_path_get_next_segment_joined(&base) && cwk_path_get_next_segment_joined(&other));
+    } while (cwk_path_get_next_segment_joined(&base) &&
+             cwk_path_get_next_segment_joined(&other));
 
-    // Now we calculate the length up to the last point where our paths pointed to
-    // the same place.
+    // Now we calculate the length up to the last point where our paths pointed
+    // to the same place.
     return (size_t)(end - path_base);
 }
 
@@ -1345,8 +1370,8 @@ bool cwk_path_get_first_segment(const char* path, struct cwk_segment* segment)
     cwk_path_get_root(path, &length);
     segments = path + length;
 
-    // Now, after we skipped the root we can continue and find the actual segment
-    // content.
+    // Now, after we skipped the root we can continue and find the actual
+    // segment content.
     return cwk_path_get_first_segment_without_root(path, segments, segment);
 }
 
@@ -1375,8 +1400,8 @@ bool cwk_path_get_next_segment(struct cwk_segment* segment)
 {
     const char* c;
 
-    // First we jump to the end of the previous segment. The first character must
-    // be either a '\0' or a separator.
+    // First we jump to the end of the previous segment. The first character
+    // must be either a '\0' or a separator.
     c = segment->begin + segment->size;
     if (*c == '\0')
     {
@@ -1416,8 +1441,8 @@ bool cwk_path_get_previous_segment(struct cwk_segment* segment)
 {
     const char* c;
 
-    // The current position might point to the first character of the path, which
-    // means there are no previous segments available.
+    // The current position might point to the first character of the path,
+    // which means there are no previous segments available.
     c = segment->begin;
     if (c <= segment->segments)
     {
@@ -1431,14 +1456,16 @@ bool cwk_path_get_previous_segment(struct cwk_segment* segment)
         --c;
         if (c < segment->segments)
         {
-            // So we reached the beginning here and there is no segment. So we return
-            // false and don't change the segment structure submitted by the caller.
+            // So we reached the beginning here and there is no segment. So we
+            // return false and don't change the segment structure submitted by
+            // the caller.
             return false;
         }
     } while (cwk_path_is_separator(c));
 
-    // We are guaranteed now that there is another segment, since we moved before
-    // the previous separator and did not reach the segment path beginning.
+    // We are guaranteed now that there is another segment, since we moved
+    // before the previous separator and did not reach the segment path
+    // beginning.
     segment->end = c + 1;
     segment->begin = cwk_path_find_previous_stop(segment->segments, c);
     segment->size = (size_t)(segment->end - segment->begin);
@@ -1529,8 +1556,8 @@ size_t cwk_path_change_segment(struct cwk_segment* segment, const char* value,
     // where we have enough space to fit the whole trimmed value.
     pos += cwk_path_output_sized(buffer, buffer_size, pos, value, value_size);
 
-    // Now we add the tail size to the current position and terminate the output -
-    // basically, ensure that there is a '\0' at the end of the buffer.
+    // Now we add the tail size to the current position and terminate the output
+    // - basically, ensure that there is a '\0' at the end of the buffer.
     pos += tail_size;
     cwk_path_terminate_output(buffer, buffer_size, pos);
 
@@ -1544,9 +1571,9 @@ enum cwk_path_style cwk_path_guess_style(const char* path)
     size_t root_length;
     struct cwk_segment segment;
 
-    // First we determine the root. Only windows roots can be longer than a single
-    // slash, so if we can determine that it starts with something like "C:", we
-    // know that this is a windows path.
+    // First we determine the root. Only windows roots can be longer than a
+    // single slash, so if we can determine that it starts with something like
+    // "C:", we know that this is a windows path.
     cwk_path_get_root_windows(path, &root_length);
     if (root_length > 1)
     {
@@ -1574,8 +1601,8 @@ enum cwk_path_style cwk_path_guess_style(const char* path)
     // case we assume the path to have UNIX style.
     if (!cwk_path_get_last_segment(path, &segment))
     {
-        // We couldn't find any segments, so we default to a UNIX path style since
-        // there is no way to make any assumptions.
+        // We couldn't find any segments, so we default to a UNIX path style
+        // since there is no way to make any assumptions.
         return CWK_STYLE_UNIX;
     }
 
@@ -1585,8 +1612,8 @@ enum cwk_path_style cwk_path_guess_style(const char* path)
     }
 
     // And finally we check whether the last segment contains a dot. If it
-    // contains a dot, that might be an extension. Windows is more likely to have
-    // file names with extensions, so our guess would be windows.
+    // contains a dot, that might be an extension. Windows is more likely to
+    // have file names with extensions, so our guess would be windows.
     for (c = segment.begin; *c; ++c)
     {
         if (*c == '.')
@@ -1595,8 +1622,8 @@ enum cwk_path_style cwk_path_guess_style(const char* path)
         }
     }
 
-    // All our checks failed, so we will return a default value which is currently
-    // UNIX.
+    // All our checks failed, so we will return a default value which is
+    // currently UNIX.
     return CWK_STYLE_UNIX;
 }
 

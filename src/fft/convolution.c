@@ -1,13 +1,14 @@
 /* This is a routine to perform 3D FFT convolution of potential and wavefunction
     i.e FFT(V(r)*psi(r)). */
 
-#include "../common/error.h"
-#include "../elphC.h"
-#include "fft.h"
 #include <complex.h>
 #include <fftw3.h>
 #include <stdbool.h>
 #include <string.h>
+
+#include "../common/error.h"
+#include "../elphC.h"
+#include "fft.h"
 
 void fft_convolution3D(struct ELPH_fft_plan* plan, const ND_int nspinor,
                        ND_int nmag, const ELPH_cmplx* Vpotr,
@@ -102,7 +103,7 @@ void fft_convolution3D(struct ELPH_fft_plan* plan, const ND_int nspinor,
             if (ispinor == 1)
             {
                 dV_r = Vpotr + 2 * fft_buf_size;
-            } // [1,2],[3,4]
+            }  // [1,2],[3,4]
 
             for (ND_int iy = 0; iy < Ny; ++iy)
             {
@@ -136,7 +137,8 @@ void fft_convolution3D(struct ELPH_fft_plan* plan, const ND_int nspinor,
             {
                 continue;
             }
-            ELPH_cmplx* wfcr_tmp_y = plan->fft_data + ix * Ny_stride; //(Gx,Ny,Nz_log)
+            ELPH_cmplx* wfcr_tmp_y =
+                plan->fft_data + ix * Ny_stride;  //(Gx,Ny,Nz_log)
             ND_int iax = fftw_fun(alignment_of)((void*)wfcr_tmp_y);
             iax /= sizeof(ELPH_cmplx);
             fftw_fun(execute_dft)(plan->fplan_y[iax], wfcr_tmp_y, wfcr_tmp_y);
@@ -154,7 +156,7 @@ void fft_convolution3D(struct ELPH_fft_plan* plan, const ND_int nspinor,
                    sizeof(ELPH_cmplx) * plan->nzloc);
         }
         // b) (ii)  transpose the data
-        fwd_transpose(plan); // nz_buf has (NGxy_loc,Nz)
+        fwd_transpose(plan);  // nz_buf has (NGxy_loc,Nz)
 
         // c) perform fft along z
         fftw_fun(execute)(plan->fplan_z);

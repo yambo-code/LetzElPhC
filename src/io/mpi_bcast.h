@@ -1,8 +1,9 @@
 #pragma once
-#include "../common/dtypes.h"
-#include "../elphC.h"
 #include <mpi.h>
 #include <stdbool.h>
+
+#include "../common/dtypes.h"
+#include "../elphC.h"
 
 // mpi_bcast.c
 // Bcast functions

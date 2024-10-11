@@ -2,6 +2,14 @@
 This routine computes the non local part to
 bare electron-phonon mat elements.
 */
+#include <complex.h>
+#include <limits.h>
+#include <math.h>
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "../common/constants.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
@@ -11,13 +19,6 @@ bare electron-phonon mat elements.
 #include "../wfc/wfc.h"
 #include "Vnonloc.h"
 #include "fcoeff.h"
-#include <complex.h>
-#include <limits.h>
-#include <math.h>
-#include <mpi.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 
 /*
 **** Yambo stores <K|X^a_{lm}>sqrt(E_l) with out spherical harmonics i.e
@@ -77,16 +78,16 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     ND_int nspin = lattice->nspin;
     ND_int nbnds = lattice->nbnds;
     ND_int nspinor = lattice->nspinor;
-    ND_int ntype = pseudo->ntype; // number of atomic types
+    ND_int ntype = pseudo->ntype;  // number of atomic types
     ND_int natom = lattice->natom;
     ND_int npwK = (wfcs + ikq)->npw_loc;
     ND_int npwKp = (wfcs + ik)->npw_loc;
 
-    ELPH_cmplx* wfc_K; // K = S*k+q wfc
-    ELPH_cmplx* wfc_Kp; // K^\prime = S*k
+    ELPH_cmplx* wfc_K;   // K = S*k+q wfc
+    ELPH_cmplx* wfc_Kp;  // K^\prime = S*k
 
-    ELPH_float* GvecK; // gvecs for S*k+q wfc
-    ELPH_float* GvecKp; // gvecs for S*k wfc
+    ELPH_float* GvecK;   // gvecs for S*k+q wfc
+    ELPH_float* GvecKp;  // gvecs for S*k wfc
 
     // wfc structure (nspin,nbnd,nspinor,npw_loc)
 
@@ -172,15 +173,18 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     rotation. But we always compute on fly as for large k points, these would
     add to more memory footprint per core with less performance gain
     */
-    ELPH_float* YlmK = malloc(npwK * nl_max * sizeof(ELPH_float)); // (nl_max,npwK)
+    ELPH_float* YlmK =
+        malloc(npwK * nl_max * sizeof(ELPH_float));  // (nl_max,npwK)
     CHECK_ALLOC(YlmK);
-    ELPH_float* YlmKp = malloc(npwKp * nl_max * sizeof(ELPH_float)); // These are real spherical harmonics
+    ELPH_float* YlmKp =
+        malloc(npwKp * nl_max *
+               sizeof(ELPH_float));  // These are real spherical harmonics
     CHECK_ALLOC(YlmKp);
 
     for (int il = 0; il <= lmax; ++il)
     {
         for (int im = 0; im <= 2 * il; ++im)
-        { //
+        {  //
             int m = im - il;
 
             ND_int ilim_idx = (il * il) + im;
@@ -207,15 +211,15 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     /* ----- */
     /* (ispin, nbnd, nspinor,npw) */
 
-    ELPH_cmplx su2K[4] = { 1, 0, 0, 1 };
-    ELPH_cmplx su2Kp[4] = { 1, 0, 0, 1 };
+    ELPH_cmplx su2K[4] = {1, 0, 0, 1};
+    ELPH_cmplx su2Kp[4] = {1, 0, 0, 1};
 
     /* Get SU(2) matrices for spinors*/
     SU2mat(SymK, nspinor, false, timerevK, su2K);
     SU2mat(SymKp, nspinor, false, timerevKp, su2Kp);
 
     ND_int nsets = nspin * nbnds;
-    ELPH_float kzero[3] = { 0, 0, 0 };
+    ELPH_float kzero[3] = {0, 0, 0};
 
     /* Apply spinors and fractional translation to wfcs */
     for (ND_int iset = 0; iset < nsets; ++iset)
@@ -245,15 +249,21 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     /*temporary beta_ia buffers */
     // ((2*lmax+1)*nproj_max,4,nspin*nspinor*nbnds)
     const ND_int bandbuffer_stride = nspin * nbnds * nspinor * 4;
-    ELPH_cmplx* bandbufferK = malloc(nltimesj * (2 * lmax + 1) * bandbuffer_stride * sizeof(ELPH_cmplx));
+    ELPH_cmplx* bandbufferK = malloc(nltimesj * (2 * lmax + 1) *
+                                     bandbuffer_stride * sizeof(ELPH_cmplx));
     CHECK_ALLOC(bandbufferK);
-    ELPH_cmplx* bandbufferKp = malloc(nltimesj * (2 * lmax + 1) * bandbuffer_stride * sizeof(ELPH_cmplx));
+    ELPH_cmplx* bandbufferKp = malloc(nltimesj * (2 * lmax + 1) *
+                                      bandbuffer_stride * sizeof(ELPH_cmplx));
     CHECK_ALLOC(bandbufferKp);
 
     ND_int temp_len = nltimesj * (2 * lmax + 1);
-    ELPH_cmplx* betaK = malloc(4 * temp_len * npwK * sizeof(ELPH_cmplx)); // buffer for beta and K*beta (pw,4)
+    ELPH_cmplx* betaK =
+        malloc(4 * temp_len * npwK *
+               sizeof(ELPH_cmplx));  // buffer for beta and K*beta (pw,4)
     CHECK_ALLOC(betaK);
-    ELPH_cmplx* betaKp = malloc(4 * temp_len * npwKp * sizeof(ELPH_cmplx)); // buffer for beta' and K'*beta'
+    ELPH_cmplx* betaKp =
+        malloc(4 * temp_len * npwKp *
+               sizeof(ELPH_cmplx));  // buffer for beta' and K'*beta'
     CHECK_ALLOC(betaKp);
 
     // (natom, 3, nspin, mk, nk+q)
@@ -297,24 +307,28 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     {
         const ND_int itype = atom_type[ia];
 
-        const ELPH_float* tau = atom_pos + 3 * ia; // atom_pos[ia,:]
+        const ELPH_float* tau = atom_pos + 3 * ia;  // atom_pos[ia,:]
         /* First compute betas for each atom */
 
-        ND_int idxK = 0; // counter for nltimesj*(2*lmax+1) i.e l+m for K
-        ND_int idxKp = 0; // counter for nltimesj*(2*lmax+1) i.e l+m for K'
+        ND_int idxK = 0;   // counter for nltimesj*(2*lmax+1) i.e l+m for K
+        ND_int idxKp = 0;  // counter for nltimesj*(2*lmax+1) i.e l+m for K'
         // idxK and idxKp should be same
         for (ND_int lidx = 0; lidx < nltimesj; ++lidx)
         {
-            const int l = rint(PP_table[ntype * 3 * lidx + itype * 3] - 1); // PP_table[lidx,itype,0]
+            const int l = rint(PP_table[ntype * 3 * lidx + itype * 3] -
+                               1);  // PP_table[lidx,itype,0]
 
             if (l < 0)
             {
                 continue;
-            } // skip fake entries
+            }  // skip fake entries
 
-            const ELPH_float Kbsign = Fsign[lidx * ntype + itype]; // Fsign[lidx,itype]
-            const ELPH_float* FKtemp = FK + (lidx * ntype + itype) * npwK; // FK[lidx,itype,:]
-            const ELPH_float* FKptemp = FKp + (lidx * ntype + itype) * npwKp; // FKp[lidx,itype,:]
+            const ELPH_float Kbsign =
+                Fsign[lidx * ntype + itype];  // Fsign[lidx,itype]
+            const ELPH_float* FKtemp =
+                FK + (lidx * ntype + itype) * npwK;  // FK[lidx,itype,:]
+            const ELPH_float* FKptemp =
+                FKp + (lidx * ntype + itype) * npwKp;  // FKp[lidx,itype,:]
 
             // nltimesj*(2*lmax+1)*4*npw_split;
 
@@ -333,12 +347,17 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                 {
                     ELPH_float* GrotPtr = GvecK + 3 * ipw;
                     // tau.G
-                    ELPH_float tau_dotG = GrotPtr[0] * tau[0] + GrotPtr[1] * tau[1] + GrotPtr[2] * tau[2];
-                    betaK0[ipw] = FKtemp[ipw] * cexp(-I * 2 * ELPH_PI * tau_dotG) * YlmKtemp[ipw];
+                    ELPH_float tau_dotG = GrotPtr[0] * tau[0] +
+                                          GrotPtr[1] * tau[1] +
+                                          GrotPtr[2] * tau[2];
+                    betaK0[ipw] = FKtemp[ipw] *
+                                  cexp(-I * 2 * ELPH_PI * tau_dotG) *
+                                  YlmKtemp[ipw];
                     betaK1[ipw] = betaK0[ipw] * GrotPtr[0] * Kbsign;
                     betaK2[ipw] = betaK0[ipw] * GrotPtr[1] * Kbsign;
-                    betaK3[ipw] = betaK0[ipw] * GrotPtr[2] * Kbsign; // Kbsign is the sign coming from F.T
-                                                                     // of projectors
+                    betaK3[ipw] = betaK0[ipw] * GrotPtr[2] *
+                                  Kbsign;  // Kbsign is the sign coming from F.T
+                                           // of projectors
                 }
                 ++idxK;
             }
@@ -356,11 +375,15 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                 /*** WARNING !! DO NOT PARALLELIZE LOOPS except this !! */
                 // ELPH_OMP_PAR_FOR_SIMD
                 for (ND_int ipw = 0; ipw < npwKp; ++ipw)
-                { // K' has -ve sign
+                {  // K' has -ve sign
                     ELPH_float* GrotPtr = GvecKp + 3 * ipw;
                     // tau.G
-                    ELPH_float tau_dotG = GrotPtr[0] * tau[0] + GrotPtr[1] * tau[1] + GrotPtr[2] * tau[2];
-                    betaKp0[ipw] = FKptemp[ipw] * cexp(I * 2 * ELPH_PI * tau_dotG) * conj(YlmKptemp[ipw]);
+                    ELPH_float tau_dotG = GrotPtr[0] * tau[0] +
+                                          GrotPtr[1] * tau[1] +
+                                          GrotPtr[2] * tau[2];
+                    betaKp0[ipw] = FKptemp[ipw] *
+                                   cexp(I * 2 * ELPH_PI * tau_dotG) *
+                                   conj(YlmKptemp[ipw]);
                     betaKp1[ipw] = -betaKp0[ipw] * GrotPtr[0] * Kbsign;
                     betaKp2[ipw] = -betaKp0[ipw] * GrotPtr[1] * Kbsign;
                     betaKp3[ipw] = -betaKp0[ipw] * GrotPtr[2] * Kbsign;
@@ -440,21 +463,25 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
         if (Comm->commK_rank == 0)
         {
             /* Now compute non local contribution to elph matrix  elements*/
-            ELPH_cmplx* elph_buffer_temp = elph_buffer + ia * elph_buffer_stride;
+            ELPH_cmplx* elph_buffer_temp =
+                elph_buffer + ia * elph_buffer_stride;
 
             ND_int il_counter = 0;
             for (ND_int lidx = 0; lidx < nltimesj; ++lidx)
             {
-                int l = rint(PP_table[ntype * 3 * lidx + itype * 3] - 1); // PP_table[lidx,itype,0]
-                int j = rint(PP_table[ntype * 3 * lidx + itype * 3 + 1]); // Careful, this is 2j
+                int l = rint(PP_table[ntype * 3 * lidx + itype * 3] -
+                             1);  // PP_table[lidx,itype,0]
+                int j = rint(PP_table[ntype * 3 * lidx + itype * 3 +
+                                      1]);  // Careful, this is 2j
 
                 if (l < 0)
                 {
                     continue;
-                } // skip fake entries
+                }  // skip fake entries
 
                 ELPH_float soc_fac = 1.0;
-                // incase relativistic pseudo is used in a non-SOC calc, we need to do a j-avg
+                // incase relativistic pseudo is used in a non-SOC calc, we need
+                // to do a j-avg
                 if (j != 0 && !lattice->is_soc_present)
                 {
                     soc_fac = (j + 1.0) / (4.0 * l + 2.0);
@@ -469,24 +496,28 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                 }
                 for (ND_int im1 = 0; im1 <= 2 * l; ++im1)
                 {
-                    ELPH_cmplx* betaPsi_K = bandbufferK + (il_counter + im1) * bandbuffer_stride;
+                    ELPH_cmplx* betaPsi_K =
+                        bandbufferK + (il_counter + im1) * bandbuffer_stride;
 
                     for (ND_int im2 = 0; im2 <= 2 * l; ++im2)
                     {
-                        ELPH_cmplx* betaPsi_Kp = bandbufferKp + (il_counter + im2) * bandbuffer_stride;
+                        ELPH_cmplx* betaPsi_Kp =
+                            bandbufferKp +
+                            (il_counter + im2) * bandbuffer_stride;
 
                         if (!ifCoeff && im1 != im2)
                         {
                             continue;
-                        } // if no soc, diagonal in m's and spins
+                        }  // if no soc, diagonal in m's and spins
 
-                        ELPH_cmplx temp_flmm[4] = { soc_fac, 0.0, 0.0, soc_fac };
+                        ELPH_cmplx temp_flmm[4] = {soc_fac, 0.0, 0.0, soc_fac};
                         // in case of nspinor = 1, only 1st element is read, for
                         // nspinor =2 it is 2x2 identity.
                         ELPH_cmplx* flmm = temp_flmm;
                         if (ifCoeff)
                         {
-                            flmm = ifCoeff + (two_lp1 * im1 + im2) * nspinor * nspinor;
+                            flmm = ifCoeff +
+                                   (two_lp1 * im1 + im2) * nspinor * nspinor;
                         }
                         /*** WARNING !! DO NOT PARALLELIZE LOOPS !! */
                         // perform the summation over K,K'
@@ -495,7 +526,7 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
                         // f*npwKp^\sigma'[0]*npwK^\sigma[1:4] ;
                         sum_VNL_KKp(
                             betaPsi_K, betaPsi_Kp, flmm, nspin, nbnds, nspinor,
-                            elph_buffer_temp); // this is not thread safe
+                            elph_buffer_temp);  // this is not thread safe
                     }
                 }
                 // update counter
@@ -511,7 +542,9 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
         ND_int nmodes = lattice->nmodes;
         ND_int elph_stride = nspin * nbnds * nbnds;
 
-        ELPH_cmplx pre_facNL = -2 * ELPH_PI * I * ELPH_e2; // this is a prefactor from VKL, but we multiply it here
+        ELPH_cmplx pre_facNL =
+            -2 * ELPH_PI * I *
+            ELPH_e2;  // this is a prefactor from VKL, but we multiply it here
         /* 2*pi from Gvecs, -I from derivate with ion pos, and e^2 for Ha->Ry.
         Note that the factor (4*pi)^2/V is included in output of yambo*/
 
@@ -538,4 +571,4 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     free(GvecK);
     free(GvecKp);
 
-} // end of function
+}  // end of function

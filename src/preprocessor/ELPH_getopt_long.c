@@ -55,17 +55,17 @@
 #define REPLACE_GETOPT
 
 #ifdef REPLACE_GETOPT
-int opterr = 1; /* if error message should be printed */
-int optind = 1; /* index into parent argv vector */
+int opterr = 1;   /* if error message should be printed */
+int optind = 1;   /* index into parent argv vector */
 int optopt = '?'; /* character checked for validity */
-int optreset; /* reset getopt */
-char* optarg; /* argument associated with option */
+int optreset;     /* reset getopt */
+char* optarg;     /* argument associated with option */
 #endif
 
 #define PRINT_ERROR ((opterr) && (*options != ':'))
 
-#define FLAG_PERMUTE 0x01 /* permute non-options to the end of argv */
-#define FLAG_ALLARGS 0x02 /* treat non-options as args to option "-1" */
+#define FLAG_PERMUTE 0x01  /* permute non-options to the end of argv */
+#define FLAG_ALLARGS 0x02  /* treat non-options as args to option "-1" */
 #define FLAG_LONGONLY 0x04 /* operate as getopt_long_only */
 
 /* return values */
@@ -82,10 +82,10 @@ char* optarg; /* argument associated with option */
 #define W_PREFIX 2
 #endif
 
-static int getopt_internal(int, char* const*, const char*,
-                           const struct option*, int*, int);
-static int parse_long_options(char* const*, const char*,
-                              const struct option*, int*, int, int);
+static int getopt_internal(int, char* const*, const char*, const struct option*,
+                           int*, int);
+static int parse_long_options(char* const*, const char*, const struct option*,
+                              int*, int, int);
 static int gcd(int, int);
 static void permute_args(int, int, int, char* const*);
 
@@ -93,7 +93,7 @@ static char* place = EMSG; /* option letter processing */
 
 /* XXX: set optreset to 1 rather than these two */
 static int nonopt_start = -1; /* first non option argument (for permute) */
-static int nonopt_end = -1; /* first option after non options (for permute) */
+static int nonopt_end = -1;   /* first option after non options (for permute) */
 
 /* Error messages */
 static const char recargchar[] = "option requires an argument -- %c";
@@ -193,18 +193,18 @@ static int parse_long_options(char* const* nargv, const char* options,
 #ifdef GNU_COMPATIBLE
     switch (dash_prefix)
     {
-    case D_PREFIX:
-        current_dash = "-";
-        break;
-    case DD_PREFIX:
-        current_dash = "--";
-        break;
-    case W_PREFIX:
-        current_dash = "-W ";
-        break;
-    default:
-        current_dash = "";
-        break;
+        case D_PREFIX:
+            current_dash = "-";
+            break;
+        case DD_PREFIX:
+            current_dash = "--";
+            break;
+        case W_PREFIX:
+            current_dash = "-W ";
+            break;
+        default:
+            current_dash = "";
+            break;
     }
 #endif
     match = -1;
@@ -252,7 +252,10 @@ static int parse_long_options(char* const* nargv, const char* options,
         {
             match = i;
         }
-        else if ((flags & FLAG_LONGONLY) || long_options[i].has_arg != long_options[match].has_arg || long_options[i].flag != long_options[match].flag || long_options[i].val != long_options[match].val)
+        else if ((flags & FLAG_LONGONLY) ||
+                 long_options[i].has_arg != long_options[match].has_arg ||
+                 long_options[i].flag != long_options[match].flag ||
+                 long_options[i].val != long_options[match].val)
         {
             second_partial_match = 1;
         }
@@ -300,7 +303,8 @@ static int parse_long_options(char* const* nargv, const char* options,
             return (BADARG);
 #endif
         }
-        if (long_options[match].has_arg == required_argument || long_options[match].has_arg == optional_argument)
+        if (long_options[match].has_arg == required_argument ||
+            long_options[match].has_arg == optional_argument)
         {
             if (has_equal)
             {
@@ -314,7 +318,8 @@ static int parse_long_options(char* const* nargv, const char* options,
                 optarg = nargv[optind++];
             }
         }
-        if ((long_options[match].has_arg == required_argument) && (optarg == NULL))
+        if ((long_options[match].has_arg == required_argument) &&
+            (optarg == NULL))
         {
             /*
              * Missing argument; leading ':' indicates no error
@@ -533,7 +538,8 @@ start:
      *  2) the arg is not just "-"
      *  3) either the arg starts with -- we are getopt_long_only()
      */
-    if (long_options != NULL && place != nargv[optind] && (*place == '-' || (flags & FLAG_LONGONLY)))
+    if (long_options != NULL && place != nargv[optind] &&
+        (*place == '-' || (flags & FLAG_LONGONLY)))
     {
         short_too = 0;
 #ifdef GNU_COMPATIBLE
@@ -560,7 +566,9 @@ start:
         }
     }
 
-    if ((optchar = (int)*place++) == (int)':' || (optchar == (int)'-' && *place != '\0') || (oli = strchr(options, optchar)) == NULL)
+    if ((optchar = (int)*place++) == (int)':' ||
+        (optchar == (int)'-' && *place != '\0') ||
+        (oli = strchr(options, optchar)) == NULL)
     {
         /*
          * If the user specified "-" and  '-' isn't listed in
@@ -611,7 +619,8 @@ start:
 #ifdef GNU_COMPATIBLE
         dash_prefix = W_PREFIX;
 #endif
-        optchar = parse_long_options(nargv, options, long_options, idx, 0, flags);
+        optchar =
+            parse_long_options(nargv, options, long_options, idx, 0, flags);
         place = EMSG;
         return (optchar);
     }

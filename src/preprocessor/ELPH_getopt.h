@@ -63,8 +63,8 @@ struct option
     int val;
 };
 
-int ELPH_getopt_long_only(int, char* const*, const char*,
-                          const struct option*, int*);
+int ELPH_getopt_long_only(int, char* const*, const char*, const struct option*,
+                          int*);
 
 extern char* optarg;
 extern int optind, opterr, optopt;

@@ -1,7 +1,8 @@
+#include <stdlib.h>
+
 #include "../elphC.h"
 #include "error.h"
 #include "numerical_func.h"
-#include <stdlib.h>
 /*
 This file contains functions related to cublic spline interpolation
 https://en.wikipedia.org/wiki/Spline_interpolation
@@ -15,9 +16,12 @@ ELPH_float spline_interpolate(const ELPH_float x, ND_int inear,
                               const ELPH_float* restrict dy)
 {
     ELPH_float tx = (x - xi[inear]) / (xi[inear + 1] - xi[inear]);
-    ELPH_float ax = dy[inear] * (xi[inear + 1] - xi[inear]) - (yi[inear + 1] - yi[inear]);
-    ELPH_float bx = -dy[inear + 1] * (xi[inear + 1] - xi[inear]) + (yi[inear + 1] - yi[inear]);
-    return (1 - tx) * yi[inear] + tx * yi[inear + 1] + tx * (1 - tx) * ((1 - tx) * ax + tx * bx);
+    ELPH_float ax =
+        dy[inear] * (xi[inear + 1] - xi[inear]) - (yi[inear + 1] - yi[inear]);
+    ELPH_float bx = -dy[inear + 1] * (xi[inear + 1] - xi[inear]) +
+                    (yi[inear + 1] - yi[inear]);
+    return (1 - tx) * yi[inear] + tx * yi[inear + 1] +
+           tx * (1 - tx) * ((1 - tx) * ax + tx * bx);
 }
 
 void prepare_spline(const ND_int nvals, ELPH_float* restrict xin,

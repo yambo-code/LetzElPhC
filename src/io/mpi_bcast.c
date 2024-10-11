@@ -1,16 +1,19 @@
 #include "mpi_bcast.h"
-#include "../common/dtypes.h"
-#include "../common/error.h"
-#include "../elphC.h"
+
 #include <limits.h>
 #include <mpi.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../elphC.h"
+
 #ifdef MPI_Aint_diff
 #define MPI_Aint_diff_stub(addr1, addr2) MPI_Aint_diff(addr1, addr2)
 #else
-#define MPI_Aint_diff_stub(addr1, addr2) ((MPI_Aint)((char*)(addr1) - (char*)(addr2)))
+#define MPI_Aint_diff_stub(addr1, addr2) \
+    ((MPI_Aint)((char*)(addr1) - (char*)(addr2)))
 #endif
 
 void Bcast_wfc(struct WFC* wfc, const struct Lattice* lattice,
@@ -72,23 +75,23 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
     int mpi_error;
     struct symmetry dummy;
 
-    int lengths[4] = { 9, 3, 1, 1 };
+    int lengths[4] = {9, 3, 1, 1};
     MPI_Aint displacements[4], base_address;
 
     // get address of members
     mpi_error = MPI_Get_address(&dummy, &base_address);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Get_address(dummy.Rmat, &displacements[0]); // 9
+    mpi_error = MPI_Get_address(dummy.Rmat, &displacements[0]);  // 9
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Get_address(dummy.tau, &displacements[1]); // 3
+    mpi_error = MPI_Get_address(dummy.tau, &displacements[1]);  // 3
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Get_address(&dummy.inv_idx, &displacements[2]); // 1
+    mpi_error = MPI_Get_address(&dummy.inv_idx, &displacements[2]);  // 1
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Get_address(&dummy.time_rev, &displacements[3]); // 1
+    mpi_error = MPI_Get_address(&dummy.time_rev, &displacements[3]);  // 1
     MPI_error_msg(mpi_error);
 
     for (int i = 0; i < 4; ++i)
@@ -96,11 +99,12 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
         displacements[i] = MPI_Aint_diff_stub(displacements[i], base_address);
     }
 
-    MPI_Datatype types[4] = { ELPH_MPI_float, ELPH_MPI_float, ELPH_MPI_ND_INT,
-                              MPI_C_BOOL };
+    MPI_Datatype types[4] = {ELPH_MPI_float, ELPH_MPI_float, ELPH_MPI_ND_INT,
+                             MPI_C_BOOL};
 
     MPI_Datatype symm_type;
-    mpi_error = MPI_Type_create_struct(4, lengths, displacements, types, &symm_type);
+    mpi_error =
+        MPI_Type_create_struct(4, lengths, displacements, types, &symm_type);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Type_commit(&symm_type);
@@ -133,7 +137,8 @@ void Bcast_local_pseudo(struct local_pseudo* loc_pseudo, bool alloc_mem,
 
     if (alloc_mem && (my_rank != root))
     {
-        loc_pseudo->Vloc_atomic = malloc(sizeof(ELPH_float) * loc_pseudo->ngrid);
+        loc_pseudo->Vloc_atomic =
+            malloc(sizeof(ELPH_float) * loc_pseudo->ngrid);
         CHECK_ALLOC(loc_pseudo->Vloc_atomic);
 
         loc_pseudo->r_grid = malloc(sizeof(ELPH_float) * loc_pseudo->ngrid);

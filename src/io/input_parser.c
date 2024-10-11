@@ -1,13 +1,14 @@
-#include "../common/dtypes.h"
-#include "../common/error.h"
-#include "../common/string_func.h"
-#include "inih/ini.h"
-#include "io.h"
 #include <mpi.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/string_func.h"
+#include "inih/ini.h"
+#include "io.h"
 
 #define MAX_STR_INPUT 1400
 
@@ -38,7 +39,7 @@ void init_usr_input(struct usr_input** input)
     strcpy(inp->save_dir, "SAVE");
     strcpy(inp->ph_save_dir, "ph_save");
     strcpy(inp->kernel_str, "dfpt");
-    inp->kminusq = false; // default is standard
+    inp->kminusq = false;  // default is standard
 }
 
 // function to free usr_input struct data
@@ -136,8 +137,9 @@ static int handler(void* user, const char* section, const char* name,
         }
         else
         {
-            error_msg("Invalid value for convention in the input file."
-                      " Only yambo or standard are accepted.");
+            error_msg(
+                "Invalid value for convention in the input file."
+                " Only yambo or standard are accepted.");
         }
     }
     else

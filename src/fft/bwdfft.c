@@ -1,20 +1,22 @@
 /*
 This is a routine to perform 3D FFT in parallel
 */
-#include "../common/error.h"
-#include "../elphC.h"
-#include "fft.h"
 #include <complex.h>
 #include <fftw3.h>
 #include <stdbool.h>
 #include <string.h>
 
+#include "../common/error.h"
+#include "../elphC.h"
+#include "fft.h"
+
 void invfft3D(struct ELPH_fft_plan* plan, const ND_int nsets, ELPH_cmplx* wfcG,
               ELPH_cmplx* wfcr, const bool conjugate)
 {
     /*
-    Note: if conjugate is true, then the input is conjugated and then FFT is performed!
-    please note that the input wfcG is not alterned even when conjugate is set to true.
+    Note: if conjugate is true, then the input is conjugated and then FFT is
+    performed! please note that the input wfcG is not alterned even when
+    conjugate is set to true.
 
     a) sphere to box
 
@@ -75,7 +77,7 @@ void invfft3D(struct ELPH_fft_plan* plan, const ND_int nsets, ELPH_cmplx* wfcG,
         fftw_fun(execute)(plan->bplan_z);
 
         // c) (i) transpose the data
-        bwd_transpose(plan); // nz_buf has (NGxy,Nz_loc)
+        bwd_transpose(plan);  // nz_buf has (NGxy,Nz_loc)
 
         // zero out the xy buffer and fill the fft_data buffer
         for (ND_int ixyz = 0; ixyz < fft_buf_size; ++ixyz)
@@ -102,7 +104,8 @@ void invfft3D(struct ELPH_fft_plan* plan, const ND_int nsets, ELPH_cmplx* wfcG,
                 continue;
             }
 
-            ELPH_cmplx* wfcr_tmp_y = wfcr_tmp + ix * Ny_stride; //(Gx,Ny,Nz_log)
+            ELPH_cmplx* wfcr_tmp_y =
+                wfcr_tmp + ix * Ny_stride;  //(Gx,Ny,Nz_log)
             ND_int iax = fftw_fun(alignment_of)((void*)wfcr_tmp_y);
             iax /= sizeof(ELPH_cmplx);
             fftw_fun(execute_dft)(plan->bplan_y[iax], wfcr_tmp_y, wfcr_tmp_y);

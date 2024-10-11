@@ -1,12 +1,13 @@
-#include "../common/error.h"
-#include "../common/parallel.h"
-#include "../elphC.h"
-#include "fft.h"
 #include <complex.h>
 #include <fftw3.h>
 #include <mpi.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../common/error.h"
+#include "../common/parallel.h"
+#include "../elphC.h"
+#include "fft.h"
 
 /*
 Create plan creation function for FFTs
@@ -41,8 +42,8 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
     }
 
     plan->align_len = alignment_len();
-    size_fft_data += plan->align_len; // we add alignment_len to make
-                                      // alignment_len plans for x and y
+    size_fft_data += plan->align_len;  // we add alignment_len to make
+                                       // alignment_len plans for x and y
 
     // alloc memory for fft_data and nz_buf;
     plan->fft_data = fftw_fun(malloc)(size_fft_data * sizeof(ELPH_cmplx));
@@ -52,9 +53,9 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
     CHECK_ALLOC(plan->nz_buf);
 
     memset(plan->fft_data, 0,
-           size_fft_data * sizeof(ELPH_cmplx)); // 0 the buffer
+           size_fft_data * sizeof(ELPH_cmplx));  // 0 the buffer
     memset(plan->nz_buf, 0,
-           size_fft_data * sizeof(ELPH_cmplx)); // 0 the buffer
+           size_fft_data * sizeof(ELPH_cmplx));  // 0 the buffer
 
     plan->comm = comm;
     plan->gvecs = gvecs;
@@ -73,7 +74,7 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
         error_msg("Wrong xy local dimensions to planner.");
     }
 
-    int* Gxy_loc = malloc(sizeof(int) * 2 * nGxyloc); // local gxy (nGxyloc,2)
+    int* Gxy_loc = malloc(sizeof(int) * 2 * nGxyloc);  // local gxy (nGxyloc,2)
     CHECK_ALLOC(Gxy_loc);
 
     plan->Gxy_total = malloc(sizeof(int) * 2 * plan->nGxy);
@@ -125,7 +126,8 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
             }
 
             // sanity checks
-            if (Gxy_loc[2 * xycount] >= fft_dims[0] || Gxy_loc[2 * xycount + 1] >= fft_dims[1])
+            if (Gxy_loc[2 * xycount] >= fft_dims[0] ||
+                Gxy_loc[2 * xycount + 1] >= fft_dims[1])
             {
                 error_msg("gvec > Nfft dim");
             }
@@ -152,11 +154,13 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
                               MPI_C_BOOL, MPI_LOR, comm);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Allgather(&xycount, 1, MPI_INT, gxy_counts, 1, MPI_INT, comm);
+    mpi_error =
+        MPI_Allgather(&xycount, 1, MPI_INT, gxy_counts, 1, MPI_INT, comm);
     MPI_error_msg(mpi_error);
 
     int nzloc_temp = nzloc;
-    mpi_error = MPI_Allgather(&nzloc_temp, 1, MPI_INT, z_counts, 1, MPI_INT, comm);
+    mpi_error =
+        MPI_Allgather(&nzloc_temp, 1, MPI_INT, z_counts, 1, MPI_INT, comm);
     MPI_error_msg(mpi_error);
 
     int dispdisp_temp = 0;
@@ -193,17 +197,21 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
     // create plan buffers
     // fftw_fun(plan) expands to fftwf_plan or fftw_plan
 
-    plan->fplan_x = malloc(sizeof(fftw_generic_plan) * 5 * plan->align_len); // (naligment plans) for x
+    plan->fplan_x = malloc(sizeof(fftw_generic_plan) * 5 *
+                           plan->align_len);  // (naligment plans) for x
     CHECK_ALLOC(plan->fplan_x);
 
-    plan->fplan_y = plan->fplan_x + plan->align_len; // (naligment plans) for y
+    plan->fplan_y = plan->fplan_x + plan->align_len;  // (naligment plans) for y
 
     /* backward plans G->r */
-    plan->bplan_x = plan->fplan_x + 2 * plan->align_len; // (naligment plans) for x
-    plan->bplan_y = plan->fplan_x + 3 * plan->align_len; // (naligment plans) for y
+    plan->bplan_x =
+        plan->fplan_x + 2 * plan->align_len;  // (naligment plans) for x
+    plan->bplan_y =
+        plan->fplan_x + 3 * plan->align_len;  // (naligment plans) for y
 
     /* convolution plan x */
-    plan->cplan_x = plan->fplan_x + 4 * plan->align_len; // (naligment plans) for x
+    plan->cplan_x =
+        plan->fplan_x + 4 * plan->align_len;  // (naligment plans) for x
 
     // i) create forward plan and bwd plan along X
     for (ND_int i = 0; i < plan->align_len; ++i)
@@ -266,7 +274,7 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
     // iii) create a single z plan.
     // forward plan->
     plan->fplan_z = fftw_fun(plan_many_dft)(
-        1, (int[1]) { fft_dims[2] }, nGxyloc, plan->nz_buf, NULL, 1, fft_dims[2],
+        1, (int[1]){fft_dims[2]}, nGxyloc, plan->nz_buf, NULL, 1, fft_dims[2],
         plan->nz_buf, NULL, 1, fft_dims[2], FFTW_FORWARD, fft_flags);
     if (plan->fplan_z == NULL)
     {
@@ -275,7 +283,7 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
 
     // backward plan
     plan->bplan_z = fftw_fun(plan_many_dft)(
-        1, (int[1]) { fft_dims[2] }, nGxyloc, plan->nz_buf, NULL, 1, fft_dims[2],
+        1, (int[1]){fft_dims[2]}, nGxyloc, plan->nz_buf, NULL, 1, fft_dims[2],
         plan->nz_buf, NULL, 1, fft_dims[2], FFTW_BACKWARD, fft_flags);
     if (plan->bplan_z == NULL)
     {
@@ -293,7 +301,7 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
         ia /= sizeof(ELPH_cmplx);
         // (Nx, k, Nz_loc)
         plan->cplan_x[ia] = fftw_fun(plan_many_dft)(
-            1, (int[1]) { fft_dims[0] }, nzloc, tmp_pln_ptr, NULL,
+            1, (int[1]){fft_dims[0]}, nzloc, tmp_pln_ptr, NULL,
             fft_dims[1] * nzloc, 1, tmp_pln_ptr, NULL, fft_dims[1] * nzloc, 1,
             FFTW_FORWARD, fft_flags);
 

@@ -1,8 +1,9 @@
+#include <math.h>
+
 #include "../common/constants.h"
 #include "../common/numerical_func.h"
 #include "../elphC.h"
 #include "dvloc.h"
-#include <math.h>
 
 /*Function to compute local short range bare potential of Each atom placed at
  * origin */
@@ -45,7 +46,8 @@ ELPH_float Vloc_Gspace(ELPH_float* work_arr, const char cutoff,
         }
         else
         {
-            fac *= (radius * Vloc_atomic[imesh] + ELPH_e2 * Zval * erf(radius * sqrt_eta));
+            fac *= (radius * Vloc_atomic[imesh] +
+                    ELPH_e2 * Zval * erf(radius * sqrt_eta));
         }
         work_arr[imesh] = fac;
     }

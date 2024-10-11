@@ -34,25 +34,25 @@ extern "C"
 {
 #endif
 
-#define EZXML_BUFSIZE 1024 // size of internal memory buffers
-#define EZXML_NAMEM 0x80 // name is malloced
-#define EZXML_TXTM 0x40 // txt is malloced
-#define EZXML_DUP 0x20 // attribute name and value are strduped
+#define EZXML_BUFSIZE 1024  // size of internal memory buffers
+#define EZXML_NAMEM 0x80    // name is malloced
+#define EZXML_TXTM 0x40     // txt is malloced
+#define EZXML_DUP 0x20      // attribute name and value are strduped
 
     typedef struct ezxml* ezxml_t;
     struct ezxml
     {
-        char* name; // tag name
-        char** attr; // tag attributes { name, value, name, value, ... NULL }
-        char* txt; // tag character content, empty string if none
-        size_t off; // tag offset from start of parent tag character content
-        ezxml_t next; // next tag with same name in this section at this depth
+        char* name;    // tag name
+        char** attr;   // tag attributes { name, value, name, value, ... NULL }
+        char* txt;     // tag character content, empty string if none
+        size_t off;    // tag offset from start of parent tag character content
+        ezxml_t next;  // next tag with same name in this section at this depth
         ezxml_t
-            sibling; // next tag with different name in same section and depth
-        ezxml_t ordered; // next tag, same section and depth, in original order
-        ezxml_t child; // head of sub tag list, NULL if none
-        ezxml_t parent; // parent tag, NULL if current tag is root tag
-        short flags; // additional information
+            sibling;  // next tag with different name in same section and depth
+        ezxml_t ordered;  // next tag, same section and depth, in original order
+        ezxml_t child;    // head of sub tag list, NULL if none
+        ezxml_t parent;   // parent tag, NULL if current tag is root tag
+        short flags;      // additional information
     };
 
     // Given a string of xml data and its length, parses it and creates an ezxml
@@ -158,4 +158,4 @@ extern "C"
 }
 #endif
 
-#endif // _EZXML_H
+#endif  // _EZXML_H

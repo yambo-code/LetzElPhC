@@ -2,13 +2,14 @@
 This file contains function that finds the index of S^-1 in the group
 */
 
+#include <math.h>
+#include <stdbool.h>
+
 #include "../common/constants.h"
 #include "../common/error.h"
 #include "../common/numerical_func.h"
 #include "../elphC.h"
 #include "symmetries.h"
-#include <math.h>
-#include <stdbool.h>
 
 ND_int find_inv_symm_idx(ND_int nsym, const ELPH_float* Smat,
                          const ELPH_float* point_group, const bool trans)
@@ -18,7 +19,8 @@ ND_int find_inv_symm_idx(ND_int nsym, const ELPH_float* Smat,
     // else Smat@point_group is compared to Identity
     // return -1 if idx not found
     // **** Warning ****
-    // NM : Remove this function. The inverse of time reversal symmetry does not make sense.
+    // NM : Remove this function. The inverse of time reversal symmetry does not
+    // make sense.
 
     ND_int idx = -1;
 
