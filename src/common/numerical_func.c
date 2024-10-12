@@ -165,18 +165,12 @@ ELPH_float simpson(const ELPH_float* restrict func_vals,
     ELPH_float sum = func_vals[0] * dx[0];
 
 /* Odd terms*/
-#ifdef ELPH_OMP_PARALLEL_BUILD
-#pragma omp simd reduction(+ : sum)
-#endif
     for (ND_int i = 1; i < npts - 1; i += 2)
     {
         sum += 4.0 * func_vals[i] * dx[i];
     }
 
 /* even terms*/
-#ifdef ELPH_OMP_PARALLEL_BUILD
-#pragma omp simd reduction(+ : sum)
-#endif
     for (ND_int i = 2; i < npts - 1; i += 2)
     {
         sum += 2.0 * func_vals[i] * dx[i];
@@ -224,16 +218,7 @@ static ELPH_float factorial(ND_int n)
     {
         return 0.0;  // error
     }
-    if (n == 0 || n == 1)
-    {
-        return 1.0;
-    }
-    ELPH_float factorial = 1.0;
-    for (ND_int i = 2; i <= n; ++i)
-    {
-        factorial *= i;
-    }
-    return factorial;
+    return tgamma(n+1);
 }
 
 /* Better to inline them ? */
