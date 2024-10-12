@@ -164,13 +164,13 @@ ELPH_float simpson(const ELPH_float* restrict func_vals,
 
     ELPH_float sum = func_vals[0] * dx[0];
 
-/* Odd terms*/
+    /* Odd terms*/
     for (ND_int i = 1; i < npts - 1; i += 2)
     {
         sum += 4.0 * func_vals[i] * dx[i];
     }
 
-/* even terms*/
+    /* even terms*/
     for (ND_int i = 2; i < npts - 1; i += 2)
     {
         sum += 2.0 * func_vals[i] * dx[i];
@@ -218,7 +218,7 @@ static ELPH_float factorial(ND_int n)
     {
         return 0.0;  // error
     }
-    return tgamma(n+1);
+    return tgamma(n + 1);
 }
 
 /* Better to inline them ? */
