@@ -125,8 +125,8 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
                     if test_pass : in_passed += 1
                     else :  in_failed += 1 
 
-            print('=> %10s  |  %10s : Total = %4d, Passed = %4d, Failed = %4d'\
-                %(test_name, i.strip(),in_total,in_passed,in_failed))
+            print('=> %10s  |  %10s : [%d/%d]'\
+                %(test_name, i.strip(),in_passed,in_total))
             
             ntotal_tests += in_total
             nfailed_tests += in_failed
@@ -170,9 +170,7 @@ def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
     print('*'*20 + ' Summary ' + '*'*21)
     test_results = np.array(test_results)
     sum_tests = np.sum(test_results,axis=0)
-    print('## Total tests     : %8d' %(sum_tests[0]))
-    print('## Total passed    : %8d' %(sum_tests[1]))
-    print('## Total failed    : %8d' %(sum_tests[2]))
+    print('## [Total : %d], [Passed : %d], [Failed : %d]' %(sum_tests[0],sum_tests[1],sum_tests[2]))
     #print('*'*50)
     print('*'*17 + " Testing Ended " + 18*'*')
     #print('*'*50)
