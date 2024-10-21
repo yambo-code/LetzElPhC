@@ -8,7 +8,7 @@ from check_data import check_dmat_files, check_elph_files
 from functools import reduce
 from netCDF4 import Dataset
 import os
-
+import numpy as np
 
 
 
@@ -76,7 +76,7 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
     os.system('rm ndb.elph > /dev/null 2>&1')
     os.system('rm ndb.Dmats > /dev/null 2>&1')
 
-    print('=> Running test job : %s' %(test_name))
+    #print('=> Running test job : %s' %(test_name))
     for i in sections:
         if i.strip() != 'DEFAULT':
             in_total = 0
@@ -125,21 +125,55 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
                     if test_pass : in_passed += 1
                     else :  in_failed += 1 
 
-            print('| %10s results : Total = %8d, Passed = %8d, Failed = %8d |'\
-                %(i.strip(),in_total,in_passed,in_failed))
+            print('=> %10s  |  %10s : Total = %4d, Passed = %4d, Failed = %4d'\
+                %(test_name, i.strip(),in_total,in_passed,in_failed))
             
             ntotal_tests += in_total
             nfailed_tests += in_failed
             npassed_tests += in_passed
     
-    print('## ************* Job %s Results *************' %(test_name))
-    print('## Number of tests ran    : %8d' %(ntotal_tests))
-    print('## Number of passed tests : %8d' %(npassed_tests))
-    print('## Number of failed tests : %8d' %(nfailed_tests))
+    # print('## ************* Job %s Results *************' %(test_name))
+    # print('## Number of tests ran    : %8d' %(ntotal_tests))
+    # print('## Number of passed tests : %8d' %(npassed_tests))
+    # print('## Number of failed tests : %8d' %(nfailed_tests))
     return [ntotal_tests,npassed_tests,nfailed_tests]
 
 
 
 
+def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
+    ## this is the main driver for the test suite
+    ## We give list of folder names (relative paths are okay) of the tests
+    cwd = os.getcwd()
+    test_results = []
+    print('*'*50)
+    print('*'*14 + ' LetzElPhC Test Suite ' + '*'*14)
+    # print('*'*50)
+    #print('')
+    print('='*50)
+    print('Starting tests ...')
+    print('NCPUS  : %d'%(ncpus))
+    print('MPIRUN : %s'%(mpirun_cmd))
+    print('LELPHC : %s'%(lelphc_cmd))
+    print('='*50)
+    for ifolder in folders:
+        folder_name = ifolder[0]
+        test_file_name = ifolder[1]
+        test_path = os.path.join(cwd, folder_name.strip())
+        os.chdir(test_path)
+        res = run_test(test_file_name, lelphc_cmd=lelphc_cmd, mpirun_cmd=mpirun_cmd, ncpus = ncpus, test_name=folder_name)
+        test_results.append(res)
+        os.chdir(cwd)
 
-run_test('test.ini', lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4, test_name='Sample')
+    ## print summery
+    print('='*50)
+    print('*'*20 + ' Summary ' + '*'*21)
+    test_results = np.array(test_results)
+    sum_tests = np.sum(test_results,axis=0)
+    print('## Total tests     : %8d' %(sum_tests[0]))
+    print('## Total passed    : %8d' %(sum_tests[1]))
+    print('## Total failed    : %8d' %(sum_tests[2]))
+    #print('*'*50)
+    print('*'*17 + " Testing Ended " + 18*'*')
+    #print('*'*50)
+    
