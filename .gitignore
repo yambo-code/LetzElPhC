@@ -1,5 +1,6 @@
 temp
 kb_temp 
+__pycache__
 fcoeff.py
 *.zip
 .DS_Store
