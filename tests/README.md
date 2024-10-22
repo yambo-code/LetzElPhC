@@ -1,12 +1,13 @@
 ## How to run the test suite?
-The test suite is written in ```python```. To run the test suite, the following modules are required: <br/>
+The test suite is written in ```python3```. To run the test suite, the following modules are required: <br/>
 1) Numpy <br/>
 2) Scipy <br/>
 3) netCDF4 <br/>
 
 ```console
 python3 run_tests.py --ncpus=1 --mpirun=mpirun --lelphc=./lelphc
-python3 run_tests.py --help ## This provides information about the available options
+## For more information about the available options use the below command
+python3 run_tests.py --help 
 ``` 
 
 ## Adding new tests to the test suite
