@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-from runner import test_driver
+from driver import test_driver
 import argparse
-
-## Add your tests here [foldername, .ini_filename]
-tests = (
-[
-    ['.', 'test.ini'],
-])
+from test_list import tests
 
 
 ### Test suite runs from here 
