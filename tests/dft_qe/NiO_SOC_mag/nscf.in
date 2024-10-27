@@ -10,7 +10,7 @@
   verbosity = 'high'
 /
 &SYSTEM
-  ecutwfc = 100 
+  ecutwfc = 50 
   ibrav = 0
   nat = 4
   ntyp = 3
@@ -25,9 +25,7 @@
   force_symmorphic = .true.
 /
 &ELECTRONS
-  conv_thr =   1.000000000d-12
   electron_maxstep = 100000
-  !mixing_beta =   1.0000000000d-01
 /
 &IONS
 /
@@ -49,4 +47,4 @@ Ni2              0.5000000000        0.5000000000        0.5000000000
 O               -0.2500000957       -0.2500000957       -0.2500000957
 O                0.2500000957        0.2500000957        0.2500000957
 K_POINTS automatic
-4 4 4 0 0 0
+2 2 2 0 0 0

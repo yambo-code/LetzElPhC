@@ -4,7 +4,7 @@ phonons on a grid
   nq2 = 3, 
   nq3 = 2, 
   fildyn = 'hBN.dyn', 
-  tr2_ph = 1e-16, 
+  tr2_ph = 1e-14, 
   prefix = 'hBN', 
   trans = .true., 
   electron_phonon = 'dvscf', 

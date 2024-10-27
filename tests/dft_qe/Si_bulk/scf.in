@@ -10,12 +10,12 @@
                ibrav = 0
                  nat = 2
                 ntyp = 1
-             ecutwfc = 40.0
+             ecutwfc = 20.0
  	     celldm(1) = 10.3346008116 
              occupations = 'fixed'
 /
 &ELECTRONS
-  conv_thr =   1.0000000000d-12
+  conv_thr =   1.0000000000d-8
   electron_maxstep = 1000
 /&end
 &IONS
@@ -34,5 +34,5 @@ ATOMIC_POSITIONS (crystal)
 Si               0.0000000000        0.0000000000        0.0000000000
 Si              -0.2500000000       -0.2500000000       -0.2500000000
 K_POINTS automatic
-    8  8  8  0  0  0
+    4  4  4  0  0  0
 

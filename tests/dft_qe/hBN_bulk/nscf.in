@@ -7,7 +7,7 @@
   nstep = 20000
 /&end
 &system
-  ecutwfc = 80 
+  ecutwfc = 60 
   ibrav = 0
   nat = 4
   ntyp = 2
@@ -16,7 +16,6 @@
   force_symmorphic = .true.
 /&end
 &electrons
-            conv_thr = 1e-12
 /&end
 &IONS
 /

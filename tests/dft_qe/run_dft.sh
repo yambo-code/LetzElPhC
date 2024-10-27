@@ -25,6 +25,7 @@ PW=pw.x
 PH=ph.x
 P2Y=p2y
 YAMBO=yambo
+LELPHC=lelphc
 
 
 NCPUS=$SLURM_NTASKS
@@ -45,8 +46,8 @@ test_systems=(\
 for test_str in ${test_systems[@]}
 do
     cd "$test_str"
-    rm -rf scf phonons nscf nscf_wo
-    mkdir scf phonons nscf nscf_wo
+    rm -rf scf phonons nscf 
+    mkdir scf phonons nscf 
     cp scf.in scf
     cd scf
 
@@ -58,7 +59,8 @@ do
     cp -r ../scf/*.xml .
 
     ## phonons
-    $MPI_CMD -n $NCPUS $PH  < ph.in | tee ph.out
+    $MPI_CMD -n $NCPUS $PH  <ph.in | tee ph.out
+    $MPI_CMD -n $NCPUS $LELPHC -pp --code=qe -F ph.in 
     rm *wfc*
     cd ../nscf
     cp ../nscf.in .
@@ -69,41 +71,12 @@ do
     $MPI_CMD -n $NCPUS $PW  < nscf.in | tee nscf.out
     rm *wfc*
     cd *.save
-    cp ../../dipoles.in .
     $MPI_CMD -n 1 $P2Y
     $MPI_CMD -n 1 $YAMBO
-    $MPI_CMD -n $NCPUS $YAMBO -F dipoles.in # dipoles
-    ### elph for symmetric 
-    cd ..
-    cp ../elph.in .
-    cp -r ../phonons/_ph* ../phonons/*.dyn* .
-    #$MPI_CMD -n $NCPUS $PH  < elph.in | tee elph.out
-    #cd elph_dir
-    #cp ../../../convert_scripts/qe2yambo .
-    #echo "s.dbph_000001" | ./qe2yambo
-    #cd ..
-
-    cd ../nscf_wo
-    cp ../nscf_wo.in .
-    cp -r ../scf/*.save .
-    cp -r ../scf/*.xml .
-
-    ##no_sym
-    $MPI_CMD -n $NCPUS $PW < nscf_wo.in | tee nscf.out
-    rm *wfc*
-    cd *.save
-    cp ../../dipoles.in .
-    $MPI_CMD -n 1 $P2Y
-    $MPI_CMD -n 1 $YAMBO
-    $MPI_CMD -n $NCPUS $YAMBO -F dipoles.in
-    cd ..
-    cp ../elph.in .
-    cp -r ../phonons/_ph* ../phonons/*.dyn* .
-    #$MPI_CMD -n $NCPUS $PH  < elph.in | tee elph.out
-    #cd elph_dir
-    #cp ../../../convert_scripts/qe2yambo .
-    #echo "s.dbph_000001" | ./qe2yambo
-    #cd ..
     cd ../..
+    cp -r nscf/*.save/SAVE .
+    cp -r phonons/ph_save .
+    rm -rf scf phonons nscf
+    cd ..
 done
 
