@@ -23,3 +23,4 @@ examples/qe/silicon/*/*
 !examples/qe/silicon/elph/*.in
 tests/dft_qe/*/*
 !tests/dft_qe/*/*.in
+!tests/dft_qe/*/*.ini
