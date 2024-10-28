@@ -21,6 +21,7 @@ MPI_CMD=mpirun
 export SLURM_NTASKS=4
 
 #MPI_CMD=srun
+PYTHON=python3
 PW=pw.x
 PH=ph.x
 P2Y=p2y
@@ -77,6 +78,12 @@ do
     cp -r nscf/*.save/SAVE .
     cp -r phonons/ph_save .
     rm -rf scf phonons nscf
+
+    ## Convert to portable databases
+    # 1) COnvert ph_save 
+    $PYTHON ../../convert_data.py --to_npy=ph_save 
+    # 2) convert SAVE to float
+    $PYTHON ../../convert_data.py --to_float=SAVE 
     cd ..
 done
 

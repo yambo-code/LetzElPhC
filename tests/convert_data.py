@@ -9,7 +9,6 @@
 
 import numpy as np
 from netCDF4 import Dataset
-import netCDF4 as nc
 import os
 import glob
 
