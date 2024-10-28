@@ -7,7 +7,7 @@
   nstep = 20000
 /&end
 &system
-  ecutwfc = 60 
+  ecutwfc = 80 
   ibrav = 0
   nat = 4
   ntyp = 2

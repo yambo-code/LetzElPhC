@@ -10,7 +10,7 @@
   verbosity = 'high'
 /
 &SYSTEM
-  ecutwfc = 50 
+  ecutwfc = 60 
   ibrav = 0
   nat = 4
   ntyp = 3
