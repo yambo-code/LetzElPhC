@@ -79,6 +79,11 @@ do
     cp -r phonons/ph_save .
     rm -rf scf phonons nscf
 
+    ## run letzelphc
+    $MPI_CMD -n $NCPUS $LELPHC --code=qe -F elph.in
+    mv ndb.elph ndb.elph_ref_test
+    mv ndb.Dmats ndb.Dmats_ref_test
+
     ## Convert to portable databases
     # 1) COnvert ph_save 
     $PYTHON ../../convert_data.py --to_npy=ph_save 
@@ -86,4 +91,9 @@ do
     $PYTHON ../../convert_data.py --to_float=SAVE 
     cd ..
 done
+
+# create a tarball
+tar -czvf save_data.tar.gz */SAVE */ph_save */ndb.elph_ref_test */ndb.Dmats_ref_test
+
+
 
