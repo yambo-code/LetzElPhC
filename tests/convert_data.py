@@ -51,20 +51,22 @@ def generate_binary_ph_save(ph_save_dir,remove=False):
     ## if remove = True, will remove  numpy dvscfs files
     cwd = os.getcwd()
     os.chdir(os.path.join(cwd, ph_save_dir))
-    dvscfs_names = glob.glob('npy_dvscf*')
+    npy_dvscfs = glob.glob('npy_dvscf*')
+    bin_dvscfs = glob.glob('dvscf*')
 
-    for idvscf in dvscfs_names:
-        npy2binary(idvscf.strip().replace('npy_','').replace('.npy','').strip())
+    if (len(npy_dvscfs) != 0 and len(bin_dvscfs) == 0):
+        for idvscf in npy_dvscfs:
+            npy2binary(idvscf.strip().replace('npy_','').replace('.npy','').strip())
 
-    if remove:
-        os.system('rm npy_dvscf* > /dev/null 2>&1')
-    
+        if remove:
+            os.system('rm npy_dvscf* > /dev/null 2>&1')
     os.chdir(cwd)
 
 
 
 def nc_convert_types(ncfile, dtype_in, dtype_out,replace):
     ## changes all variables from float to double in a given netcdf file
+    ## dtype_in is list
     ## Adapted from https://stackoverflow.com/a/49592545
     out_file_tmp = ncfile.strip()+'_tmp'
     with Dataset(ncfile) as src, Dataset(out_file_tmp, "w") as dst:
@@ -75,7 +77,7 @@ def nc_convert_types(ncfile, dtype_in, dtype_out,replace):
                 name, (len(dimension) if not dimension.isunlimited() else None))
         # copy all file data except for the excluded
         for name, variable in src.variables.items():
-            if variable.datatype == dtype_in:
+            if variable.datatype in dtype_in:
                 x = dst.createVariable(name, dtype_out, variable.dimensions)
             else :
                 x = dst.createVariable(name, variable.datatype, variable.dimensions)
@@ -92,8 +94,21 @@ def convert_save_dbs(save_dir, dtype_in, dtype_out,replace=True):
     cwd = os.getcwd()
     os.chdir(os.path.join(cwd, save_dir))
     save_dbs = glob.glob('ns.*') + glob.glob('ndb.*')
-    for idb in save_dbs:
-        nc_convert_types(idb, dtype_in, dtype_out, replace)
+
+    is_save_in_dtype_out = False
+
+    ## check if save is in given dtype
+    ns_db_test = Dataset('ns.db1','r')
+
+    if ns_db_test['EIGENVALUES'].datatype == dtype_out:
+        is_save_in_dtype_out = True
+    
+    ns_db_test.close()
+
+    if not is_save_in_dtype_out:
+        for idb in save_dbs:
+            nc_convert_types(idb, dtype_in, dtype_out, replace)
+    
     os.chdir(cwd)
 
 
@@ -129,7 +144,7 @@ if __name__ == "__main__":
     elif args['to_npy'] != '':
         generate_portable_ph_save(args['to_npy'].strip(),remove=True)
     elif args['to_double'] != '':
-        convert_save_dbs(args['to_double'].strip(), np.single, np.double,replace=True)
+        convert_save_dbs(args['to_double'].strip(), [np.double, np.single], np.double,replace=True)
     elif args['to_float'] != '':
-        convert_save_dbs(args['to_float'].strip(), np.double, np.single,replace=True)
+        convert_save_dbs(args['to_float'].strip(), [np.double, np.single], np.single,replace=True)
 

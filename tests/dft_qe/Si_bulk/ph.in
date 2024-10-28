@@ -2,7 +2,7 @@ phonons on a grid
  &inputph 
   nq1 = 4, 
   nq2 = 4, 
-  nq3 = 2, 
+  nq3 = 4, 
   fildyn = 'si.dyn', 
   tr2_ph = 1e-14, 
   prefix = 'si', 

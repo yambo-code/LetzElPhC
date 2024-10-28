@@ -16,9 +16,9 @@ void ELPH_print_version(void)
     fprintf(stdout, "Build details :\n");
 // print information about the precession
 #if defined(COMPILE_ELPH_DOUBLE)
-    fprintf(stdout, "PRECESSION : Double\n");
+    fprintf(stdout, "Precision : Double\n");
 #else
-    fprintf(stdout, "PRECESSION : Single\n");
+    fprintf(stdout, "Precision : Single\n");
 #endif
 // print information about the openmp
 #if defined(ELPH_OMP_PARALLEL_BUILD)

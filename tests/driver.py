@@ -9,8 +9,9 @@ from functools import reduce
 from netCDF4 import Dataset
 import os
 import numpy as np
-
-
+import subprocess
+from convert_data import convert_save_dbs, generate_binary_ph_save
+import glob
 
 def make_inp_file(dict_list,qpools=1,kpools=1):
     # pass the section to this function to create a letzelph input file
@@ -50,7 +51,16 @@ def get_triplet(n, nq_max,nk_max):
     return triplet
 
 
-def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test_name=''):
+def is_letzelphc_double_precision(lelphc_cmd='./lelphc'):
+    lelphc_version_out = subprocess.run([lelphc_cmd, '--version'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+    if "Double" in lelphc_version_out:
+        return True
+    else :
+        False
+
+
+def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test_name='', \
+            dtype_in=[np.double, np.single], dtype_out=np.single):
     # return [total_tests, total_passes, total_fails]
     config = ConfigParser()
     config.read(ini_file)
@@ -106,6 +116,25 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
                 print("[Warning] Issue with Reference file : skipping the test.")
                 continue
             
+            try :
+                if 'ph_save_dir' in config[i]:
+                    generate_binary_ph_save(config[i]['ph_save_dir'])
+                else :
+                    generate_binary_ph_save('ph_save')
+            except:
+                print("Warning : Issue with generating binary dvscfs from .npy files.")
+                continue
+
+            try :
+                if 'save_dir' in config[i]:
+                    convert_save_dbs(config[i]['save_dir'], dtype_in, dtype_out)
+                else :
+                    convert_save_dbs('SAVE', dtype_in, dtype_out)
+            except:
+                print("Warning : Issue with converting SAVE directory.")
+                continue
+            
+
             for icpu in ncpus_set:
                 processor_sets = get_triplet(icpu,nqpool_max,nkpool_max)
                 for iset in processor_sets:
@@ -141,6 +170,7 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
 
 
 
+
 def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
     ## this is the main driver for the test suite
     ## We give list of folder names (relative paths are okay) of the tests
@@ -152,16 +182,27 @@ def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
     #print('')
     print('='*50)
     print('Starting tests ...')
-    print('NCPUS  : %d'%(ncpus))
-    print('MPIRUN : %s'%(mpirun_cmd))
-    print('LELPHC : %s'%(lelphc_cmd))
+    print('NCPUS     : %d'%(ncpus))
+    print('MPIRUN    : %s'%(mpirun_cmd))
+    print('LELPHC    : %s'%(lelphc_cmd))
+
+    is_double_precision = is_letzelphc_double_precision(lelphc_cmd)
+
+    dtype_out = np.single
+    if is_double_precision:
+        print('Precision : Double')
+        dtype_out = np.double
+    else :
+        print('Precision : Single')
+
     print('='*50)
     for ifolder in folders:
         folder_name = ifolder[0]
         test_file_name = ifolder[1]
         test_path = os.path.join(cwd, folder_name.strip())
         os.chdir(test_path)
-        res = run_test(test_file_name, lelphc_cmd=lelphc_cmd, mpirun_cmd=mpirun_cmd, ncpus = ncpus, test_name=folder_name)
+        res = run_test(test_file_name, lelphc_cmd=lelphc_cmd, mpirun_cmd=mpirun_cmd, \
+            ncpus = ncpus, test_name=folder_name, dtype_out=dtype_out)
         test_results.append(res)
         os.chdir(cwd)
 
