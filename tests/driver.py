@@ -42,12 +42,8 @@ def get_triplet(n, nq_max,nk_max):
         ifac_factors = find_factors(ifac)
         for jfac in ifac_factors:
             kfac = ifac//jfac
-            if ifac <= nq_max and jfac <=nk_max :
-                triplet.append([ifac,jfac])
-            if ifac == jfac:
-                continue
-            if jfac <= nq_max and ifac <=nk_max:
-                triplet.append([jfac,ifac])
+            if jfac <= nq_max and  kfac<=nk_max :
+                triplet.append([jfac,kfac])
     return triplet
 
 
@@ -154,7 +150,7 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
                     if test_pass : in_passed += 1
                     else :  in_failed += 1 
 
-            print('=> %10s  |  %10s : [%d/%d]'\
+            print('=> %25s  |  %10s   :   [%5d/%5d]'\
                 %(test_name, i.strip(),in_passed,in_total))
             
             ntotal_tests += in_total
@@ -211,7 +207,7 @@ def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
     print('*'*20 + ' Summary ' + '*'*21)
     test_results = np.array(test_results)
     sum_tests = np.sum(test_results,axis=0)
-    print('## [Total : %d], [Passed : %d], [Failed : %d]' %(sum_tests[0],sum_tests[1],sum_tests[2]))
+    print('## [Total : %5d], [Passed : %5d], [Failed : %5d]' %(sum_tests[0],sum_tests[1],sum_tests[2]))
     #print('*'*50)
     print('*'*17 + " Testing Ended " + 18*'*')
     #print('*'*50)

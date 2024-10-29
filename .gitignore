@@ -24,3 +24,5 @@ examples/qe/silicon/*/*
 tests/dft_qe/*/*
 !tests/dft_qe/*/*.in
 !tests/dft_qe/*/*.ini
+__pycache__
+

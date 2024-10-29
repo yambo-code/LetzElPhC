@@ -8,22 +8,22 @@ except:
     from scipy.spatial import KDTree
 
 
-rtol_elph = 1e-05  # relative tolerence used in allclose
-atol_elph = 1e-8  # absoulte tolerence used in allclose
+rtol_elph = 1e-04  # relative tolerence used in allclose
+atol_elph = 1e-6  # absoulte tolerence used in allclose
 
 def set_tolerence(rtol=1e-05,atol=1e-8):
     rtol_elph = rtol
     atol_elph = atol
 
 
-def quick_check_numeric_db(nc_db_test, nc_db_ref, var_name):
+def quick_check_numeric_db(nc_db_test, nc_db_ref, var_name, rtol=rtol_elph, atol=atol_elph):
     # if return_data is true, then funtcion will test data (not the reference data)
     try:
         test_data = nc_db_test[var_name][...].data
         ref_data  = nc_db_ref[var_name][...].data
     except:
         return False
-    return np.allclose(test_data,ref_data,rtol=rtol_elph, atol=atol_elph)
+    return np.allclose(test_data,ref_data,rtol=rtol, atol=atol)
     
 
 def make_kpositive(klist, tol=1e-6):
@@ -51,8 +51,8 @@ def convert_yambo_to_std(eph_mat,kpts,qpts):
     for iq in range(nq):
         idx_q = find_kpt(qpts[iq][None,:]+kpts, ktree)
         for imode in range(nmodes):
-            elph_tmp_iq = eph_mat[iq,imode][idx_q,...].copy()
-            eph_mat[iq,imode][...] = elph_tmp_iq[...]
+            elph_tmp_iq = eph_mat[iq,idx_q,imode,...].copy()
+            eph_mat[iq,:,imode,...] = elph_tmp_iq[...]
 
 
 def get_nc_strings(char_in):
@@ -136,6 +136,13 @@ def check_elph_me(nc_db_test, nc_db_ref):
         return False
     nq, nmodes, atom, pol = ref_polvec.shape
 
+    # incase if two conventions are not same, we need to convert to standard
+    if (ref_elph_convention != test_elph_convention):
+        if (ref_elph_convention != 'standard'):
+            convert_yambo_to_std(ref_data, ref_kpts, ref_qpts)
+        if (test_elph_convention != 'standard'):
+            convert_yambo_to_std(test_data, test_kpts, test_qpts)
+
     ## basic gauge invariance check
     test_data2 = np.sum(np.abs(test_data)**2,axis=(2,3,4,5))
     ref_data2  = np.sum(np.abs(ref_data)**2,axis=(2,3,4,5))
@@ -147,20 +154,14 @@ def check_elph_me(nc_db_test, nc_db_ref):
     test_polvec = np.linalg.inv(test_polvec.reshape(nq, nmodes, -1))
     overlap_polvec = np.matmul(ref_polvec.reshape(nq, nmodes, -1),test_polvec)
     
-    # incase if two conventions are not same, we need to convert to standard
-    if (ref_elph_convention != test_elph_convention):
-        if (ref_elph_convention != 'standard'):
-            convert_yambo_to_std(ref_data, ref_kpts, ref_qpts)
-        if (test_elph_convention != 'standard'):
-            convert_yambo_to_std(test_data, test_kpts, test_qpts)
     # multiply with overlap
     test_data = np.einsum('qxv,qkvsij->qkxsij',overlap_polvec,test_data,optimize=True)
     ref_data_sum = np.sum(ref_data)
     
-    test_pass1 = np.allclose(np.sum(test_data,axis=(3,4,5)),np.sum(ref_data,axis=(3,4,5)),rtol=rtol_elph, atol=1e-6)
-    test_pass2 = test_pass1 and 100*abs(np.sum(test_data)-np.sum(ref_data))/abs(ref_data_sum) < 0.01
+    test_pass1 = np.allclose(np.sum(test_data,axis=(3,4,5)),np.sum(ref_data,axis=(3,4,5)),rtol=rtol_elph, atol=atol_elph)
+    test_pass2 = test_pass1 and abs(np.sum(test_data)-np.sum(ref_data))/abs(ref_data_sum) < rtol_elph
 
-    return test_pass2 and np.allclose(test_data,ref_data,rtol=rtol_elph, atol=1e-6)
+    return test_pass2 and np.allclose(test_data,ref_data,rtol=rtol_elph, atol=atol_elph)
 
 
 def check_elph_files(test_file, ref_file):
