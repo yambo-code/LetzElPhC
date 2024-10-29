@@ -13,7 +13,7 @@ HPC @ Uni.lu (Computing resources)
 # TODO  
 1) Support XML format for dynamical matrices
 2) Work on suporting image parallelization of ph.x (preprocessor)
-3) Prepare automatic test cases
+3) ~~Prepare automatic test cases~~
 4) Improve OPENMP
 5) Implement basic Acoustic sum rule
 6) Turn on different kernel options for the user
