@@ -20,8 +20,8 @@ if args['download']:
     os.system("git init")
     os.system("git remote add origin https://github.com/muralidhar-nalabothula/Lelphc-Test-Data")
     os.system("git pull")
-    os.system("git checkout main -f")
-    os.system("git branch --set-upstream-to origin/main")
+    os.system("git checkout master -f")
+    os.system("git branch --set-upstream-to origin/master")
     os.chdir(cwd)
 else :
     test_driver(tests, lelphc_cmd=args['lelphc'], mpirun_cmd=args['mpirun'], ncpus = args['ncpus'])
