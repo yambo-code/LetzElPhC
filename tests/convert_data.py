@@ -54,7 +54,7 @@ def generate_binary_ph_save(ph_save_dir,remove=False):
     npy_dvscfs = glob.glob('npy_dvscf*')
     bin_dvscfs = glob.glob('dvscf*')
 
-    if (len(npy_dvscfs) != 0 and len(bin_dvscfs) == 0):
+    if (len(npy_dvscfs) != 0 and len(bin_dvscfs) != len(npy_dvscfs)):
         for idvscf in npy_dvscfs:
             npy2binary(idvscf.strip().replace('npy_','').replace('.npy','').strip())
 
