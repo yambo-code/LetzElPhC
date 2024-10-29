@@ -25,4 +25,4 @@ tests/dft_qe/*/*
 !tests/dft_qe/*/*.in
 !tests/dft_qe/*/*.ini
 __pycache__
-
+tests/dft_qe/LICENSE

@@ -5,11 +5,11 @@ The test suite is written in ```python3```. To run the test suite, the following
 3) netCDF4 <br/>
 
 
-## Download the required data to run test suite
+Download the required data to run test suite
 ```properties
 python3 run_tests.py --download
 ```
-
+To run the test suite:
 ```properties
 python3 run_tests.py --ncpus=1 --mpirun=mpirun --lelphc=./lelphc
 ```
