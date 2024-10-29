@@ -1,5 +1,6 @@
 temp
 kb_temp 
+__pycache__
 fcoeff.py
 *.zip
 .DS_Store
@@ -22,3 +23,7 @@ examples/qe/silicon/*/*
 !examples/qe/silicon/elph/*.in
 tests/dft_qe/*/*
 !tests/dft_qe/*/*.in
+!tests/dft_qe/*/*.ini
+__pycache__
+tests/dft_qe/LICENSE
+tests/TEST_RUN_OUTPUT

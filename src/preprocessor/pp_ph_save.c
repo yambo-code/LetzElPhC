@@ -1,6 +1,13 @@
 /*
 This file contains functions which are system dependent
 */
+#include <errno.h>
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../common/cwalk/cwalk.h"
 #include "../common/error.h"
 #include "../common/string_func.h"
 #include "../elphC.h"
@@ -19,7 +26,6 @@ This file contains functions which are system dependent
 
 void create_ph_save_dir_pp_qe(const char* inp_file)
 {
-
     // first check if system can find a command processor
     if (!system(NULL))
     {
@@ -39,8 +45,9 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         if (strlen(env_var_tmp) > (ELPH_MAX_ENV_SIZE - 1))
         {
-            fprintf(stderr, "Warning : length of ELPH_COPY_CMD environment "
-                            "variable must be strictly less than %d\n",
+            fprintf(stderr,
+                    "Warning : length of ELPH_COPY_CMD environment "
+                    "variable must be strictly less than %d\n",
                     (int)ELPH_MAX_ENV_SIZE);
         }
         snprintf(ELPH_COPY_CMD, ELPH_MAX_ENV_SIZE, "%s", env_var_tmp);
@@ -56,8 +63,9 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         if (strlen(env_var_tmp) > (ELPH_MAX_ENV_SIZE - 1))
         {
-            fprintf(stderr, "Warning : length of ELPH_SAVE_DIR environment "
-                            "variable must be strictly less than %d\n",
+            fprintf(stderr,
+                    "Warning : length of ELPH_SAVE_DIR environment "
+                    "variable must be strictly less than %d\n",
                     (int)ELPH_MAX_ENV_SIZE);
         }
         snprintf(PH_SAVE_DIR_NAME, ELPH_MAX_ENV_SIZE, "%s", env_var_tmp);
@@ -70,7 +78,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     FILE* fp = fopen(inp_file, "r");
     if (fp == NULL)
     {
-        fprintf(stderr, "Unable to open given ph.x input file : %s \n", inp_file);
+        fprintf(stderr, "Unable to open given ph.x input file : %s \n",
+                inp_file);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
@@ -93,7 +102,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     // set defaults
     bool ldisp = false;
     bool elph_yambo = false;
-    // this is true if electron_phonon is set to either 'yambo' or 'dvscf' or 'Wannier'
+    // this is true if electron_phonon is set to either 'yambo' or 'dvscf' or
+    // 'Wannier'
 
     env_var_tmp = getenv("ESPRESSO_TMPDIR");
     if (env_var_tmp)
@@ -149,7 +159,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
             // lowercase val_str
             lowercase_str(val_str);
 
-            if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") || !strcmp(val_str, "t"))
+            if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") ||
+                !strcmp(val_str, "t"))
             {
                 ldisp = true;
             }
@@ -185,7 +196,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
             // lowercase val_str
             lowercase_str(val_str);
 
-            if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") || !strcmp(val_str, "wannier"))
+            if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") ||
+                !strcmp(val_str, "wannier"))
             {
                 elph_yambo = true;
             }
@@ -195,10 +207,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     if (strlen(dvscf_prefix) == 0)
     {
-        fprintf(stderr, "Error : fildvscf is not set in ph.x input. "
-                        "Change in potential is not stored. "
-                        "You must rerun the ph.x calculation again with "
-                        "fildvscf flag set in ph.x input\n");
+        fprintf(stderr,
+                "Error : fildvscf is not set in ph.x input. "
+                "Change in potential is not stored. "
+                "You must rerun the ph.x calculation again with "
+                "fildvscf flag set in ph.x input\n");
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
@@ -213,14 +226,17 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     if (strstr(dyn_prefix, ".xml"))
     {
-        fprintf(stderr, "Error : xml format for dyn files not yet supported.\n");
+        fprintf(stderr,
+                "Error : xml format for dyn files not yet supported.\n");
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
     if (!ldisp)
     {
-        fprintf(stderr, "Warning : ldisp is set .false. in the ph.x calculation. "
-                        "Make sure dyn0 file is present with k-point compatible q-point grid.\n");
+        fprintf(stderr,
+                "Warning : ldisp is set .false. in the ph.x calculation. "
+                "Make sure dyn0 file is present with k-point compatible "
+                "q-point grid.\n");
     }
 
     char* src_file_tmp = read_buf;
@@ -241,15 +257,16 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     // 1) copy data-file-schema.xml
     snprintf(prefix_dir, 100, "%s.save", scf_prefix);
 
-    cwk_path_join_multiple((const char*[]) { out_dir, prefix_dir,
-                                             "data-file-schema.xml", NULL },
-                           src_file_tmp, PH_X_INP_READ_BUF_SIZE);
+    cwk_path_join_multiple(
+        (const char*[]){out_dir, prefix_dir, "data-file-schema.xml", NULL},
+        src_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-    cwk_path_join_multiple((const char*[]) { PH_SAVE_DIR_NAME,
-                                             "data-file-schema.xml", NULL },
-                           dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
+    cwk_path_join_multiple(
+        (const char*[]){PH_SAVE_DIR_NAME, "data-file-schema.xml", NULL},
+        dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-    snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
+    snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD,
+             src_file_tmp, dest_file_tmp);
     system(exe_cmd_tmp);
 
     // 2) copy pseudo pots files
@@ -277,18 +294,17 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     for (ND_int itype = 0; itype < ntype; ++itype)
     {
-        char* tmp_str = ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
+        char* tmp_str =
+            ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
 
-        cwk_path_join_multiple((const char*[]) { out_dir, prefix_dir,
-                                                 tmp_str, NULL },
-                               src_file_tmp,
-                               PH_X_INP_READ_BUF_SIZE);
+        cwk_path_join_multiple(
+            (const char*[]){out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,
+            PH_X_INP_READ_BUF_SIZE);
 
-        cwk_path_join_multiple((const char*[]) { PH_SAVE_DIR_NAME,
-                                                 tmp_str, NULL },
-                               dest_file_tmp,
-                               PH_X_INP_READ_BUF_SIZE);
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
+        cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, tmp_str, NULL},
+                               dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
+        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
+                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
 
         system(exe_cmd_tmp);
     }
@@ -299,12 +315,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s0", dyn_prefix);
     // first copy the dyn0 file
-    cwk_path_join_multiple((const char*[]) { PH_SAVE_DIR_NAME,
-                                             "dyn0", NULL },
-                           dest_file_tmp,
-                           PH_X_INP_READ_BUF_SIZE);
+    cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, "dyn0", NULL},
+                           dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-    snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
+    snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD,
+             src_file_tmp, dest_file_tmp);
 
     system(exe_cmd_tmp);
 
@@ -313,8 +328,9 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     if (fp_dyn0 == NULL)
     {
-        fprintf(stderr, "Opening file %s failed. "
-                        "This could be due to ldisp not set to .true. \n",
+        fprintf(stderr,
+                "Opening file %s failed. "
+                "This could be due to ldisp not set to .true. \n",
                 src_file_tmp);
 
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -335,17 +351,18 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     for (int idyn = 0; idyn < ndyn; ++idyn)
     {
-        snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s%d", dyn_prefix, idyn + 1);
+        snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s%d", dyn_prefix,
+                 idyn + 1);
 
         char dyn_tmp_str[32];
         snprintf(dyn_tmp_str, 32, "dyn%d", idyn + 1);
 
-        cwk_path_join_multiple((const char*[]) { PH_SAVE_DIR_NAME,
-                                                 dyn_tmp_str, NULL },
-                               dest_file_tmp,
-                               PH_X_INP_READ_BUF_SIZE);
+        cwk_path_join_multiple(
+            (const char*[]){PH_SAVE_DIR_NAME, dyn_tmp_str, NULL}, dest_file_tmp,
+            PH_X_INP_READ_BUF_SIZE);
 
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
+        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
+                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
         system(exe_cmd_tmp);
     }
 
@@ -367,35 +384,35 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         if (idyn)
         {
             // use dest_file_tmp and exe_cmd_tmp as tmp buffer string
-            snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.q_%d", scf_prefix, idyn + 1);
-            snprintf(exe_cmd_tmp, PH_X_INP_READ_BUF_SIZE, "%s.%s%s",
-                     scf_prefix, dvscf_prefix, dvscf_tmp_str);
+            snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.q_%d",
+                     scf_prefix, idyn + 1);
+            snprintf(exe_cmd_tmp, PH_X_INP_READ_BUF_SIZE, "%s.%s%s", scf_prefix,
+                     dvscf_prefix, dvscf_tmp_str);
 
-            cwk_path_join_multiple((const char*[]) { out_dir, "_ph0",
-                                                     dest_file_tmp, exe_cmd_tmp, NULL },
-                                   src_file_tmp,
-                                   PH_X_INP_READ_BUF_SIZE);
+            cwk_path_join_multiple(
+                (const char*[]){out_dir, "_ph0", dest_file_tmp, exe_cmd_tmp,
+                                NULL},
+                src_file_tmp, PH_X_INP_READ_BUF_SIZE);
         }
         else
         {
-            snprintf(exe_cmd_tmp, PH_X_INP_READ_BUF_SIZE, "%s.%s%s",
-                     scf_prefix, dvscf_prefix, dvscf_tmp_str);
+            snprintf(exe_cmd_tmp, PH_X_INP_READ_BUF_SIZE, "%s.%s%s", scf_prefix,
+                     dvscf_prefix, dvscf_tmp_str);
 
-            cwk_path_join_multiple((const char*[]) { out_dir, "_ph0",
-                                                     exe_cmd_tmp, NULL },
-                                   src_file_tmp,
-                                   PH_X_INP_READ_BUF_SIZE);
+            cwk_path_join_multiple(
+                (const char*[]){out_dir, "_ph0", exe_cmd_tmp, NULL},
+                src_file_tmp, PH_X_INP_READ_BUF_SIZE);
         }
 
         snprintf(dvscf_tmp_str, 32, "dvscf%d", idyn + 1);
 
         // set the destination
-        cwk_path_join_multiple((const char*[]) { PH_SAVE_DIR_NAME,
-                                                 dvscf_tmp_str, NULL },
-                               dest_file_tmp,
-                               PH_X_INP_READ_BUF_SIZE);
+        cwk_path_join_multiple(
+            (const char*[]){PH_SAVE_DIR_NAME, dvscf_tmp_str, NULL},
+            dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
+        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
+                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
         system(exe_cmd_tmp);
     }
 
@@ -407,20 +424,20 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         char dyn_tmp_str[32];
 
-        snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.phsave", scf_prefix);
+        snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.phsave",
+                 scf_prefix);
         snprintf(dyn_tmp_str, 32, "patterns.%d.xml", idyn + 1);
 
-        cwk_path_join_multiple((const char*[]) { out_dir, "_ph0",
-                                                 dest_file_tmp, dyn_tmp_str, NULL },
-                               src_file_tmp,
-                               PH_X_INP_READ_BUF_SIZE);
+        cwk_path_join_multiple(
+            (const char*[]){out_dir, "_ph0", dest_file_tmp, dyn_tmp_str, NULL},
+            src_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-        cwk_path_join_multiple((const char*[]) { PH_SAVE_DIR_NAME,
-                                                 dyn_tmp_str, NULL },
-                               dest_file_tmp,
-                               PH_X_INP_READ_BUF_SIZE);
+        cwk_path_join_multiple(
+            (const char*[]){PH_SAVE_DIR_NAME, dyn_tmp_str, NULL}, dest_file_tmp,
+            PH_X_INP_READ_BUF_SIZE);
 
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
+        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
+                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
         system(exe_cmd_tmp);
     }
 

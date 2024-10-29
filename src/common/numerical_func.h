@@ -1,10 +1,7 @@
 #pragma once
-#include "../elphC.h"
-#include "dtypes.h"
-#include "error.h"
+#include <stdbool.h>
 
-#define Function(FUN_NAME, TYPE_SMALL) Function_HIDDEN(FUN_NAME, TYPE_SMALL)
-#define Function_HIDDEN(FUN_NAME, TYPE_SMALL) ELPH_##TYPE_SMALL##FUN_NAME
+#include "../elphC.h"
 
 ND_int find_kidx_in_list(ND_int nkpts, const ELPH_float* kpts_list,
                          const ELPH_float* kpt);
@@ -15,8 +12,8 @@ void get_KplusQ_idxs(const ND_int Nbz, const ELPH_float* kpoints,
 /* numerical_func.c */
 ELPH_float legendre(int l_val, int m_val, ELPH_float x_in);
 ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec);
-ELPH_float simpson(const ELPH_float* restrict func_vals, const ELPH_float* restrict dx,
-                   ND_int npts);
+ELPH_float simpson(const ELPH_float* restrict func_vals,
+                   const ELPH_float* restrict dx, ND_int npts);
 
 ELPH_float cos_angle_bw_Vec(const ELPH_float* vec1, const ELPH_float* vec2);
 ELPH_float dotVec3(const ELPH_float* vec1, const ELPH_float* vec2);

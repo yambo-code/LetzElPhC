@@ -1,6 +1,7 @@
 #pragma once
+#include <mpi.h>
+
 #include "../elphC.h"
-#include "error.h"
 #include "dtypes.h"
 
 ND_int get_mpi_local_size_idx(const ND_int n, ND_int* start_idx, MPI_Comm Comm);

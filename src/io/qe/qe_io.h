@@ -1,12 +1,9 @@
 #pragma once
+#include <mpi.h>
+#include <stdbool.h>
+
 #include "../../common/dtypes.h"
-#include "../../common/numerical_func.h"
-#include "../../common/parallel.h"
-#include "../../common/string_func.h"
 #include "../../elphC.h"
-#include "../../symmetries/symmetries.h"
-#include "../ezxml/ezxml.h"
-#include "../mpi_bcast.h"
 
 void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
                  char* dim, bool* is_soc_present, ND_int* nmag,

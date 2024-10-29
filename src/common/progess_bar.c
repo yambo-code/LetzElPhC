@@ -1,10 +1,12 @@
 #include "progess_bar.h"
-#include <stdio.h>
+
 #include <math.h>
-#include <time.h>
-#include <stdint.h>
 #include <mpi.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 void start_progressbar(struct progress_bar* pbar, int mpi_rank, ND_int niter)
 {
@@ -99,9 +101,8 @@ void print_progressbar(struct progress_bar* pbar)
         rem_time = 0;
     }
 
-    fprintf(stdout, "] %6.2f%%  ETC: %4dh %2dm %2ds\n",
-            progress * 100, rem_time / 3600,
-            (rem_time % 3600) / 60, (rem_time % 3600) % 60);
+    fprintf(stdout, "] %6.2f%%  ETC: %4dh %2dm %2ds\n", progress * 100,
+            rem_time / 3600, (rem_time % 3600) / 60, (rem_time % 3600) % 60);
 
     if (pbar->iiter == pbar->niter)
     {

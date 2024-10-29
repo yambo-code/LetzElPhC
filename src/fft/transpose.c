@@ -1,5 +1,12 @@
 /* This file contains transpose routines need for ffts*/
 
+#include <complex.h>
+#include <fftw3.h>
+#include <mpi.h>
+#include <string.h>
+
+#include "../common/error.h"
+#include "../elphC.h"
 #include "fft.h"
 
 void fwd_transpose(struct ELPH_fft_plan* plan)

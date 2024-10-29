@@ -1,4 +1,10 @@
 #include "string_func.h"
+
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "error.h"
 /*
 This file contains some useful string functions
 */
@@ -85,7 +91,8 @@ bool string_end_with(char* str, char* compare_str, bool trim)
     /*
     Check if given string ends with a substring
     */
-    char* temp_str = malloc(sizeof(char) * (strlen(str) + strlen(compare_str) + 2));
+    char* temp_str =
+        malloc(sizeof(char) * (strlen(str) + strlen(compare_str) + 2));
     CHECK_ALLOC(temp_str);
 
     char* a = temp_str;
@@ -142,7 +149,8 @@ char* str_reverse_in_place(char* str)
     return str;
 }
 
-void str_replace_chars(char* str_in, const char* delimters, const char* replace_chars)
+void str_replace_chars(char* str_in, const char* delimters,
+                       const char* replace_chars)
 {
     ND_int ndelimters = strlen(delimters);
     // if  ndelimters != strlen(replace_chars) buffer overflow

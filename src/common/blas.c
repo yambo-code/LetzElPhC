@@ -5,6 +5,7 @@ This file contails blas wrappers
 // note the above header must be called before #include "cblas.h"
 #include "../elphC.h"
 #include "cblas.h"
+#include "error.h"
 #include "numerical_func.h"
 
 #if defined(COMPILE_ELPH_DOUBLE)
@@ -25,6 +26,7 @@ This file contails blas wrappers
 static enum CBLAS_TRANSPOSE get_gemmn_T(char Trans);
 
 // =================================================================
+// NM : Fix me : Check for overflows
 
 void matmul_cmplx(const char TransA, const char TransB, const ELPH_cmplx* arr_A,
                   const ELPH_cmplx* arr_B, ELPH_cmplx* arr_C,

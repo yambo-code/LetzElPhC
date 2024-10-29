@@ -58,7 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef __cplusplus
 extern "C"
-{ /* Assume C declarations for C++ */
+{      /* Assume C declarations for C++ */
 #endif /* __cplusplus */
 
 /*

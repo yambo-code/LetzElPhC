@@ -1,43 +1,22 @@
 #pragma once
-#include "../common/dtypes.h"
-#include "../common/numerical_func.h"
-#include "../common/parallel.h"
-#include "../common/string_func.h"
-#include "../dvloc/dvloc.h"
-#include "../elphC.h"
-#include "../nonloc/fcoeff.h"
-#include "../symmetries/symmetries.h"
-#include "mpi_bcast.h"
-#include "qe/qe_io.h"
 
-/* This struct contains all the input file details */
-struct usr_input
-{
-    // system varibles
-    int nkpool; // k point parallelization
-    int nqpool; // q point parallelization
-    int start_bnd; // starting band
-    int end_bnd; // last band
-    char* save_dir; // save dir
-    char* ph_save_dir; // ph_save directory
-    char* kernel_str; // level of screening to include
-    bool kminusq; // true if convention is "yambo" else false
-};
+#include <mpi.h>
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stddef.h>
+
+#include "../common/dtypes.h"
+#include "../elphC.h"
 
 #define NC4_DEFAULT_CHUCK_KB 2048
 // default chunking for large nc varaibles (in Kilobytes)
-
-#define ERR(e)                                          \
-    {                                                   \
-        fprintf(stderr, "Error: %s\n", nc_strerror(e)); \
-        error_msg("netcdf_error");                      \
-    }
 
 void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               ND_int start_band, ND_int end_band,
                               struct WFC** wfcs, char* ph_save_dir,
                               struct Lattice* lattice, struct Pseudo* pseudo,
-                              struct Phonon* phonon, enum ELPH_dft_code dft_code);
+                              struct Phonon* phonon,
+                              enum ELPH_dft_code dft_code);
 
 void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
                     struct Pseudo* pseudo, struct Phonon* phonon);
@@ -57,4 +36,5 @@ void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
                size_t* chunksize);
 
 void write_basic_data(const int ncid, struct Lattice* lattice,
-                      struct Phonon* phonon, const char* kernel_str, const char* convention_str);
+                      struct Phonon* phonon, const char* kernel_str,
+                      const char* convention_str);

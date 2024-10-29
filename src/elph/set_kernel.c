@@ -1,3 +1,9 @@
+#include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
+
+#include "../common/dtypes.h"
+#include "../common/error.h"
 #include "elph.h"
 
 void init_kernel(struct kernel_info* kernel)

@@ -10,7 +10,7 @@
                ibrav = 0
                  nat = 2
                 ntyp = 1
-             ecutwfc = 40.0
+             ecutwfc = 20.0
  	     celldm(1) = 10.3346008116 
              occupations = 'fixed'
              nbnd = 10

@@ -4,13 +4,11 @@ phonons on a grid
   nq2 = 4, 
   nq3 = 4, 
   fildyn = 'si.dyn', 
-  tr2_ph = 1e-16, 
+  tr2_ph = 1e-14, 
   prefix = 'si', 
   trans = .true., 
   electron_phonon = 'dvscf', 
   fildvscf = 'dvscf', 
   ldisp = .true., 
-  !lraman = .true.
-  alpha_mix(1) = 0.5, 
   reduce_io = .true.
 / 

@@ -3,8 +3,16 @@ This file contains function that parses data-file-schema.xml file
 */
 
 #include <ctype.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
+#include "../../common/constants.h"
+#include "../../common/error.h"
+#include "../../common/string_func.h"
+#include "../../elphC.h"
+#include "../ezxml/ezxml.h"
 #include "qe_io.h"
 
 #define ELPH_XML_READ_LINE_SIZE 1000
@@ -42,14 +50,15 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     {
         if (strstr(tmp_read, "assume_isolated"))
         {
-            assume_isolated_found = true; // if (strstr(tmp_read, "2D")) *dim = '2';
+            assume_isolated_found =
+                true;  // if (strstr(tmp_read, "2D")) *dim = '2';
             break;
         }
     }
 
     rewind(fp);
 
-    char* tmp_str; // tmp variable for ezxml char pointer
+    char* tmp_str;  // tmp variable for ezxml char pointer
 
     ezxml_t qexml = ezxml_parse_fp(fp);
     if (qexml == NULL)
@@ -68,10 +77,12 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
         }
     }
     // next get the pseudo pot directory
-    tmp_str = ezxml_get(qexml, "input", 0, "control_variables", 0, "pseudo_dir", -1)
-                  ->txt;
+    tmp_str =
+        ezxml_get(qexml, "input", 0, "control_variables", 0, "pseudo_dir", -1)
+            ->txt;
 
-    *pseudo_dir = malloc(strlen(tmp_str) + 1); // we need to free this outside of this function
+    *pseudo_dir = malloc(strlen(tmp_str) +
+                         1);  // we need to free this outside of this function
     CHECK_ALLOC(*pseudo_dir);
 
     strcpy(*pseudo_dir, tmp_str);
@@ -91,7 +102,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
 
     for (ND_int itype = 0; itype < ntype; ++itype)
     {
-        tmp_str = ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
+        tmp_str =
+            ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
         // printf("%d : %s \n",(int)itype, tmp_str);
         pot_tmp[itype] = malloc(1 + strlen(tmp_str));
         CHECK_ALLOC(pot_tmp[itype]);
@@ -124,7 +136,7 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     }
     for (int ix = 0; ix < 3; ++ix)
     {
-        lat_vec[3 * ix + 0] = a_tmp_read[ix]; // a[:,i]
+        lat_vec[3 * ix + 0] = a_tmp_read[ix];  // a[:,i]
     }
 
     tmp_str = ezxml_get(qexml, "output", 0, "atomic_structure", 0, "cell", 0,
@@ -152,7 +164,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     }
 
     // check if soc is present
-    tmp_str = ezxml_get(qexml, "output", 0, "magnetization", 0, "spinorbit", -1)->txt;
+    tmp_str =
+        ezxml_get(qexml, "output", 0, "magnetization", 0, "spinorbit", -1)->txt;
     strcpy(tmp_read, tmp_str);
     lowercase_str(tmp_read);
 
@@ -164,7 +177,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
     // nmag
     // first check if this is a lsda calc
     bool lsda = false;
-    tmp_str = ezxml_get(qexml, "output", 0, "magnetization", 0, "lsda", -1)->txt;
+    tmp_str =
+        ezxml_get(qexml, "output", 0, "magnetization", 0, "lsda", -1)->txt;
     strcpy(tmp_read, tmp_str);
     lowercase_str(tmp_read);
 
@@ -177,7 +191,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
 
     // check if there is noinv flag
     bool no_inv = false;
-    tmp_str = ezxml_get(qexml, "input", 0, "symmetry_flags", 0, "noinv", -1)->txt;
+    tmp_str =
+        ezxml_get(qexml, "input", 0, "symmetry_flags", 0, "noinv", -1)->txt;
     strcpy(tmp_read, tmp_str);
     lowercase_str(tmp_read);
 
@@ -200,8 +215,9 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
         bool is_non_collinear = false;
         bool mag_system = false;
 
-        tmp_str = ezxml_get(qexml, "output", 0, "magnetization", 0, "noncolin", -1)
-                      ->txt;
+        tmp_str =
+            ezxml_get(qexml, "output", 0, "magnetization", 0, "noncolin", -1)
+                ->txt;
         strcpy(tmp_read, tmp_str);
         lowercase_str(tmp_read);
 
@@ -258,7 +274,7 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
 
     bool inversion_sym = false;
 
-    ELPH_float I3x3[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+    ELPH_float I3x3[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
     for (ND_int isym = 0; isym < *nph_sym; ++isym)
     {
         ezxml_t sym_xml_tmp = ezxml_get(qexml, "output", 0, "symmetries", -1);
@@ -294,7 +310,8 @@ void parse_qexml(const char* xml_file, ELPH_float* lat_vec, ELPH_float* alat,
         ELPH_float* sym_mat_tmpp = (*ph_sym_mats) + 9 * isym;
         for (int ix = 0; ix < 9; ++ix)
         {
-            sum += fabs((I3x3[ix] + sym_mat_tmpp[ix]) * (I3x3[ix] + sym_mat_tmpp[ix]));
+            sum += fabs((I3x3[ix] + sym_mat_tmpp[ix]) *
+                        (I3x3[ix] + sym_mat_tmpp[ix]));
         }
         sum = sqrt(sum);
         if (sum < ELPH_EPS)

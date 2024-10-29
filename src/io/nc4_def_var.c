@@ -1,3 +1,9 @@
+#include <netcdf.h>
+#include <netcdf_par.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "../common/error.h"
 #include "io.h"
 
 /* ND_function to create a varible to netCDF */
@@ -7,12 +13,12 @@ void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
 {
     // creates a netcdf variable and returns varid
 
-    int retval; // error iD
-    int tmp_varid; // var iDs // return value
+    int retval;     // error iD
+    int tmp_varid;  // var iDs // return value
 
     if ((retval = nc_inq(ncid, NULL, NULL, NULL, NULL)))
     {
-        ERR(retval); // check the ncid
+        ERR(retval);  // check the ncid
     }
 
     int* dimids = malloc(rank * sizeof(int));
@@ -49,14 +55,16 @@ void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
     // Set chunking if there
     if (!chunksize)
     {
-        if ((retval = nc_def_var_chunking(ncid, tmp_varid, NC_CONTIGUOUS, NULL)))
+        if ((retval =
+                 nc_def_var_chunking(ncid, tmp_varid, NC_CONTIGUOUS, NULL)))
         {
             ERR(retval);
         }
     }
     else
     {
-        if ((retval = nc_def_var_chunking(ncid, tmp_varid, NC_CHUNKED, chunksize)))
+        if ((retval =
+                 nc_def_var_chunking(ncid, tmp_varid, NC_CHUNKED, chunksize)))
         {
             ERR(retval);
         }

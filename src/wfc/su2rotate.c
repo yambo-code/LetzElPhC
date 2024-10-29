@@ -6,6 +6,8 @@ This file contains function su2rotate
 This function rotates the wave-function in spin space
 */
 
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
 #include "wfc.h"
 
 void su2rotate(const int nspinor, const ND_int npw, const ND_int nsets,
@@ -21,7 +23,7 @@ void su2rotate(const int nspinor, const ND_int npw, const ND_int nsets,
         return;
     }
 
-    ND_int stride_wfc = nspinor * npw; // i.e 2*npw
+    ND_int stride_wfc = nspinor * npw;  // i.e 2*npw
 
     for (ND_int iset = 0; iset < nsets; ++iset)
     {

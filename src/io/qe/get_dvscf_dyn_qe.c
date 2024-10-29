@@ -1,6 +1,15 @@
 /*
 This function gets the dvscf and eig vectors for q point from qe
 */
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../../common/cwalk/cwalk.h"
+#include "../../common/dtypes.h"
+#include "../../common/error.h"
+#include "../../elphC.h"
 #include "qe_io.h"
 
 void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
@@ -39,10 +48,10 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
         ELPH_float qpts[3];
 
         snprintf(small_buf, 32, "dyn%d", (int)(iq_BZ + 1));
-        cwk_path_join(ph_save_dir, small_buf, tmp_char_buf,
-                      tmp_char_buf_len);
+        cwk_path_join(ph_save_dir, small_buf, tmp_char_buf, tmp_char_buf_len);
 
-        ND_int ndyn_read = read_dyn_qe(tmp_char_buf, lattice, qpts, omega_ph, eig);
+        ND_int ndyn_read =
+            read_dyn_qe(tmp_char_buf, lattice, qpts, omega_ph, eig);
         if (ndyn_read != 1)
         {
             error_msg(
@@ -60,12 +69,12 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
 
     if (dvscf != NULL)
     {
-        mpi_error = MPI_Bcast(pat_vecs, nmodes * nmodes, ELPH_MPI_cmplx, 0, Comm->commQ);
+        mpi_error = MPI_Bcast(pat_vecs, nmodes * nmodes, ELPH_MPI_cmplx, 0,
+                              Comm->commQ);
         MPI_error_msg(mpi_error);
 
         snprintf(small_buf, 32, "dvscf%d", (int)(iq_BZ + 1));
-        cwk_path_join(ph_save_dir, small_buf, tmp_char_buf,
-                      tmp_char_buf_len);
+        cwk_path_join(ph_save_dir, small_buf, tmp_char_buf, tmp_char_buf_len);
 
         if (Comm->commRq_rank == 0)
         {
@@ -73,7 +82,8 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
                           Comm->commK);
         }
         // broad cast dvscf
-        ND_int dvscf_len = nmodes * lattice->nmag * lattice->fft_dims[0] * lattice->fft_dims[1] * lattice->nfftz_loc;
+        ND_int dvscf_len = nmodes * lattice->nmag * lattice->fft_dims[0] *
+                           lattice->fft_dims[1] * lattice->nfftz_loc;
         ND_int max_int_val = ((ND_int)INT_MAX) - 10;
 
         // check for buffer overflow
@@ -82,7 +92,8 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
             error_msg("Buffer Overflow in dvscf_len. Contact developer");
         }
 
-        mpi_error = MPI_Bcast(dvscf, dvscf_len, ELPH_MPI_cmplx, 0, Comm->commRq);
+        mpi_error =
+            MPI_Bcast(dvscf, dvscf_len, ELPH_MPI_cmplx, 0, Comm->commRq);
         MPI_error_msg(mpi_error);
 
         free(pat_vecs);

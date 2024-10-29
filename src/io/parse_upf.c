@@ -4,6 +4,15 @@ Only Local part, grids , valance electron info are read rest are available in
 yambo
 */
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/string_func.h"
+#include "../elphC.h"
 #include "ezxml/ezxml.h"
 #include "io.h"
 
@@ -173,7 +182,8 @@ static void parse_upf2(FILE* fp, struct local_pseudo* loc_pseudo)
     loc_pseudo->rab_grid = malloc(sizeof(ELPH_float) * ngrid);
     CHECK_ALLOC(loc_pseudo->rab_grid);
 
-    if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) != ngrid)
+    if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) !=
+        ngrid)
     {
         error_msg("Parsing local potential from upf-2 failed");
     }
@@ -227,23 +237,23 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
     }
 
     // Now read line by line
-    fgets(xml_buf, 1000, fp); // version number
-    fgets(xml_buf, 1000, fp); // element label
-    fgets(xml_buf, 1000, fp); // pseudo type
+    fgets(xml_buf, 1000, fp);  // version number
+    fgets(xml_buf, 1000, fp);  // element label
+    fgets(xml_buf, 1000, fp);  // pseudo type
     if (!strstr(xml_buf, "NC"))
     {
         error_msg("Pseudo potential is not norm conserving");
     }
 
-    fgets(xml_buf, 1000, fp); // nlcc
-    fgets(xml_buf, 1000, fp); // XC info
-    fgets(xml_buf, 1000, fp); // Valence electrons
+    fgets(xml_buf, 1000, fp);  // nlcc
+    fgets(xml_buf, 1000, fp);  // XC info
+    fgets(xml_buf, 1000, fp);  // Valence electrons
     char* tmp_token = strtok(xml_buf, " ");
     sscanf(tmp_token, "%f", &Zval);
-    fgets(xml_buf, 1000, fp); // total energy
-    fgets(xml_buf, 1000, fp); // suggested cutoff
-    fgets(xml_buf, 1000, fp); // max l
-    fgets(xml_buf, 1000, fp); // max nmesh
+    fgets(xml_buf, 1000, fp);  // total energy
+    fgets(xml_buf, 1000, fp);  // suggested cutoff
+    fgets(xml_buf, 1000, fp);  // max l
+    fgets(xml_buf, 1000, fp);  // max nmesh
     tmp_token = strtok(xml_buf, " ");
 
     sscanf(tmp_token, "%d", &ngrid);
@@ -268,7 +278,7 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
         error_msg("error setting the start seek for upf file");
     }
 
-    length += 15; // to add root elements and one for null terminator
+    length += 15;  // to add root elements and one for null terminator
 
     xml_buf = malloc(length + 1);
     CHECK_ALLOC(xml_buf);
@@ -323,7 +333,8 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
     loc_pseudo->rab_grid = malloc(sizeof(ELPH_float) * ngrid);
     CHECK_ALLOC(loc_pseudo->rab_grid);
 
-    if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) != ngrid)
+    if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) !=
+        ngrid)
     {
         error_msg("Parsing local potential from upf-1 failed");
     }
@@ -406,8 +417,8 @@ static void get_upf1_element(FILE* fp, char* atomic_sym)
     }
 
     // Now read line by line
-    fgets(xml_buf, 1000, fp); // version number
-    fgets(xml_buf, 1000, fp); // element label
+    fgets(xml_buf, 1000, fp);  // version number
+    fgets(xml_buf, 1000, fp);  // element label
     char tmp_read[30];
     char* token_tmp = strtok(xml_buf, " ");
     sscanf(token_tmp, "%s", tmp_read);
@@ -422,7 +433,7 @@ static void get_upf1_element(FILE* fp, char* atomic_sym)
         atomic_sym[1] = ' ';
     }
 
-    fgets(xml_buf, 1000, fp); // pseudo type
+    fgets(xml_buf, 1000, fp);  // pseudo type
     if (!strstr(xml_buf, "NC"))
     {
         error_msg("Pseudo potential is not norm conserving");

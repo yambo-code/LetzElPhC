@@ -1,9 +1,0 @@
-dipoles
-NLogCPUs=1
-#DIP_Threads= 4
-DIP_CPU= "4 2 2"                 # [PARALLEL] CPUs for each role
-DIP_ROLEs= "k c v"               # [PARALLEL] CPUs roles (k,c,v)
-% DipBands
-   1 |  60 |                   # [DIP] Bands range for dipoles
-%
-DipApproach= "G-space v"       # [DIP] [G-space v/R-space x/Covariant/Shifted grids]

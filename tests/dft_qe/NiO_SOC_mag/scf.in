@@ -1,7 +1,5 @@
 &CONTROL
   calculation = 'scf'
-  etot_conv_thr =   1.0000000000d-05
-  forc_conv_thr =   1.0000000000d-05
   outdir = '.'
   prefix = 'NiO'
   pseudo_dir = '../../pseudos_dojo'
@@ -10,7 +8,7 @@
   verbosity = 'high'
 /
 &SYSTEM
-  ecutwfc = 100 
+  ecutwfc = 60 
   ibrav = 0
   nat = 4
   ntyp = 3
@@ -21,7 +19,6 @@
   starting_magnetization(2) = -0.5 
   starting_magnetization(3) =  0.0 
   occupations = 'fixed'
-  !nbnd = 60
 /
 &ELECTRONS
   conv_thr =   1.000000000d-9
@@ -48,4 +45,4 @@ Ni2              0.5000000000        0.5000000000        0.5000000000
 O               -0.2500000957       -0.2500000957       -0.2500000957
 O                0.2500000957        0.2500000957        0.2500000957
 K_POINTS automatic
-8 8 8 0 0 0
+2 2 2 0 0 0

@@ -1,3 +1,15 @@
+#include <complex.h>
+#include <ctype.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "../../common/constants.h"
+#include "../../common/dtypes.h"
+#include "../../common/error.h"
+#include "../../common/string_func.h"
+#include "../../elphC.h"
 #include "qe_io.h"
 
 /*
@@ -5,8 +17,8 @@ File contains function to read dynamical matrix file (in the old format)
 and outputs phonon polarization vectors
 */
 
-void zheev_(char* jobz, char* uplo, int* n, double complex* a, int* lda,
-            double* w, double complex* work, int* lwork, double* rwork,
+void zheev_(char* jobz, char* uplo, int* n, double _Complex* a, int* lda,
+            double* w, double _Complex* work, int* lwork, double* rwork,
             int* info);
 
 // only one cpu calls the routine
@@ -24,9 +36,9 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     the qpoints and pol_vecs are updated according
     */
 
-    ND_int nq_found = 0; // function return value
+    ND_int nq_found = 0;  // function return value
 
-    char* fgets_err; // error code for fgets
+    char* fgets_err;  // error code for fgets
 
     // First, open the file
     FILE* fp = fopen(dyn_file, "r");
@@ -45,7 +57,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     // two comment lines
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-    fgets(read_buf, DYN_READ_BUF_SIZE, fp); // this line has 9 floats
+    fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // this line has 9 floats
     if (parser_doubles_from_string(read_buf, read_fbuf) != 9)
     {
         error_msg("Error reading line 3 in dyn file");
@@ -60,10 +72,10 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     ND_int ibrav = rint(read_fbuf[2]);
     if (ibrav == 0)
     {
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // scratch
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // lat vec 1
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // lat vec 2
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // lat vec 3
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // scratch
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // lat vec 1
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // lat vec 2
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // lat vec 3
     }
 
     ELPH_float* atm_mass = malloc(sizeof(ELPH_float) * (natom + ntype));
@@ -77,7 +89,8 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
         int tmpi_read;
         double tmpf_read;
         char tmps_read[128];
-        if (sscanf(read_buf, "%d '%[^']' %lf", &tmpi_read, tmps_read, &tmpf_read) != 3)
+        if (sscanf(read_buf, "%d '%[^']' %lf", &tmpi_read, tmps_read,
+                   &tmpf_read) != 3)
         {
             error_msg("Failed to read atomic masses from dyn file");
         }
@@ -101,18 +114,20 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     }
 
     // allocate a tmp buffer for diagonalization
-    double complex* dyn_mat_tmp = malloc(sizeof(double complex) * nmodes * nmodes);
+    double _Complex* dyn_mat_tmp =
+        malloc(sizeof(double _Complex) * nmodes * nmodes);
     CHECK_ALLOC(dyn_mat_tmp);
 
     // allocate workspace for zheev
-    double* omega2 = malloc(sizeof(double) * 4 * nmodes); // // (3N-2 + N) = 4N-2
+    double* omega2 =
+        malloc(sizeof(double) * 4 * nmodes);  // // (3N-2 + N) = 4N-2
     CHECK_ALLOC(omega2);
 
     double* rwork = omega2 + nmodes;
 
     int info_z, lwork;
-    double complex tmp_work_var;
-    lwork = -1; // set up a query request
+    double _Complex tmp_work_var;
+    lwork = -1;  // set up a query request
     zheev_("V", "U", &nmodes, dyn_mat_tmp, &nmodes, omega2, &tmp_work_var,
            &lwork, rwork, &info_z);
     if (info_z != 0)
@@ -122,21 +137,21 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
     }
     lwork = (int)rint(creal(tmp_work_var));
 
-    double complex* work_array = malloc(sizeof(double complex) * lwork);
+    double _Complex* work_array = malloc(sizeof(double _Complex) * lwork);
     CHECK_ALLOC(work_array);
 
     // start reading the dynamical matrices
-    while (!nq_found) // while(true) // put while(true) to read all the
-                      // dynamical matrices from file.
+    while (!nq_found)  // while(true) // put while(true) to read all the
+                       // dynamical matrices from file.
     {
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // empty
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // content strong
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // empty
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // content strong
         if (!string_start_with(read_buf, "Dynamical", true))
         {
-            break; // break the loop if dynmaical not found
+            break;  // break the loop if dynmaical not found
         }
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // empty
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // qpoint
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // empty
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // qpoint
 
         ELPH_float* restrict qpt_tmp = qpts + nq_found * 3;
 
@@ -145,7 +160,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
             error_msg("error reading qpoint from dynamat files");
         }
 
-        fgets(read_buf, DYN_READ_BUF_SIZE, fp); // empty
+        fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // empty
 
         ELPH_cmplx* restrict eig = pol_vecs + nq_found * nmodes * nmodes;
         ELPH_float* restrict omega_q = omega + nq_found * nmodes;
@@ -154,7 +169,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
         {
             for (ND_int ib = 0; ib < natom; ++ib)
             {
-                fgets(read_buf, DYN_READ_BUF_SIZE, fp); // read ia and ib
+                fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // read ia and ib
                 int itmp, jtmp;
                 sscanf(read_buf, "%d  %d", &itmp, &jtmp);
                 --itmp;
@@ -171,7 +186,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
 
                 for (int ix = 0; ix < 3; ++ix)
                 {
-                    fgets(read_buf, DYN_READ_BUF_SIZE, fp); // read dynmat
+                    fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // read dynmat
                     // get the values of dynamical matrix
                     if (parser_doubles_from_string(read_buf, read_fbuf) != 6)
                     {
@@ -183,11 +198,13 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
                     {
                         read_fbuf[i] *= inv_mass_sqtr;
                     }
-                    for (int iy = 0; iy < 3; ++iy) // // (ib,iy,ia,ix)
+                    for (int iy = 0; iy < 3; ++iy)  // // (ib,iy,ia,ix)
                     {
                         // we store in column major format (this is because
                         // lapack routines are column major)
-                        dyn_mat_tmp[ix + ia * 3 + iy * nmodes + ib * 3 * nmodes] = read_fbuf[2 * iy] + I * read_fbuf[2 * iy + 1];
+                        dyn_mat_tmp[ix + ia * 3 + iy * nmodes +
+                                    ib * 3 * nmodes] =
+                            read_fbuf[2 * iy] + I * read_fbuf[2 * iy + 1];
                     }
                 }
             }
@@ -198,7 +215,9 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
         {
             for (ND_int jdim1 = 0; jdim1 <= idim1; ++jdim1)
             {
-                dyn_mat_tmp[idim1 * nmodes + jdim1] = 0.5 * (dyn_mat_tmp[idim1 * nmodes + jdim1] + conj(dyn_mat_tmp[jdim1 * nmodes + idim1]));
+                dyn_mat_tmp[idim1 * nmodes + jdim1] =
+                    0.5 * (dyn_mat_tmp[idim1 * nmodes + jdim1] +
+                           conj(dyn_mat_tmp[jdim1 * nmodes + idim1]));
             }
         }
 
@@ -219,7 +238,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
             }
 
             ELPH_cmplx* eig_tmp_ptr = eig + imode * nmodes;
-            double complex* dyn_tmp_ptr = dyn_mat_tmp + imode * nmodes;
+            double _Complex* dyn_tmp_ptr = dyn_mat_tmp + imode * nmodes;
             for (ND_int jmode = 0; jmode < nmodes; ++jmode)
             {
                 ND_int ia = jmode / 3;
@@ -292,7 +311,8 @@ void read_qpts_qe(const char* dyn0_file, ND_int* nqpt_iBZ, ND_int* nqpt_fullBZ,
     {
         float qpt_tmp[3];
         fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-        if (sscanf(read_buf, "%f %f %f", qpt_tmp, qpt_tmp + 1, qpt_tmp + 2) != 3)
+        if (sscanf(read_buf, "%f %f %f", qpt_tmp, qpt_tmp + 1, qpt_tmp + 2) !=
+            3)
         {
             error_msg("Error reading qpoint from dyn0 file");
         }

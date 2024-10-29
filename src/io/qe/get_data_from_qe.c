@@ -1,3 +1,17 @@
+#include <mpi.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../../common/constants.h"
+#include "../../common/dtypes.h"
+#include "../../common/error.h"
+#include "../../common/numerical_func.h"
+#include "../../common/parallel.h"
+#include "../../elphC.h"
+#include "../../symmetries/symmetries.h"
+#include "../mpi_bcast.h"
 #include "qe_io.h"
 
 void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
@@ -60,7 +74,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     ELPH_float* ph_sym_mats = NULL;
     ELPH_float* ph_sym_tau = NULL;
 
-    ELPH_float lat_vec[9]; // a[:,i] is ith lattice vector
+    ELPH_float lat_vec[9];  // a[:,i] is ith lattice vector
     if (Comm->commW_rank == 0)
     {
         strcpy(tmp_buffer, ph_save_dir);
@@ -79,7 +93,8 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     mpi_error = MPI_Bcast(lat_vec, 9, ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW);
+    mpi_error =
+        MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(alat, 3, ELPH_MPI_float, 0, Comm->commW);
@@ -94,7 +109,8 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     mpi_error = MPI_Bcast(&phonon->nph_sym, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Bcast(&lattice->is_soc_present, 1, MPI_C_BOOL, 0, Comm->commW);
+    mpi_error =
+        MPI_Bcast(&lattice->is_soc_present, 1, MPI_C_BOOL, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&ph_tim_rev, 1, MPI_C_BOOL, 0, Comm->commW);
@@ -124,17 +140,19 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
             // Note we also fill the second half but are only used when tim_rev
             // is present
             ELPH_float* sym_tmp = ph_sym_mats + isym * 9;
-            ELPH_float* sym_tmp_trev = ph_sym_mats + (isym + phonon->nph_sym) * 9;
+            ELPH_float* sym_tmp_trev =
+                ph_sym_mats + (isym + phonon->nph_sym) * 9;
 
-            // It should be noted that we use Sx + v convention, but qe uses S(x+v)
-            // so our v = S*tau_qe
+            // It should be noted that we use Sx + v convention, but qe uses
+            // S(x+v) so our v = S*tau_qe
             ELPH_float* vec_tmp = ph_sym_tau + isym * 3;
-            ELPH_float* vec_tmp_trev = ph_sym_tau + (isym + phonon->nph_sym) * 3;
+            ELPH_float* vec_tmp_trev =
+                ph_sym_tau + (isym + phonon->nph_sym) * 3;
 
             // compute lat_vec@S@b^T
             // first  S and b^T
             Gemm3x3f(sym_tmp, 'N', blat, 'T',
-                     sym_tmp_trev); // sym_tmp_trev is used as tmp buffer
+                     sym_tmp_trev);  // sym_tmp_trev is used as tmp buffer
             Gemm3x3f(lat_vec, 'N', sym_tmp_trev, 'N', sym_tmp);
 
             for (int ix = 0; ix < 9; ++ix)
@@ -177,8 +195,9 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     {
         for (ND_int isym = 0; isym < phonon->nph_sym; ++isym)
         {
-            phonon->ph_syms[isym].inv_idx = find_inv_symm_idx(phonon->nph_sym, phonon->ph_syms[isym].Rmat,
-                                                              ph_sym_mats, false);
+            phonon->ph_syms[isym].inv_idx =
+                find_inv_symm_idx(phonon->nph_sym, phonon->ph_syms[isym].Rmat,
+                                  ph_sym_mats, false);
 
             if (phonon->ph_syms[isym].inv_idx < 0)
             {

@@ -61,7 +61,8 @@ int main(int argc, char* argv[])
     zloc = get_mpi_local_size_idx(fft_dims[2], &zshift, MPI_COMM_WORLD);
 
     ND_int size_G_vecs = G_vecs_xy * fft_dims[2];
-    ELPH_cmplx* dVlocG = calloc(2 * size_G_vecs, sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+    ELPH_cmplx* dVlocG =
+        calloc(2 * size_G_vecs, sizeof(ELPH_cmplx));  // 3*natom* ix_s*jy_s*kz
     int* gvecs = malloc(3 * size_G_vecs * sizeof(int));
     // set gvecs
     for (ND_int ig = 0; ig < G_vecs_xy; ++ig)
@@ -79,8 +80,10 @@ int main(int argc, char* argv[])
         }
     }
 
-    ELPH_cmplx* Vlocr = malloc(4 * fft_dims[0] * fft_dims[1] * zloc * sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
-    ELPH_cmplx* Psir = malloc(2 * fft_dims[0] * fft_dims[1] * zloc * sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+    ELPH_cmplx* Vlocr = malloc(4 * fft_dims[0] * fft_dims[1] * zloc *
+                               sizeof(ELPH_cmplx));  // 3*natom* ix_s*jy_s*kz
+    ELPH_cmplx* Psir = malloc(2 * fft_dims[0] * fft_dims[1] * zloc *
+                              sizeof(ELPH_cmplx));  // 3*natom* ix_s*jy_s*kz
 
     // fill data
     for (ND_int i = 0; i < (4 * fft_dims[0] * fft_dims[1] * zloc); ++i)
@@ -97,7 +100,7 @@ int main(int argc, char* argv[])
     wfc_plan(&fft_plan, size_G_vecs, zloc, G_vecs_xy, gvecs, fft_dims,
              FFTW_MEASURE, MPI_COMM_WORLD);
 
-    struct timespec start, finish, delta; // timing vars
+    struct timespec start, finish, delta;  // timing vars
 
     MPI_Barrier(MPI_COMM_WORLD);
     clock_gettime(CLOCK_REALTIME, &start);
@@ -105,8 +108,8 @@ int main(int argc, char* argv[])
     fft_convolution3D(&fft_plan, 2, 4, Vlocr, Psir, dVlocG, false);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    clock_gettime(CLOCK_REALTIME, &finish); // timing end:
-    sub_timespec(start, finish, &delta); // timing end:
+    clock_gettime(CLOCK_REALTIME, &finish);  // timing end:
+    sub_timespec(start, finish, &delta);     // timing end:
     if (!world_rank)
     {
         printf("Time taken for run : %d.%.9ld\n", (int)delta.tv_sec,

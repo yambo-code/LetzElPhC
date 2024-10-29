@@ -4,12 +4,11 @@ phonons on a grid
   nq2 = 2, 
   nq3 = 2, 
   fildyn = 'NiO.dyn', 
-  tr2_ph = 1e-15, 
+  tr2_ph = 1e-13, 
   prefix = 'NiO', 
   trans = .true., 
   electron_phonon = 'dvscf', 
   fildvscf = 'dvscf', 
   ldisp = .true., 
   reduce_io = .true.
-  diagonalization = 'cg'
 / 

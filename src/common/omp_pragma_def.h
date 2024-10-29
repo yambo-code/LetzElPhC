@@ -1,6 +1,8 @@
 #pragma once
+#include "../elphC.h"
 
 #if defined(ELPH_OMP_PARALLEL_BUILD)
+#include <omp.h>
 #define ELPH_OMP_PAR_FOR_SIMD _Pragma("omp parallel for simd")
 
 #define ELPH_OMP_PAR_FOR _Pragma("omp parallel for")

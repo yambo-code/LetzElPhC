@@ -3,14 +3,18 @@
  * elements in q space
  *
  */
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../elphC.h"
 #include "symmetries.h"
 
-void elph_q_rotate(const ELPH_cmplx* Dmats_l,
-                   const ELPH_cmplx* elph_mat_q,
-                   const ELPH_cmplx* Dmats_r,
-                   const struct Lattice* lattice,
-                   const bool tim_rev,
-                   ELPH_cmplx* restrict elph_mat_Sq)
+void elph_q_rotate(const ELPH_cmplx* Dmats_l, const ELPH_cmplx* elph_mat_q,
+                   const ELPH_cmplx* Dmats_r, const struct Lattice* lattice,
+                   const bool tim_rev, ELPH_cmplx* restrict elph_mat_Sq)
 {
     /*
     WARNING !! : Dmats must be for S symmetry and not for S^-1
@@ -53,11 +57,11 @@ void elph_q_rotate(const ELPH_cmplx* Dmats_l,
             {
                 g_Sq[i] = 0;
             }
-            matmul_cmplx(g_conj, 'C', g_q, D_r, tmp_buffer, 1.0, 0.0,
-                         nbnds, nbnds, nbnds, nbnds, nbnds, nbnds);
+            matmul_cmplx(g_conj, 'C', g_q, D_r, tmp_buffer, 1.0, 0.0, nbnds,
+                         nbnds, nbnds, nbnds, nbnds, nbnds);
 
-            matmul_cmplx('T', 'T', tmp_buffer, D_l, g_Sq, 1.0, 0.0,
-                         nbnds, nbnds, nbnds, nbnds, nbnds, nbnds);
+            matmul_cmplx('T', 'T', tmp_buffer, D_l, g_Sq, 1.0, 0.0, nbnds,
+                         nbnds, nbnds, nbnds, nbnds, nbnds);
         }
     }
 

@@ -1,6 +1,5 @@
 #pragma once
-#include <ctype.h>
-#include <stdlib.h>
+#include <stdbool.h>
 
 #include "../elphC.h"
 

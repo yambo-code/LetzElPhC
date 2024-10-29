@@ -1,3 +1,13 @@
+#include <math.h>
+#include <mpi.h>
+#include <stdlib.h>
+
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../common/parallel.h"
+#include "../elphC.h"
+#include "../wfc/wfc.h"
 #include "dvloc.h"
 
 /* create a interpolation table on a coarse grid for short local potential in
@@ -17,13 +27,16 @@ void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
 
     // create a small scope
     {
-        const ELPH_float* blat = lattice->blat_vec; // 2*pi is included
+        const ELPH_float* blat = lattice->blat_vec;  // 2*pi is included
 
         ELPH_float bi[3], bmin, bmax, Nmax;
 
-        bi[0] = sqrt((blat[0] * blat[0]) + (blat[3] * blat[3]) + (blat[6] * blat[6]));
-        bi[1] = sqrt((blat[1] * blat[1]) + (blat[4] * blat[4]) + (blat[7] * blat[7]));
-        bi[2] = sqrt((blat[2] * blat[2]) + (blat[5] * blat[5]) + (blat[8] * blat[8]));
+        bi[0] = sqrt((blat[0] * blat[0]) + (blat[3] * blat[3]) +
+                     (blat[6] * blat[6]));
+        bi[1] = sqrt((blat[1] * blat[1]) + (blat[4] * blat[4]) +
+                     (blat[7] * blat[7]));
+        bi[2] = sqrt((blat[2] * blat[2]) + (blat[5] * blat[5]) +
+                     (blat[8] * blat[8]));
         bmin = bi[0];
         bmax = bi[0];
         Nmax = lattice->fft_dims[0];
@@ -55,16 +68,17 @@ void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
         // coarse spacing = b_min, npts ~ (1.5*N_max + 3*|qmax|)*b_max/b_min.
         */
 
-        if (bmin > 0.001)
+        if (bmin > 0.01)
         {
-            bmin = 0.001; // set some bare minimum
+            bmin = 0.01;  // set some bare minimum
         }
 
-        gmax = (1.7 * (Nmax + 4.0) + 3 * fabs(pseudo->vloc_table->qmax_abs)) * bmax;
+        gmax = (1.7 * (Nmax + 4.0) + 3 * fabs(pseudo->vloc_table->qmax_abs)) *
+               bmax;
         // we choose 1.7 instead of 1.5
         npts = ceil(gmax / bmin);
         gmin = 0.0;
-    } // end of scope
+    }  // end of scope
 
     ELPH_float* xins = malloc(sizeof(ELPH_float) * npts);
     CHECK_ALLOC(xins);
@@ -89,7 +103,8 @@ void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
     ND_int n_shift;
     int npts_loc = get_mpi_local_size_idx(npts, &n_shift, Comm->commW);
 
-    ELPH_float* work_array = malloc(sizeof(ELPH_float) * (ngrid_max + npts_loc + 1));
+    ELPH_float* work_array =
+        malloc(sizeof(ELPH_float) * (ngrid_max + npts_loc + 1));
     CHECK_ALLOC(work_array);
 
     ELPH_float* vlocg_cpu = work_array + ngrid_max;
@@ -117,10 +132,11 @@ void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
         // loop not thread safe
         for (ND_int i = 0; i < npts_loc; ++i)
         {
-            vlocg_cpu[i] = Vloc_Gspace(work_array, lattice->dimension, xins[i + n_shift],
-                                       loc_pseudo_type->ngrid, loc_pseudo_type->Vloc_atomic,
-                                       loc_pseudo_type->r_grid, loc_pseudo_type->rab_grid,
-                                       loc_pseudo_type->Zval, 1.0, volume);
+            vlocg_cpu[i] = Vloc_Gspace(
+                work_array, lattice->dimension, xins[i + n_shift],
+                loc_pseudo_type->ngrid, loc_pseudo_type->Vloc_atomic,
+                loc_pseudo_type->r_grid, loc_pseudo_type->rab_grid,
+                loc_pseudo_type->Zval, 1.0, volume);
         }
         mpi_error = MPI_Allgatherv(vlocg_cpu, npts_loc, ELPH_MPI_float,
                                    vlocg_atom, counts_recv, displacements,

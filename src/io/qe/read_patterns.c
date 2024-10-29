@@ -1,6 +1,18 @@
 /*
 This file contains function that parses pattern.xml files
 */
+#include <complex.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../../common/dtypes.h"
+#include "../../common/error.h"
+#include "../../common/string_func.h"
+#include "../../elphC.h"
+#include "../ezxml/ezxml.h"
 #include "qe_io.h"
 
 void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
@@ -24,7 +36,8 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
 
     // first get the number of irrep
 
-    int nirrep = atoll(ezxml_get(patxml, "IRREPS_INFO", 0, "NUMBER_IRR_REP", -1)->txt);
+    int nirrep =
+        atoll(ezxml_get(patxml, "IRREPS_INFO", 0, "NUMBER_IRR_REP", -1)->txt);
 
     ND_int natom = lattice->natom;
     ND_int nmodes = natom * 3;
@@ -47,18 +60,21 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
         {
             snprintf(pert_str, 100, "PERTURBATION.%d", ipert + 1);
 
-            char* per_vec_str = ezxml_get(patxml, "IRREPS_INFO", 0, rep_str,
-                                          0, pert_str, 0, "DISPLACEMENT_PATTERN", -1)
-                                    ->txt;
+            char* per_vec_str =
+                ezxml_get(patxml, "IRREPS_INFO", 0, rep_str, 0, pert_str, 0,
+                          "DISPLACEMENT_PATTERN", -1)
+                    ->txt;
 
-            if (parser_doubles_from_string(per_vec_str, pat_tmp_read) != (2 * nmodes))
+            if (parser_doubles_from_string(per_vec_str, pat_tmp_read) !=
+                (2 * nmodes))
             {
                 error_msg("Reading patterns.xml file failed");
             }
 
             for (ND_int i = 0; i < nmodes; ++i)
             {
-                pat_vecs[imode * nmodes + i] = pat_tmp_read[2 * i] + I * pat_tmp_read[2 * i + 1];
+                pat_vecs[imode * nmodes + i] =
+                    pat_tmp_read[2 * i] + I * pat_tmp_read[2 * i + 1];
             }
 
             ++imode;

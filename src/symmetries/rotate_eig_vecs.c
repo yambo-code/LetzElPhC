@@ -2,6 +2,14 @@
 This file contains function that rotates eigen vectors
 q -> Sq
 */
+#include <complex.h>
+#include <stdlib.h>
+
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../elphC.h"
 #include "symmetries.h"
 
 void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
@@ -29,7 +37,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
     {
         const ELPH_float* pos_tmp = lattice->atomic_pos + 3 * ia;
 
-        ELPH_float rot_atom[3] = { 0, 0, 0 };
+        ELPH_float rot_atom[3] = {0, 0, 0};
         // apply rotation
         MatVec3f(sym->Rmat, pos_tmp, false, rot_atom);
         // add translation
@@ -41,7 +49,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
                 rot_atom[ix] = -rot_atom[ix];
             }
         }
-        ELPH_float rot_atom_crys[3] = { 0, 0, 0 };
+        ELPH_float rot_atom_crys[3] = {0, 0, 0};
         // convert to cystal
         MatVec3f(blat, rot_atom, true, rot_atom_crys);
         // remove 2*pi comming from blat
@@ -53,13 +61,14 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
         // note we can use find_kidx_in_list function as the
         // functionality is not limited to reciprocal space
         // (contrary to what the name says so)
-        rot_map[ia] = find_kidx_in_list(natom, atom_pos_crys,
-                                        rot_atom_crys);
+        rot_map[ia] = find_kidx_in_list(natom, atom_pos_crys, rot_atom_crys);
 
         if (rot_map[ia] < 0)
         {
-            error_msg("Unable to find the equalivalent atom for the symmetry operation. "
-                      "Wrong symmetry operation detected.");
+            error_msg(
+                "Unable to find the equalivalent atom for the symmetry "
+                "operation. "
+                "Wrong symmetry operation detected.");
         }
     }
     free(atom_pos_crys);
@@ -69,9 +78,9 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
     // Sq in cart units
 
     // convert qpt to cartisian coordinates
-    MatVec3f(blat, qpt, false, qcart); // 2pi is included
+    MatVec3f(blat, qpt, false, qcart);  // 2pi is included
     // compute S*q
-    MatVec3f(sym->Rmat, qcart, false, Sq_cart); // 2pi is included
+    MatVec3f(sym->Rmat, qcart, false, Sq_cart);  // 2pi is included
 
     ELPH_cmplx qphase = 0;
     for (int ix = 0; ix < 3; ++ix)
@@ -118,11 +127,11 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
         const ELPH_cmplx* eig_q_mode = eig_q + imode * nmodes;
 
         // S@eig_q_mode.T  = (3,natom) eig_q_mode@S^T =
-        matmul_cmplx('N', 'T', eig_q_mode, Rmat_cmplx, rot_eig,
-                     1.0, 0.0, 3, 3, 3, natom, 3, 3);
+        matmul_cmplx('N', 'T', eig_q_mode, Rmat_cmplx, rot_eig, 1.0, 0.0, 3, 3,
+                     3, natom, 3, 3);
 
         for (ND_int ia = 0; ia < natom; ++ia)
-        { // remove q phase
+        {  // remove q phase
             ELPH_cmplx* restrict rot_eig_ia = rot_eig + ia * 3;
             for (int ix = 0; ix < 3; ++ix)
             {

@@ -1,4 +1,10 @@
 #include "gsort.h"
+
+#include <math.h>
+#include <stdlib.h>
+
+#include "../common/error.h"
+#include "../elphC.h"
 /*
 This file contain g vectors sorting functions
 */
@@ -70,7 +76,8 @@ void find_gvecs_idxs(const ND_int nsearchs, ELPH_float* search_gvecs,
     {
         ELPH_float* tmp_gvec = search_gvecs + 3 * isearch;
 
-        ELPH_float** search_ptr = bsearch(&tmp_gvec, gvec_ptrs, npw, sizeof(ELPH_float*), gsort_cmp);
+        ELPH_float** search_ptr =
+            bsearch(&tmp_gvec, gvec_ptrs, npw, sizeof(ELPH_float*), gsort_cmp);
 
         if (search_ptr != NULL)
         {

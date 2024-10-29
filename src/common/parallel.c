@@ -3,6 +3,13 @@ This file contains function which distributes cpus
 */
 #include "parallel.h"
 
+#include <mpi.h>
+#include <stddef.h>
+
+#include "../elphC.h"
+#include "dtypes.h"
+#include "error.h"
+
 /*get block size and starting idx of dimension that is distrbuted amoung cpus*/
 ND_int get_mpi_local_size_idx(const ND_int n, ND_int* start_idx, MPI_Comm Comm)
 {

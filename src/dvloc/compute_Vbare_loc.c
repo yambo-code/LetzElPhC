@@ -1,3 +1,14 @@
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../common/omp_pragma_def.h"
+#include "../elphC.h"
+#include "../fft/fft.h"
+#include "../wfc/wfc.h"
 #include "dvloc.h"
 
 /* Compute the electron phonon matrix elements i.e sandwich for Local part of KS
@@ -35,7 +46,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     /* nmag = 1 for non magnetic and = 2/4 for spin
     polarized/magnetic systems */
 
-    const ND_int nfft_loc = lattice->fft_dims[0] * lattice->fft_dims[1] * lattice->nfftz_loc;
+    const ND_int nfft_loc =
+        lattice->fft_dims[0] * lattice->fft_dims[1] * lattice->nfftz_loc;
 
     const ELPH_float* lat_vec = lattice->alat_vec;
     const ELPH_float* blat = lattice->blat_vec;
@@ -78,8 +90,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     ELPH_float ulmveckq[3];
     // ulmveckq is shift that is applyed to k+q vector
     // i.e -(Skq*kq - S*k - q)
-    ELPH_float tempSkq[3] = { 0, 0, 0 }; // S2*k2
-    ELPH_float tempSk[3] = { 0, 0, 0 }; // S1*k1
+    ELPH_float tempSkq[3] = {0, 0, 0};  // S2*k2
+    ELPH_float tempSk[3] = {0, 0, 0};   // S1*k1
     ELPH_float taukq_crys[3], tauk_crys[3];
     // fractional translation in crystal coordinates
     ELPH_float kvecSkq[3], kvecSk[3];
@@ -133,8 +145,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     rotateGvecs(Gk, symk, npwk, lat_vec, false, true, NULL, gSk_buf);
 
     // rotate the wave function in spin space
-    ELPH_cmplx su2kq[4] = { 1, 0, 0, 1 };
-    ELPH_cmplx su2k[4] = { 1, 0, 0, 1 };
+    ELPH_cmplx su2kq[4] = {1, 0, 0, 1};
+    ELPH_cmplx su2k[4] = {1, 0, 0, 1};
     /* Get SU(2) matrices for spinors*/
     SU2mat(symkq, nspinor, false, timerevkq, su2kq);
     SU2mat(symk, nspinor, false, timerevk, su2k);
@@ -143,15 +155,16 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     // which is done at sandwiching.
 
     /* scatter the wfc and gvecs */
-    int* gvecSGkq; // gvecs after rearragement // k+q
-    int* gvecSGk; // k
-    ELPH_cmplx* wfcSkq; // wfc after rearragement // k+q
-    ELPH_cmplx* wfcSk; // k
+    int* gvecSGkq;       // gvecs after rearragement // k+q
+    int* gvecSGk;        // k
+    ELPH_cmplx* wfcSkq;  // wfc after rearragement // k+q
+    ELPH_cmplx* wfcSk;   // k
 
     ND_int nGxySkq, nGxySk;
 
-    // Note : npwkq and npwk are overwritten by number of gvecs in gvecSGkq and gvecSGk
-    // respectively. Sort_pw internally allocates buffer that must be freed out side of the function
+    // Note : npwkq and npwk are overwritten by number of gvecs in gvecSGkq and
+    // gvecSGk respectively. Sort_pw internally allocates buffer that must be
+    // freed out side of the function
     Sort_pw(npwkq_total, npwkq, lattice->fft_dims, gSkq_buf, wfc_kq,
             nspin * nspinor * nbnds, &npwkq, &nGxySkq, &gvecSGkq, &wfcSkq,
             Comm->commK);
@@ -160,8 +173,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
             nspin * nspinor * nbnds, &npwk, &nGxySk, &gvecSGk, &wfcSk,
             Comm->commK);
 
-    // Note that we need to free gvecSGkq, gvecSGk, wfcSkq, wfcSk in this function
-    // when no longer need
+    // Note that we need to free gvecSGkq, gvecSGk, wfcSkq, wfcSk in this
+    // function when no longer need
 
     free(gSkq_buf);
     free(gSk_buf);
@@ -189,7 +202,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
                         wfcSkq_tmp, false);
     }
 
-    ELPH_cmplx* wfcSk_r = malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * nfft_loc);
+    ELPH_cmplx* wfcSk_r =
+        malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * nfft_loc);
     CHECK_ALLOC(wfcSk_r);
 
     struct ELPH_fft_plan fft_plan;
@@ -216,7 +230,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
         ELPH_cmplx* wfcSkr_tmp = wfcSk_r + iset * nspinor * nfft_loc;
 
-        // conjugate (only incase of timerevk is true) and then perform inverse FFT.
+        // conjugate (only incase of timerevk is true) and then perform inverse
+        // FFT.
         invfft3D(&fft_plan, nspinor, wfcSk_tmp, wfcSkr_tmp, timerevk);
         // Note that incase of time reversal symmetry,
         // inverse fft of the conjugate of input is performed.
@@ -233,7 +248,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq,
              lattice->fft_dims, FFTW_MEASURE, Comm->commK);
 
-    ELPH_cmplx* dVpsiG = malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * npwkq);
+    ELPH_cmplx* dVpsiG =
+        malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * npwkq);
     CHECK_ALLOC(dVpsiG);
 
     if (Comm->commK_rank == 0)
@@ -281,7 +297,9 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
             for (ND_int ibnd = 0; ibnd < nbnds; ++ibnd)
             {
                 /* compute the convolution FFT(dV(r)*psi(r))*/
-                ELPH_cmplx* dV_psiG_ptr = dVpsiG + is * nbnds * nspinor * npwkq + ibnd * nspinor * npwkq;
+                ELPH_cmplx* dV_psiG_ptr = dVpsiG +
+                                          is * nbnds * nspinor * npwkq +
+                                          ibnd * nspinor * npwkq;
 
                 fft_convolution3D(&fft_plan, nspinor, nmag, dV_r,
                                   psi_r_spin + ibnd * nspinor * nfft_loc,
@@ -306,7 +324,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
                          nbnds, nbnds, nspinor * npwkq);
             // reduce the electron phonon matrix elements
             ELPH_cmplx* elph_sum_buf;
-            ELPH_cmplx temp_sum = 0; // dummy
+            ELPH_cmplx temp_sum = 0;  // dummy
             if (Comm->commK_rank == 0)
             {
                 elph_sum_buf = elph_kq + (iv * nspin + is) * nbnds * nbnds;
@@ -315,8 +333,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
             {
                 elph_sum_buf = &temp_sum;
             }
-            int mpi_error = MPI_Reduce(elph_kq_mn, elph_sum_buf, nbnds * nbnds, ELPH_MPI_cmplx,
-                                       MPI_SUM, 0, Comm->commK);
+            int mpi_error = MPI_Reduce(elph_kq_mn, elph_sum_buf, nbnds * nbnds,
+                                       ELPH_MPI_cmplx, MPI_SUM, 0, Comm->commK);
             MPI_error_msg(mpi_error);
         }
     }

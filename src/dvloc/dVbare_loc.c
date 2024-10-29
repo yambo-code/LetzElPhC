@@ -1,3 +1,15 @@
+#include <complex.h>
+#include <math.h>
+#include <stdlib.h>
+
+#include "../common/constants.h"
+#include "../common/dtypes.h"
+#include "../common/error.h"
+#include "../common/numerical_func.h"
+#include "../common/omp_pragma_def.h"
+#include "../common/parallel.h"
+#include "../elphC.h"
+#include "../fft/fft.h"
 #include "dvloc.h"
 
 void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
@@ -52,7 +64,8 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
     const ND_int size_G_vecs = G_vecs_xy * lattice->fft_dims[2];
     const ND_int size_VG = nmodes * size_G_vecs;
 
-    ELPH_cmplx* VlocG = malloc(size_VG * sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+    ELPH_cmplx* VlocG =
+        malloc(size_VG * sizeof(ELPH_cmplx));  // 3*natom* ix_s*jy_s*kz
     CHECK_ALLOC(VlocG);
 
     int* gvecs = malloc(3 * size_G_vecs * sizeof(int));
@@ -63,7 +76,8 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
     const ELPH_float* vlocg = pseudo->vloc_table->vlocg;
     const ELPH_float* vploc_co = pseudo->vloc_table->vploc_co;
 
-    const ELPH_float dg = pseudo->vloc_table->dg; // spacing between two g points in g_co
+    const ELPH_float dg =
+        pseudo->vloc_table->dg;  // spacing between two g points in g_co
 
     ELPH_float* VlocGtype = malloc(sizeof(ELPH_float) * (ntype));
     CHECK_ALLOC(VlocGtype);
@@ -84,15 +98,16 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
             ELPH_float qGtemp[3] = {
                 get_miller_idx(ix, FFTx) + qpt[0],
                 get_miller_idx(jy, FFTy) + qpt[1],
-                get_miller_idx(kz, FFTz) + qpt[2]
-            }; // | q + G|
+                get_miller_idx(kz, FFTz) + qpt[2]};  // | q + G|
 
-            ELPH_float qGtempCart[3]; // in cartisian coordinate
+            ELPH_float qGtempCart[3];  // in cartisian coordinate
 
             MatVec3f(blat, qGtemp, false,
-                     qGtempCart); // 2*pi is included here //
+                     qGtempCart);  // 2*pi is included here //
 
-            ELPH_float qGnorm = sqrt(qGtempCart[0] * qGtempCart[0] + qGtempCart[1] * qGtempCart[1] + qGtempCart[2] * qGtempCart[2]);
+            ELPH_float qGnorm = sqrt(qGtempCart[0] * qGtempCart[0] +
+                                     qGtempCart[1] * qGtempCart[1] +
+                                     qGtempCart[2] * qGtempCart[2]);
 
             if (qGnorm > g_co[npts_co - 1])
             {
@@ -107,8 +122,11 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
              * broken */
             if (cutoff == '2')
             {
-                ELPH_float qGp = latvec[8] * sqrt(qGtempCart[0] * qGtempCart[0] + qGtempCart[1] * qGtempCart[1]);
-                cutoff_fac -= exp(-qGp * 0.5) * cos(qGtempCart[2] * latvec[8] * 0.5);
+                ELPH_float qGp =
+                    latvec[8] * sqrt(qGtempCart[0] * qGtempCart[0] +
+                                     qGtempCart[1] * qGtempCart[1]);
+                cutoff_fac -=
+                    exp(-qGp * 0.5) * cos(qGtempCart[2] * latvec[8] * 0.5);
             }
 
             for (ND_int itype = 0; itype < ntype; ++itype)
@@ -119,7 +137,10 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
                 // add long range part back
                 if (qGnorm >= ELPH_EPS)
                 {
-                    VlocGtype[itype] -= (4 * ELPH_PI * ELPH_e2) * ((pseudo->loc_pseudo)[itype].Zval) * exp(-qGnorm * qGnorm * 0.25 / eta) * cutoff_fac / (qGnorm * qGnorm * volume);
+                    VlocGtype[itype] -= (4 * ELPH_PI * ELPH_e2) *
+                                        ((pseudo->loc_pseudo)[itype].Zval) *
+                                        exp(-qGnorm * qGnorm * 0.25 / eta) *
+                                        cutoff_fac / (qGnorm * qGnorm * volume);
                 }
                 // printf("%f \n",VlocGtype[itype]);
             }
@@ -128,7 +149,9 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
             {
                 const ND_int itype = atom_type[ia];
                 const ELPH_float* pos_temp = atom_pos + 3 * ia;
-                ELPH_float qdottau = qGtempCart[0] * pos_temp[0] + qGtempCart[1] * pos_temp[1] + qGtempCart[2] * pos_temp[2];
+                ELPH_float qdottau = qGtempCart[0] * pos_temp[0] +
+                                     qGtempCart[1] * pos_temp[1] +
+                                     qGtempCart[2] * pos_temp[2];
                 ELPH_cmplx factor = -I * cexp(-I * qdottau);
                 factor *= VlocGtype[itype];
                 tmp_ptr[ia * 3] = factor * qGtempCart[0];
@@ -140,7 +163,8 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
 
     free(VlocGtype);
 
-    ELPH_cmplx* VlocG_mode = calloc(size_VG, sizeof(ELPH_cmplx)); // 3*natom* ix_s*jy_s*kz
+    ELPH_cmplx* VlocG_mode =
+        calloc(size_VG, sizeof(ELPH_cmplx));  // 3*natom* ix_s*jy_s*kz
     CHECK_ALLOC(VlocG_mode);
 
     // VlocG -> (nffs,atom,3),
