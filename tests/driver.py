@@ -13,6 +13,8 @@ import subprocess
 from convert_data import convert_save_dbs, generate_binary_ph_save
 import glob
 
+stdout_err_file = 'TEST_RUN_OUTPUT'
+
 def make_inp_file(dict_list,qpools=1,kpools=1):
     # pass the section to this function to create a letzelph input file
     ### create letzelph input file
@@ -56,7 +58,7 @@ def is_letzelphc_double_precision(lelphc_cmd='./lelphc'):
 
 
 def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test_name='', \
-            dtype_in=[np.double, np.single], dtype_out=np.single):
+            dtype_in=[np.double, np.single], dtype_out=np.single, out_file='/dev/null'):
     # return [total_tests, total_passes, total_fails]
     config = ConfigParser()
     config.read(ini_file)
@@ -77,10 +79,9 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
     if ncpus >1 : ncpus_set.append(ncpus)
 
     ## clear any resudual files
-    os.system('rm test_input.in > /dev/null 2>&1')
-    os.system('rm testlog > /dev/null 2>&1')
-    os.system('rm ndb.elph > /dev/null 2>&1')
-    os.system('rm ndb.Dmats > /dev/null 2>&1')
+    os.system('rm test_input.in >> %s 2>&1' %(out_file))
+    os.system('rm ndb.elph >> %s 2>&1'%(out_file))
+    os.system('rm ndb.Dmats >> %s 2>&1'%(out_file))
 
     #print('=> Running test job : %s' %(test_name))
     for i in sections:
@@ -135,16 +136,15 @@ def run_test(ini_file, lelphc_cmd='lelphc', mpirun_cmd="mpirun", ncpus = 1, test
                 processor_sets = get_triplet(icpu,nqpool_max,nkpool_max)
                 for iset in processor_sets:
                     make_inp_file(config[i],iset[0],iset[1])
-                    os.system("%s -n %d %s --code=%s -F test_input.in &> testlog" \
-                        %(mpirun_cmd, icpu, lelphc_cmd, code))
+                    os.system("%s -n %d %s --code=%s -F test_input.in >> %s 2>&1" \
+                        %(mpirun_cmd, icpu, lelphc_cmd, code, out_file))
                     
                     test_pass = check_dmat_files('ndb.Dmats', dmat_db_ref) \
                         and check_elph_files('ndb.elph', elph_db_ref)
                     ## remove files
-                    os.system('rm test_input.in > /dev/null 2>&1')
-                    os.system('rm testlog > /dev/null 2>&1')
-                    os.system('rm ndb.elph > /dev/null 2>&1')
-                    os.system('rm ndb.Dmats > /dev/null 2>&1')
+                    os.system('rm test_input.in >> %s 2>&1' %(out_file))
+                    os.system('rm ndb.elph >> %s 2>&1'%(out_file))
+                    os.system('rm ndb.Dmats >> %s 2>&1'%(out_file))
 
                     in_total += 1
                     if test_pass : in_passed += 1
@@ -182,6 +182,9 @@ def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
     print('MPIRUN    : %s'%(mpirun_cmd))
     print('LELPHC    : %s'%(lelphc_cmd))
 
+    stdout_err_file_tmp = os.path.join(cwd, stdout_err_file)
+    os.system("touch %s"%(stdout_err_file_tmp))
+
     is_double_precision = is_letzelphc_double_precision(lelphc_cmd)
 
     dtype_out = np.single
@@ -198,7 +201,7 @@ def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
         test_path = os.path.join(cwd, folder_name.strip())
         os.chdir(test_path)
         res = run_test(test_file_name, lelphc_cmd=lelphc_cmd, mpirun_cmd=mpirun_cmd, \
-            ncpus = ncpus, test_name=folder_name, dtype_out=dtype_out)
+            ncpus = ncpus, test_name=folder_name, dtype_out=dtype_out,out_file=stdout_err_file_tmp)
         test_results.append(res)
         os.chdir(cwd)
 
