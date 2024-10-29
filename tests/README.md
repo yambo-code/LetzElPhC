@@ -13,7 +13,7 @@ To run the test suite:
 ```properties
 python3 run_tests.py --ncpus=1 --mpirun=mpirun --lelphc=./lelphc
 ```
-## For more information about the available options use the below command
+For more information about the available options use the below command
 ```
 python3 run_tests.py --help 
 ``` 
