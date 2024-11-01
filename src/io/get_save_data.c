@@ -290,15 +290,6 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         {
             transpose3x3f(sym_temp + 9 * i, lattice->syms[i].Rmat);  // set Rmat
 
-            // find the inverse of the symmetry.
-            lattice->syms[i].inv_idx = find_inv_symm_idx(
-                lattice->nsym, lattice->syms[i].Rmat, sym_temp, true);
-
-            if (lattice->syms[i].inv_idx < 0)
-            {
-                error_msg("Inverse of symmetry not present in the group");
-            }
-
             memcpy(lattice->syms[i].tau, tau + 3 * i,
                    sizeof(ELPH_float) * 3);  // set tau
 

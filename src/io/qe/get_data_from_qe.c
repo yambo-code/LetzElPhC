@@ -160,7 +160,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
             {
                 if (fabs(sym_tmp[ix]) < ELPH_EPS)
                 {
-                    sym_tmp[ix] = ELPH_EPS;
+                    sym_tmp[ix] = fabs(sym_tmp[ix]);
                     // This is to make sure that we donot observe any
                     // platform/compiler specific things
                 }
@@ -195,25 +195,6 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     if (ph_tim_rev)
     {
         phonon->nph_sym *= 2;
-    }
-
-    // find the inverse index for symmetries
-    // Note this is only true for the spacial symmetries.
-    // Warning: The inverse of time reversal symmetries is not correct. (just
-    // donot use it !)
-    if (Comm->commW_rank == 0)
-    {
-        for (ND_int isym = 0; isym < phonon->nph_sym; ++isym)
-        {
-            phonon->ph_syms[isym].inv_idx =
-                find_inv_symm_idx(phonon->nph_sym, phonon->ph_syms[isym].Rmat,
-                                  ph_sym_mats, false);
-
-            if (phonon->ph_syms[isym].inv_idx < 0)
-            {
-                error_msg("Phonon symmetries do not form a group");
-            }
-        }
     }
 
     // bcast symetries
