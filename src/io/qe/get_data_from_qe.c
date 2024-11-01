@@ -157,6 +157,12 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
 
             for (int ix = 0; ix < 9; ++ix)
             {
+                if (fabs(sym_tmp[ix]) < ELPH_EPS)
+                {
+                    sym_tmp[ix] = ELPH_EPS;
+                    // This is to make sure that we donot observe any
+                    // platform/compiler specific things
+                }
                 sym_tmp_trev[ix] = -sym_tmp[ix];
             }
             // first to cartisian units
@@ -191,6 +197,9 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     }
 
     // find the inverse index for symmetries
+    // Note this is only true for the spacial symmetries.
+    // Warning: The inverse of time reversal symmetries is not correct. (just
+    // donot use it !)
     if (Comm->commW_rank == 0)
     {
         for (ND_int isym = 0; isym < phonon->nph_sym; ++isym)
