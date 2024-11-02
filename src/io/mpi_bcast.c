@@ -72,16 +72,6 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
     // This function will Bcast struct symmetrys
     // Note this will not create any data so pass allocated array
 
-    /*
-    struct symmetry
-    {
-        ELPH_float Rmat[9];
-        // rotation matrix
-        ELPH_float tau[3];
-        // fractional translation
-        bool time_rev;
-        // if this symmetry is time reversal
-    };*/
     int mpi_error;
     struct symmetry dummy;
 
