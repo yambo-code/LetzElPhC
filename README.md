@@ -16,7 +16,7 @@ HPC @ Uni.lu (Computing resources)
 3) ~~Prepare automatic test cases~~
 4) Improve OPENMP
 5) Implement basic Acoustic sum rule
-6) Turn on different kernel options for the user
+6) ~~Turn on different kernel options for the user~~
 7) Frohlich Interpolation
 8) DFT + U
 
