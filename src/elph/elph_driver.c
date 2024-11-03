@@ -185,8 +185,23 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
         // read dynamical matrix and dvscf for the iBZ qpt
         if (dft_code == DFT_CODE_QE)
         {
+            ELPH_cmplx* dvscf_read = NULL;
+            if (kernel->screening == ELPH_DFPT_SCREENING)
+            {
+                dvscf_read = dVscf;
+            }
+            else
+            {
+                // zero out the buffer. This is must !
+                ND_int dvscf_num = nmodes * lattice->nmag * nfft_loc;
+                for (ND_int ix = 0; ix < dvscf_num; ++ix)
+                {
+                    dVscf[ix] = 0.0;
+                }
+            }
+            //
             get_dvscf_dyn_qe(input_data->ph_save_dir, lattice, iqpt_iBZg,
-                             eigVec, dVscf, omega_ph, mpi_comms);
+                             eigVec, dvscf_read, omega_ph, mpi_comms);
             // qe dvscf only contains dV_Ha + dV_xc, we need to add the local
             // part of pseudo
         }
@@ -266,8 +281,8 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
         // Now compute and write the electron-phonon matrix elements
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, ncid_elph, varid_elph, ncid_dmat,
-                                varid_dmat, true, input_data->kminusq,
-                                mpi_comms);
+                                varid_dmat, kernel->non_loc,
+                                input_data->kminusq, mpi_comms);
     }
 
     free(eig_Sq);
