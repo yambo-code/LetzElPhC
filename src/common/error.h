@@ -1,5 +1,14 @@
 #pragma once
 
+// some error macros
+
+#define ERR_DIR_DOES_NOT_EXIST 1
+#define ERR_NOT_A_DIRECTORY -1
+
+#define ERR_FILE_OPEN_READ 1   // cannot open file to read
+#define ERR_FILE_OPEN_WRITE 2  // cannot open file to write
+#define ERR_FILE_COPY_FAIL 3   // copying files failed
+
 /* Function to print error message to the the file */
 #define MPI_error_msg(err_code)                                         \
     {                                                                   \

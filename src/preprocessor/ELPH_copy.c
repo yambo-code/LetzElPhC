@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "../common/error.h"
 // above two headers are found in both windows and posix systems.
 
 int check_dir_exists(const char *dir_path)
@@ -15,7 +17,7 @@ int check_dir_exists(const char *dir_path)
 
     if (stat(dir_path, &dir_info))
     {
-        return 1;
+        return ERR_DIR_DOES_NOT_EXIST;
     }
     else if (dir_info.st_mode & S_IFDIR)
     {
@@ -23,7 +25,7 @@ int check_dir_exists(const char *dir_path)
     }
     else
     {
-        return 1;
+        return ERR_NOT_A_DIRECTORY;
     }
 }
 
@@ -33,13 +35,13 @@ int copy_files(const char *file_read, const char *file_write)
     FILE *frd = fopen(file_read, "rb");
     if (!frd)
     {
-        return 1;
+        return ERR_FILE_OPEN_READ;
     }
     FILE *fwr = fopen(file_write, "wb");
     if (!fwr)
     {
         fclose(frd);
-        return 1;
+        return ERR_FILE_OPEN_WRITE;
     }
 
     char read_buf[BUFSIZ];  // BUFSIZ is defined in <stdio.h>
@@ -50,7 +52,7 @@ int copy_files(const char *file_read, const char *file_write)
     {
         if (fwrite(read_buf, 1, nbytes, fwr) != nbytes)
         {
-            err_code = 1;
+            err_code = ERR_FILE_COPY_FAIL;
             break;
         }
     }

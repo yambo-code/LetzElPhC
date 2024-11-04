@@ -244,7 +244,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     if (0 != copy_files(src_file_tmp, dest_file_tmp))
     {
-        printf("Warning : File not found %s.\n", src_file_tmp);
+        printf("Warning : Error copying file %s.\n", src_file_tmp);
     }
 
     // 2) copy pseudo pots files
@@ -284,7 +284,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         if (0 != copy_files(src_file_tmp, dest_file_tmp))
         {
-            printf("Warning : File not found %s.\n", src_file_tmp);
+            printf("Warning : Error copying file %s.\n", src_file_tmp);
         }
     }
     ezxml_free(qexml);
@@ -299,7 +299,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     if (0 != copy_files(src_file_tmp, dest_file_tmp))
     {
-        printf("Warning : File not found %s.\n", src_file_tmp);
+        printf("Warning : Error copying file %s.\n", src_file_tmp);
     }
 
     // open dyn0 file to get number of qpoints
@@ -342,7 +342,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         if (0 != copy_files(src_file_tmp, dest_file_tmp))
         {
-            printf("Warning : File not found %s.\n", src_file_tmp);
+            printf("Warning : Error copying file %s.\n", src_file_tmp);
         }
     }
 
@@ -429,7 +429,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         if (0 != copy_files(src_file_tmp, dest_file_tmp))
         {
-            printf("Warning : File not found %s.\n", src_file_tmp);
+            printf("Warning : Error copying file %s.\n", src_file_tmp);
         }
     }
 
@@ -452,6 +452,7 @@ static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
                                buffer_tmp, buffer_size);
         if (0 != check_dir_exists(buffer_tmp))
         {
+            // issue with dir (either cannot access or does not exist)
             break;
         }
         ++counter;
