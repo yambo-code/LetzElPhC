@@ -4,6 +4,7 @@
 
 #include "../common/dtypes.h"
 #include "../common/error.h"
+#include "../common/string_func.h"
 #include "elph.h"
 
 void init_kernel(struct kernel_info* kernel)
@@ -18,7 +19,7 @@ void set_kernel(const char* kernel_str, struct kernel_info* kernel)
 {
     size_t name_str_size = sizeof(kernel->name_str) - 1;
     kernel->name_str[name_str_size] = '\0';
-    strncpy(kernel->name_str, kernel_str, name_str_size);
+    strncpy_custom(kernel->name_str, kernel_str, name_str_size);
 
     if (!strcmp(kernel_str, "dfpt"))
     {

@@ -36,9 +36,9 @@ void init_usr_input(struct usr_input** input)
     inp->nqpool = 1;
     inp->start_bnd = 0;
     inp->end_bnd = 0;
-    strncpy(inp->save_dir, "SAVE", READ_STR_LEN - 1);
-    strncpy(inp->ph_save_dir, "ph_save", READ_STR_LEN - 1);
-    strncpy(inp->kernel_str, "dfpt", READ_STR_LEN - 1);
+    strncpy_custom(inp->save_dir, "SAVE", READ_STR_LEN);
+    strncpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
+    strncpy_custom(inp->kernel_str, "dfpt", READ_STR_LEN);
     inp->kminusq = false;  // default is standard
 }
 
@@ -115,15 +115,15 @@ static int handler(void* user, const char* section, const char* name,
     }
     else if (strcmp(name, "save_dir") == 0)
     {
-        strncpy(inp->save_dir, value, READ_STR_LEN - 1);
+        strncpy_custom(inp->save_dir, value, READ_STR_LEN);
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
-        strncpy(inp->ph_save_dir, value, READ_STR_LEN - 1);
+        strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
     }
     else if (strcmp(name, "kernel") == 0)
     {
-        strncpy(inp->kernel_str, value, READ_STR_LEN - 1);
+        strncpy_custom(inp->kernel_str, value, READ_STR_LEN);
         lowercase_str(inp->kernel_str);
     }
     else if (strcmp(name, "convention") == 0)

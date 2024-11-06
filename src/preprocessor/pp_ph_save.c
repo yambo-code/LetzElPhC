@@ -48,8 +48,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
     else
     {
-        strncpy(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
-                ELPH_MAX_ENV_SIZE - 1);
+        strncpy_custom(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
+                       ELPH_MAX_ENV_SIZE);
     }
     //
     FILE* fp = fopen(inp_file, "r");
@@ -85,7 +85,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     env_var_tmp = getenv("ESPRESSO_TMPDIR");
     if (env_var_tmp)
     {
-        strncpy(out_dir, env_var_tmp, PH_X_INP_READ_BUF_SIZE - 1);
+        strncpy_custom(out_dir, env_var_tmp, PH_X_INP_READ_BUF_SIZE);
     }
     else
     {
@@ -109,14 +109,14 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         }
         // now read key
         char* token = strtok(read_buf, "=");
-        strncpy(key_str, token, PH_X_INP_READ_BUF_SIZE - 1);
+        strncpy_custom(key_str, token, PH_X_INP_READ_BUF_SIZE);
         // lower case the key
         lowercase_str(key_str);
         //  read value
         token = strtok(NULL, "=");
         if (token)
         {
-            strncpy(val_str, token, PH_X_INP_READ_BUF_SIZE - 1);
+            strncpy_custom(val_str, token, PH_X_INP_READ_BUF_SIZE);
         }
         else
         {
@@ -126,10 +126,10 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         // remove spaces
         sscanf(key_str, "%s", tmp_buf);
-        strncpy(key_str, tmp_buf, PH_X_INP_READ_BUF_SIZE - 1);
+        strncpy_custom(key_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
 
         sscanf(val_str, "%s", tmp_buf);
-        strncpy(val_str, tmp_buf, PH_X_INP_READ_BUF_SIZE - 1);
+        strncpy_custom(val_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
 
         if (!strcmp(key_str, "ldisp"))
         {
@@ -145,27 +145,27 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         //
         else if (!strcmp(key_str, "outdir"))
         {
-            strncpy(out_dir, val_str, PH_X_INP_READ_BUF_SIZE - 1);
+            strncpy_custom(out_dir, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "fildyn"))
         {
-            strncpy(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE - 1);
+            strncpy_custom(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "fildvscf"))
         {
-            strncpy(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE - 1);
+            strncpy_custom(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "fildrho"))
         {
-            strncpy(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE - 1);
+            strncpy_custom(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "prefix"))
         {
-            strncpy(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE - 1);
+            strncpy_custom(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "electron_phonon"))
@@ -256,7 +256,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         error_msg("Error opening data-file-schema.xml file");
     }
 
-    ezxml_t qexml = ezxml_parse_fp(fp);
+    ezxml_t qexml = ezxml_parse_fp(fp_xml);
     if (qexml == NULL)
     {
         error_msg("Error parsing data-file-schema.xml file");
@@ -316,11 +316,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
 
     // dummy
-    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp);
+    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp_dyn0);
 
     int ndyn;
     // read number of dyn files
-    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp);
+    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp_dyn0);
 
     if (sscanf(src_file_tmp, "%d", &ndyn) != 1)
     {

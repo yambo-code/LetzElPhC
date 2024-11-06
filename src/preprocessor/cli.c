@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../common/string_func.h"
 #include "../elphC.h"
 #include "ELPH_getopt.h"
 #include "preprocessor.h"
@@ -62,7 +63,7 @@ void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
                 }
                 break;
             case 'f':
-                strncpy(calc_info->input_file, optarg, 512 - 1);
+                strncpy_custom(calc_info->input_file, optarg, 512);
                 break;
             case '?':
                 fprintf(stderr, "Unsupported argument given.\n");
