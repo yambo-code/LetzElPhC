@@ -45,8 +45,6 @@ struct symmetry
     // rotation matrix
     ELPH_float tau[3];
     // fractional translation
-    ND_int inv_idx;
-    // index of inverse in the array.
     bool time_rev;
     // if this symmetry is time reversal
 };

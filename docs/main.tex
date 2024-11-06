@@ -275,20 +275,18 @@ $ lelphc -pp --code=qe -F PH.X_input_file
 #### Where PH.X_input_file is the input file of ph.x code used for computing phonons
 \end{lstlisting}
 Upon successful execution, the \textcolor{blue}{\bf{ph\_save}} directory will be created, containing all necessary files.
-If you wish to create soft symlinks instead of copying these files, set the following environment variable (works only on linux):
+% If you wish to create soft symlinks instead of copying these files, set the following environment variable (works only on linux):
+% \begin{lstlisting}[language=bash]
+% $ export ELPH_COPY_CMD="ln -sr"
+% \end{lstlisting}
+% and then run the preprocessor.
+If you wish to change the name of the \textcolor{blue}{\bf{ph\_save}} directory, you can set the following environment variable:
 \begin{lstlisting}[language=bash]
-$ export ELPH_COPY_CMD="ln -sr"
-\end{lstlisting}
-and then run the preprocessor.
-Additionally, the name of the \textcolor{blue}{\bf{ph\_save}} directory can be changed using another environment variable:
-\begin{lstlisting}[language=bash]
-$ export ELPH_SAVE_DIR=ph_save_name_you_want
+$ export ELPH_PH_SAVE_DIR=ph_save_name_you_want
 \end{lstlisting}
 \textbf{Remarks}:
 \begin{itemize}
 \item The new format XML dynamical matrix files are currently not supported.
-\item The preprocessor does not directly work with the image parallelization. In case if you use image parallelization,, copy all prefix.q\_* in each \_ph* folder (other than \_ph0) to the \_ph0 directory 
-and run the preprocessor.
 \end{itemize}
 
 \section{Performing the ELPH Calculation (Final Step)}
@@ -339,7 +337,11 @@ A detailed description of the input file is provided below:
     # ph_save directory that was created with preprocessor
     
     kernel          = dfpt
-    ## type of kernel, only dfpt supported right Now
+    
+    ## 1) dfpt (default):     Uses the total change in the Kohn-Sham potential (DFPT screening).
+    ## 2) dfpt_local    :     Excludes the contribution from the non-local part of the pseudopotentials (p.p.).
+    ## 3) bare          :     No screening; includes only contributions from the local and non-local parts of the pseudopotentials.
+    ## 4) bare_local    :     Includes only the contribution from the local part of the pseudopotential.
 
     convention      = standard 
     # standard/yambo, If standard (default) 

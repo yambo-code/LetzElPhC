@@ -10,7 +10,7 @@
 #include "inih/ini.h"
 #include "io.h"
 
-#define MAX_STR_INPUT 1400
+#define READ_STR_LEN 600
 
 static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm);
 static int handler(void* user, const char* section, const char* name,
@@ -25,20 +25,20 @@ void init_usr_input(struct usr_input** input)
 
     struct usr_input* inp = *input;
 
-    inp->save_dir = calloc(MAX_STR_INPUT, 1);
+    inp->save_dir = calloc(READ_STR_LEN * 3, 1);
     CHECK_ALLOC(inp->save_dir);
 
-    inp->ph_save_dir = inp->save_dir + 600;
-    inp->kernel_str = inp->save_dir + 1200;
+    inp->ph_save_dir = inp->save_dir + READ_STR_LEN;
+    inp->kernel_str = inp->save_dir + 2 * READ_STR_LEN;
 
     // defaults
     inp->nkpool = 1;
     inp->nqpool = 1;
     inp->start_bnd = 0;
     inp->end_bnd = 0;
-    strcpy(inp->save_dir, "SAVE");
-    strcpy(inp->ph_save_dir, "ph_save");
-    strcpy(inp->kernel_str, "dfpt");
+    strncpy_custom(inp->save_dir, "SAVE", READ_STR_LEN);
+    strncpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
+    strncpy_custom(inp->kernel_str, "dfpt", READ_STR_LEN);
     inp->kminusq = false;  // default is standard
 }
 
@@ -54,7 +54,8 @@ static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
     int mpi_error;
 
     // all char * will be bcasted in one single call
-    mpi_error = MPI_Bcast(input->save_dir, MAX_STR_INPUT, MPI_CHAR, root, comm);
+    mpi_error =
+        MPI_Bcast(input->save_dir, READ_STR_LEN * 3, MPI_CHAR, root, comm);
     MPI_error_msg(mpi_error);
     // ph_save_dir and kernel_str are also broadcasted when entire save_dir is
     // Bcasted
@@ -114,15 +115,15 @@ static int handler(void* user, const char* section, const char* name,
     }
     else if (strcmp(name, "save_dir") == 0)
     {
-        strcpy(inp->save_dir, value);
+        strncpy_custom(inp->save_dir, value, READ_STR_LEN);
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
-        strcpy(inp->ph_save_dir, value);
+        strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
     }
     else if (strcmp(name, "kernel") == 0)
     {
-        strcpy(inp->kernel_str, value);
+        strncpy_custom(inp->kernel_str, value, READ_STR_LEN);
         lowercase_str(inp->kernel_str);
     }
     else if (strcmp(name, "convention") == 0)

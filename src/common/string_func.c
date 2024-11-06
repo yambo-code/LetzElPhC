@@ -1,6 +1,7 @@
 #include "string_func.h"
 
 #include <ctype.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,6 +9,21 @@
 /*
 This file contains some useful string functions
 */
+
+char* strncpy_custom(char* dest, const char* src, size_t count)
+{
+    // this does strncpy(dest,src,n-1) and sets nth element as \0
+    if (1 == count)
+    {
+        dest[0] = '\0';
+    }
+    else if (count > 1)
+    {
+        strncpy(dest, src, count - 1);
+        dest[count - 1] = '\0';
+    }
+    return dest;
+}
 
 void lowercase_str(char* str)
 {

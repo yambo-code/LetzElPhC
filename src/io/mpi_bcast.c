@@ -75,8 +75,8 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
     int mpi_error;
     struct symmetry dummy;
 
-    int lengths[4] = {9, 3, 1, 1};
-    MPI_Aint displacements[4], base_address;
+    int lengths[3] = {9, 3, 1};
+    MPI_Aint displacements[3], base_address;
 
     // get address of members
     mpi_error = MPI_Get_address(&dummy, &base_address);
@@ -88,23 +88,19 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
     mpi_error = MPI_Get_address(dummy.tau, &displacements[1]);  // 3
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Get_address(&dummy.inv_idx, &displacements[2]);  // 1
+    mpi_error = MPI_Get_address(&dummy.time_rev, &displacements[2]);  // 1
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Get_address(&dummy.time_rev, &displacements[3]);  // 1
-    MPI_error_msg(mpi_error);
-
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 3; ++i)
     {
         displacements[i] = MPI_Aint_diff_stub(displacements[i], base_address);
     }
 
-    MPI_Datatype types[4] = {ELPH_MPI_float, ELPH_MPI_float, ELPH_MPI_ND_INT,
-                             MPI_C_BOOL};
+    MPI_Datatype types[3] = {ELPH_MPI_float, ELPH_MPI_float, MPI_C_BOOL};
 
     MPI_Datatype symm_type;
     mpi_error =
-        MPI_Type_create_struct(4, lengths, displacements, types, &symm_type);
+        MPI_Type_create_struct(3, lengths, displacements, types, &symm_type);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Type_commit(&symm_type);

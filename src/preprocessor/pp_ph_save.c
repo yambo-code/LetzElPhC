@@ -1,5 +1,5 @@
 /*
-This file contains functions which are system dependent
+This file contains functions which are os dependent.
 */
 #include <errno.h>
 #include <mpi.h>
@@ -12,59 +12,35 @@ This file contains functions which are system dependent
 #include "../common/string_func.h"
 #include "../elphC.h"
 #include "../io/ezxml/ezxml.h"
+#include "ELPH_copy.h"
 #include "preprocessor.h"
 
 #if defined(_WIN32)
 #include <direct.h>
 #define mkdir(path, mode) _mkdir(path)
-#define ELPH_COPY_CMD_DEFAULT "copy"
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
-#define ELPH_COPY_CMD_DEFAULT "cp"
 #endif
+
+static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
+                           ND_int buffer_size);
 
 void create_ph_save_dir_pp_qe(const char* inp_file)
 {
-    // first check if system can find a command processor
-    if (!system(NULL))
-    {
-        fprintf(stderr, "System cannot find a command processor.\n");
-        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-    }
-
     //  parse the input file
     // open the  qe ph.x input file
 
-    char ELPH_COPY_CMD[ELPH_MAX_ENV_SIZE];
     char PH_SAVE_DIR_NAME[ELPH_MAX_ENV_SIZE];
 
-    // check of env exits for copy cmd and ph_save
-    char* env_var_tmp = getenv("ELPH_COPY_CMD");
+    // check if env exits for ph_save
+    char* env_var_tmp = getenv("ELPH_PH_SAVE_DIR");
     if (env_var_tmp && strlen(env_var_tmp) > 0)
     {
         if (strlen(env_var_tmp) > (ELPH_MAX_ENV_SIZE - 1))
         {
             fprintf(stderr,
-                    "Warning : length of ELPH_COPY_CMD environment "
-                    "variable must be strictly less than %d\n",
-                    (int)ELPH_MAX_ENV_SIZE);
-        }
-        snprintf(ELPH_COPY_CMD, ELPH_MAX_ENV_SIZE, "%s", env_var_tmp);
-    }
-    else
-    {
-        strcpy(ELPH_COPY_CMD, ELPH_COPY_CMD_DEFAULT);
-    }
-    //
-    //
-    env_var_tmp = getenv("ELPH_SAVE_DIR");
-    if (env_var_tmp && strlen(env_var_tmp) > 0)
-    {
-        if (strlen(env_var_tmp) > (ELPH_MAX_ENV_SIZE - 1))
-        {
-            fprintf(stderr,
-                    "Warning : length of ELPH_SAVE_DIR environment "
+                    "Warning : length of ELPH_PH_SAVE_DIR environment "
                     "variable must be strictly less than %d\n",
                     (int)ELPH_MAX_ENV_SIZE);
         }
@@ -72,7 +48,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
     else
     {
-        strcpy(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT);
+        strncpy_custom(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
+                       ELPH_MAX_ENV_SIZE);
     }
     //
     FILE* fp = fopen(inp_file, "r");
@@ -108,7 +85,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     env_var_tmp = getenv("ESPRESSO_TMPDIR");
     if (env_var_tmp)
     {
-        strcpy(out_dir, env_var_tmp);
+        strncpy_custom(out_dir, env_var_tmp, PH_X_INP_READ_BUF_SIZE);
     }
     else
     {
@@ -132,14 +109,14 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         }
         // now read key
         char* token = strtok(read_buf, "=");
-        strcpy(key_str, token);
+        strncpy_custom(key_str, token, PH_X_INP_READ_BUF_SIZE);
         // lower case the key
         lowercase_str(key_str);
         //  read value
         token = strtok(NULL, "=");
         if (token)
         {
-            strcpy(val_str, token);
+            strncpy_custom(val_str, token, PH_X_INP_READ_BUF_SIZE);
         }
         else
         {
@@ -149,10 +126,10 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         // remove spaces
         sscanf(key_str, "%s", tmp_buf);
-        strcpy(key_str, tmp_buf);
+        strncpy_custom(key_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
 
         sscanf(val_str, "%s", tmp_buf);
-        strcpy(val_str, tmp_buf);
+        strncpy_custom(val_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
 
         if (!strcmp(key_str, "ldisp"))
         {
@@ -168,27 +145,27 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         //
         else if (!strcmp(key_str, "outdir"))
         {
-            strcpy(out_dir, val_str);
+            strncpy_custom(out_dir, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "fildyn"))
         {
-            strcpy(dyn_prefix, val_str);
+            strncpy_custom(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "fildvscf"))
         {
-            strcpy(dvscf_prefix, val_str);
+            strncpy_custom(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "fildrho"))
         {
-            strcpy(drho_prefix, val_str);
+            strncpy_custom(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "prefix"))
         {
-            strcpy(scf_prefix, val_str);
+            strncpy_custom(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
         }
         //
         else if (!strcmp(key_str, "electron_phonon"))
@@ -241,7 +218,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     char* src_file_tmp = read_buf;
     char* dest_file_tmp = read_buf + PH_X_INP_READ_BUF_SIZE;
-    char* exe_cmd_tmp = read_buf + 2 * PH_X_INP_READ_BUF_SIZE;
+    char* tmp_file_buf = read_buf + 2 * PH_X_INP_READ_BUF_SIZE;
     // from now we use read buffer as file_name_buf
 
     // now create the ph_save directory
@@ -265,9 +242,10 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         (const char*[]){PH_SAVE_DIR_NAME, "data-file-schema.xml", NULL},
         dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-    snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD,
-             src_file_tmp, dest_file_tmp);
-    system(exe_cmd_tmp);
+    if (0 != copy_files(src_file_tmp, dest_file_tmp))
+    {
+        printf("Warning : Error copying file %s.\n", src_file_tmp);
+    }
 
     // 2) copy pseudo pots files
     // since src_file_tmp store file path of data-file-schema.xml we
@@ -278,7 +256,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         error_msg("Error opening data-file-schema.xml file");
     }
 
-    ezxml_t qexml = ezxml_parse_fp(fp);
+    ezxml_t qexml = ezxml_parse_fp(fp_xml);
     if (qexml == NULL)
     {
         error_msg("Error parsing data-file-schema.xml file");
@@ -303,10 +281,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
         cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, tmp_str, NULL},
                                dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
-                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
 
-        system(exe_cmd_tmp);
+        if (0 != copy_files(src_file_tmp, dest_file_tmp))
+        {
+            printf("Warning : Error copying file %s.\n", src_file_tmp);
+        }
     }
     ezxml_free(qexml);
     fclose(fp_xml);
@@ -318,10 +297,10 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, "dyn0", NULL},
                            dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-    snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s", ELPH_COPY_CMD,
-             src_file_tmp, dest_file_tmp);
-
-    system(exe_cmd_tmp);
+    if (0 != copy_files(src_file_tmp, dest_file_tmp))
+    {
+        printf("Warning : Error copying file %s.\n", src_file_tmp);
+    }
 
     // open dyn0 file to get number of qpoints
     FILE* fp_dyn0 = fopen(src_file_tmp, "r");
@@ -337,11 +316,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
 
     // dummy
-    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp);
+    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp_dyn0);
 
     int ndyn;
     // read number of dyn files
-    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp);
+    fgets(src_file_tmp, PH_X_INP_READ_BUF_SIZE, fp_dyn0);
 
     if (sscanf(src_file_tmp, "%d", &ndyn) != 1)
     {
@@ -361,10 +340,15 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
             (const char*[]){PH_SAVE_DIR_NAME, dyn_tmp_str, NULL}, dest_file_tmp,
             PH_X_INP_READ_BUF_SIZE);
 
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
-                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
-        system(exe_cmd_tmp);
+        if (0 != copy_files(src_file_tmp, dest_file_tmp))
+        {
+            printf("Warning : Error copying file %s.\n", src_file_tmp);
+        }
     }
+
+    // Find the number of qpools used in ph.x calculation
+    ND_int ph_x_qpools =
+        find_nqpools(out_dir, tmp_file_buf, PH_X_INP_READ_BUF_SIZE);
 
     // 3) copy dvscf files
     for (int idyn = 0; idyn < ndyn; ++idyn)
@@ -381,39 +365,46 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
             strcpy(dvscf_tmp_str, "1");
         }
         // set the source file
-        if (idyn)
+        for (ND_int iphx_pool = 0; iphx_pool < ph_x_qpools; ++iphx_pool)
         {
-            // use dest_file_tmp and exe_cmd_tmp as tmp buffer string
-            snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.q_%d",
-                     scf_prefix, idyn + 1);
-            snprintf(exe_cmd_tmp, PH_X_INP_READ_BUF_SIZE, "%s.%s%s", scf_prefix,
-                     dvscf_prefix, dvscf_tmp_str);
+            char ph0_tmp[16];
+            snprintf(ph0_tmp, sizeof(ph0_tmp) - 1, "_ph%d", (int)iphx_pool);
+            if (idyn)
+            {
+                // use dest_file_tmp and tmp_file_buf as tmp buffer string
+                snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.q_%d",
+                         scf_prefix, idyn + 1);
+                snprintf(tmp_file_buf, PH_X_INP_READ_BUF_SIZE, "%s.%s%s",
+                         scf_prefix, dvscf_prefix, dvscf_tmp_str);
 
+                cwk_path_join_multiple(
+                    (const char*[]){out_dir, ph0_tmp, dest_file_tmp,
+                                    tmp_file_buf, NULL},
+                    src_file_tmp, PH_X_INP_READ_BUF_SIZE);
+            }
+            else
+            {
+                snprintf(tmp_file_buf, PH_X_INP_READ_BUF_SIZE, "%s.%s%s",
+                         scf_prefix, dvscf_prefix, dvscf_tmp_str);
+
+                cwk_path_join_multiple(
+                    (const char*[]){out_dir, ph0_tmp, tmp_file_buf, NULL},
+                    src_file_tmp, PH_X_INP_READ_BUF_SIZE);
+            }
+
+            snprintf(tmp_file_buf, PH_X_INP_READ_BUF_SIZE - 1, "dvscf%d",
+                     idyn + 1);
+
+            // set the destination
             cwk_path_join_multiple(
-                (const char*[]){out_dir, "_ph0", dest_file_tmp, exe_cmd_tmp,
-                                NULL},
-                src_file_tmp, PH_X_INP_READ_BUF_SIZE);
+                (const char*[]){PH_SAVE_DIR_NAME, tmp_file_buf, NULL},
+                dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
+
+            if (0 == copy_files(src_file_tmp, dest_file_tmp))
+            {
+                break;
+            }
         }
-        else
-        {
-            snprintf(exe_cmd_tmp, PH_X_INP_READ_BUF_SIZE, "%s.%s%s", scf_prefix,
-                     dvscf_prefix, dvscf_tmp_str);
-
-            cwk_path_join_multiple(
-                (const char*[]){out_dir, "_ph0", exe_cmd_tmp, NULL},
-                src_file_tmp, PH_X_INP_READ_BUF_SIZE);
-        }
-
-        snprintf(dvscf_tmp_str, 32, "dvscf%d", idyn + 1);
-
-        // set the destination
-        cwk_path_join_multiple(
-            (const char*[]){PH_SAVE_DIR_NAME, dvscf_tmp_str, NULL},
-            dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
-
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
-                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
-        system(exe_cmd_tmp);
     }
 
     // 4) copy drho
@@ -436,11 +427,35 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
             (const char*[]){PH_SAVE_DIR_NAME, dyn_tmp_str, NULL}, dest_file_tmp,
             PH_X_INP_READ_BUF_SIZE);
 
-        snprintf(exe_cmd_tmp, 2 * PH_X_INP_READ_BUF_SIZE, "%s %s %s",
-                 ELPH_COPY_CMD, src_file_tmp, dest_file_tmp);
-        system(exe_cmd_tmp);
+        if (0 != copy_files(src_file_tmp, dest_file_tmp))
+        {
+            printf("Warning : Error copying file %s.\n", src_file_tmp);
+        }
     }
 
     free(read_buf);
     free(inputs_vals);
+}
+
+static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
+                           ND_int buffer_size)
+{
+    // find number of qpools used in ph.x
+    ND_int counter = 0;
+
+    char ph0_tmp[16];
+
+    while (true)
+    {
+        snprintf(ph0_tmp, sizeof(ph0_tmp) - 1, "_ph%d", (int)counter);
+        cwk_path_join_multiple((const char*[]){out_dir, ph0_tmp, NULL},
+                               buffer_tmp, buffer_size);
+        if (0 != check_dir_exists(buffer_tmp))
+        {
+            // issue with dir (either cannot access or does not exist)
+            break;
+        }
+        ++counter;
+    }
+    return counter;
 }

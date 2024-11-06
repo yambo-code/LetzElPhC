@@ -49,8 +49,9 @@ def get_triplet(n, nq_max,nk_max):
     return triplet
 
 
-def is_letzelphc_double_precision(lelphc_cmd='./lelphc'):
-    lelphc_version_out = subprocess.run([lelphc_cmd, '--version'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+def is_letzelphc_double_precision(lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 1):
+    run_cmd_tmp = mpirun_cmd + ' -n ' + str(ncpus) + ' ' + lelphc_cmd + ' --version'
+    lelphc_version_out = subprocess.run( run_cmd_tmp, stdout=subprocess.PIPE,shell = True).stdout.decode('utf-8')
     if "Double" in lelphc_version_out:
         return True
     else :
@@ -183,9 +184,11 @@ def test_driver(folders, lelphc_cmd='./lelphc', mpirun_cmd="mpirun", ncpus = 4):
     print('LELPHC    : %s'%(lelphc_cmd))
 
     stdout_err_file_tmp = os.path.join(cwd, stdout_err_file)
+    # // remove the old TEST output file (if any)
+    os.system("rm %s >> /dev/null 2>&1"%(stdout_err_file_tmp))
     os.system("touch %s"%(stdout_err_file_tmp))
 
-    is_double_precision = is_letzelphc_double_precision(lelphc_cmd)
+    is_double_precision = is_letzelphc_double_precision(lelphc_cmd, mpirun_cmd, ncpus)
 
     dtype_out = np.single
     if is_double_precision:
