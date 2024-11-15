@@ -312,8 +312,48 @@ void wfc_plan(struct ELPH_fft_plan* plan, const ND_int ngvecs_loc,
     }
 }
 
+void create_interpolation_plan(struct fft_interpolate_plan* plan,
+                               const ND_int* fft_dims_co,
+                               const ND_int* fft_dims_fi, ELPH_cmplx* data_co,
+                               ELPH_cmplx* data_fi, unsigned fft_flags)
+{
+    // Create required fft plans for fourier interpolation
+    // fft_dims_co : dimesions of coarse grid (3 intergers) (Nx,Ny,Nz)
+    // fft_dims_fi : dimesnsion of fine interpolation grid (3 integers)
+    // data_co  : buffer for coarse grid.
+    // data_fi  : buffer for fine grid
+    // fft_flags : flags to be passed to the fftw planner
+
+    memcpy(plan->fft_dims_co, fft_dims_co, 3 * sizeof(*fft_dims_co));
+    memcpy(plan->fft_dims_fi, fft_dims_fi, 3 * sizeof(*fft_dims_fi));
+
+    plan->data_co = data_co;
+    plan->data_fi = data_fi;
+
+    plan->fft_plan_co =
+        fftw_fun(plan_dft_3d)(fft_dims_co[0], fft_dims_co[1], fft_dims_co[2],
+                              data_co, data_co, FFTW_FORWARD, fft_flags);
+    if (NULL == plan->fft_plan_co)
+    {
+        error_msg("Coarse fft interpolation plan failed");
+    }
+
+    plan->ifft_plan_fi =
+        fftw_fun(plan_dft_3d)(fft_dims_fi[0], fft_dims_fi[1], fft_dims_fi[2],
+                              data_fi, data_fi, FFTW_BACKWARD, fft_flags);
+    if (NULL == plan->ifft_plan_fi)
+    {
+        error_msg("Fine inverse fft interpolation plan failed");
+    }
+    return;
+}
+
 void wfc_destroy_plan(struct ELPH_fft_plan* plan)
 {
+    if (NULL == plan)
+    {
+        return;
+    }
     // destroy x,y,z buffer
     fftw_fun(free)(plan->fft_data);
     fftw_fun(free)(plan->nz_buf);
@@ -339,4 +379,14 @@ void wfc_destroy_plan(struct ELPH_fft_plan* plan)
     free(plan->comm_bufs);
     free(plan->Gxy_total);
     free(plan->ngxy_z);
+}
+
+void destroy_interpolation_plan(struct fft_interpolate_plan* plan)
+{
+    if (NULL == plan)
+    {
+        return;
+    }
+    fftw_fun(destroy_plan)(plan->fft_plan_co);
+    fftw_fun(destroy_plan)(plan->ifft_plan_fi);
 }

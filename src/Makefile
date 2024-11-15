@@ -6,7 +6,8 @@ TARGET 		 :=  lelphc
 
 SUBDIR = nonloc io/ezxml io/inih io \
 		 io/qe common dvloc elph wfc \
-		 symmetries fft common/cwalk preprocessor
+		 symmetries fft common/cwalk \
+		 preprocessor interpolation
 
 .SUFFIXES :
 
