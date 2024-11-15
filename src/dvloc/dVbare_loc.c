@@ -32,7 +32,7 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
             d Vloc/dtau (in cart) (nmode,nffts_this_cpu),
     */
 
-    ELPH_start_clock("dV_pseudo");
+    ELPH_start_clock("dV_bare");
     const ELPH_float* latvec = lattice->alat_vec;
     const ND_int ntype = pseudo->ntype;
     const ELPH_float* atom_pos = lattice->atomic_pos;
@@ -185,5 +185,5 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
     wfc_destroy_plan(&fft_plan);
     free(gvecs);
     free(VlocG_mode);
-    ELPH_stop_clock("dV_pseudo");
+    ELPH_stop_clock("dV_bare");
 }

@@ -39,7 +39,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     process writes)
     */
 
-    ELPH_start_clock("dV loc");
+    ELPH_start_clock("elph local");
 
     const ND_int nspin = lattice->nspin;
     const ND_int nbnds = lattice->nbnds;
@@ -349,6 +349,6 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     free(gvecSGkq);
     free(wfcSkq);
-    ELPH_stop_clock("dV loc");
+    ELPH_stop_clock("elph local");
     // Free stuff
 }
