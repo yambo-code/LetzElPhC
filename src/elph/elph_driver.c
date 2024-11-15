@@ -10,6 +10,7 @@ THe starting point for the entire code
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
 #include "../common/parallel.h"
@@ -26,6 +27,11 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world)
 {
     struct usr_input* input_data;
+    // start the clocks
+    init_ELPH_clocks();
+    //
+    // total time maker
+    ELPH_start_clock("Total time");
     // read the input file
     read_input_file(ELPH_input_file, &input_data, comm_world);
     // Note input parameters are broadcasted internally
@@ -343,6 +349,15 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     free(mpi_comms);
     fftw_fun(cleanup)();
 
+    ELPH_stop_clock("Total time");
+    // print the clocks
+    //
+    if (0 == World_rank_tmp)
+    {
+        print_ELPH_clock_summary();
+    }
+    // cleanup the clocks
+    cleanup_ELPH_clocks();
     // done with the calculation
     print_info_msg(World_rank_tmp, "********** Program ended **********");
 }

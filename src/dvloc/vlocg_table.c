@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <stdlib.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
 #include "../common/numerical_func.h"
@@ -15,6 +16,7 @@
 void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
                         const struct ELPH_MPI_Comms* Comm)
 {
+    ELPH_start_clock("Vloc table");
     int mpi_error;
     // pseudo->vloc_table->qmax_abs
     const struct local_pseudo* loc_pseudo = pseudo->loc_pseudo;
@@ -148,6 +150,7 @@ void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
 
     free(counts_recv);
     free(work_array);
+    ELPH_stop_clock("Vloc table");
 }
 
 void free_vlocg_table(struct Vloc_table* vloc_table)

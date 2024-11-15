@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
 #include "../common/numerical_func.h"
@@ -27,6 +28,8 @@ void elph_q_rotate(const ELPH_cmplx* Dmats_l, const ELPH_cmplx* elph_mat_q,
     elph_mat_Sq and elph_mat_q : (( nmodes, nspin, nbands, nbands))
     Dmats = (nspin, nbands, nbands)
     */
+    ELPH_start_clock("Elph q expand");
+
     const ND_int nbnds = lattice->nbnds;
     const ND_int nmodes = lattice->nmodes;
     const ND_int nspin = lattice->nspin;
@@ -66,4 +69,5 @@ void elph_q_rotate(const ELPH_cmplx* Dmats_l, const ELPH_cmplx* elph_mat_q,
     }
 
     free(tmp_buffer);
+    ELPH_stop_clock("Elph q expand");
 }

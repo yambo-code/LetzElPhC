@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/constants.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
@@ -37,6 +38,8 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     nspin, mk, nk+q) // electron-phonon mat in mode basis (only the master
     process writes)
     */
+
+    ELPH_start_clock("dV loc");
 
     const ND_int nspin = lattice->nspin;
     const ND_int nbnds = lattice->nbnds;
@@ -346,5 +349,6 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     free(gvecSGkq);
     free(wfcSkq);
+    ELPH_stop_clock("dV loc");
     // Free stuff
 }
