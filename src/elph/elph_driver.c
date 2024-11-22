@@ -30,8 +30,6 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     // start the clocks
     init_ELPH_clocks();
     //
-    // total time maker
-    ELPH_start_clock("Total time");
     // read the input file
     read_input_file(ELPH_input_file, &input_data, comm_world);
     // Note input parameters are broadcasted internally
@@ -349,9 +347,7 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     free(mpi_comms);
     fftw_fun(cleanup)();
 
-    ELPH_stop_clock("Total time");
     // print the clocks
-    //
     if (0 == World_rank_tmp)
     {
         print_ELPH_clock_summary();
