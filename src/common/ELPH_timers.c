@@ -100,9 +100,10 @@ void print_ELPH_clock_summary(void)
     const char *key;
     map_iter_t iter = map_iter(&timer_map);
     fputs("\n", stdout);
-    fputs("================== Wall times ==================\n", stdout);
-    fprintf(stdout, "%-20s  : Wtime (s)    (  counts  )\n", "Function");
-    fputs("------------------------------------------------\n", stdout);
+    fputs("===================== Wall times =====================\n", stdout);
+    fprintf(stdout, "%-20s  :    Wtime (s)     (  counts  )\n",
+            "Function name");
+    fputs("------------------------------------------------------\n", stdout);
     while ((key = map_next(&timer_map, &iter)))
     {
         if (0 == strcmp(key, "Total time"))
@@ -110,12 +111,13 @@ void print_ELPH_clock_summary(void)
             continue;
         }
         struct ELPH_timer *etime = map_get(&timer_map, key);
-        fprintf(stdout, "%-20s  : %.6f     ( %8zu )\n", key, etime->Wtime,
+        fprintf(stdout, "%-20s  : %12.4f     ( %8zu )\n", key, etime->Wtime,
                 etime->count);
     }
-    fputs("------------------------------------------------\n", stdout);
+    fputs("------------------------------------------------------\n", stdout);
     // print total time
     key = "Total time";
-    fprintf(stdout, "%-20s  : %.6f s.\n", key, map_get(&timer_map, key)->Wtime);
+    fprintf(stdout, "%-20s  : %12.4f s.\n", key,
+            map_get(&timer_map, key)->Wtime);
     fputs("\n", stdout);
 }
