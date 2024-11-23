@@ -119,6 +119,16 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
             ERR(nc_err);
         }
 
+        size_t Dmat_counts[6] = {0, 0, 0, 0, 0, 0};
+        // Make a no-op call to nc_get_vara to avoid deadlocks in some
+        // suitiations. This happens when a procces doesnot make atleast
+        // single read call (for ex when qpool = qiBZ)
+        if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, Dmat_counts,
+                                  Dmat_counts, NULL)))
+        {
+            ERR(nc_err);
+        }
+
         // create elph file. Note: we overwrite any existing file
         if ((nc_err =
                  nc_create_par("ndb.elph", NC_NETCDF4 | NC_CLOBBER,

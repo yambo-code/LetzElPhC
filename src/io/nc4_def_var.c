@@ -72,4 +72,27 @@ void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,
     free(dimids);
 
     *varid = tmp_varid;
+
+    // Note: In the end, we call the nc_put_var() with 0 counts to avoid
+    // deadlocks
+    /* // when sometimes, some cpus donot perform writes. This is enforced by
+     * the netcdf. */
+
+    /* size_t * sp_tmp = calloc( rank, sizeof(*sp_tmp)); */
+    /* CHECK_ALLOC(sp_tmp); */
+
+    size_t* sp_tmp = malloc(sizeof(*sp_tmp) * rank);
+    CHECK_ALLOC(sp_tmp);
+    // let the compiler optimize it to calloc
+    for (ND_int irank = 0; irank < rank; ++irank)
+    {
+        sp_tmp[irank] = 0;
+    }
+
+    // no-op call
+    if ((retval = nc_put_vara(ncid, tmp_varid, sp_tmp, sp_tmp, NULL)))
+    {
+        ERR(retval);
+    }
+    free(sp_tmp);
 }
