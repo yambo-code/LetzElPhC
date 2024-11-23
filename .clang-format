@@ -2,3 +2,5 @@ BasedOnStyle: Google
 IndentWidth: 4
 BreakBeforeBraces: Allman
 AlignAfterOpenBracket: Align
+InsertNewlineAtEOF : true
+InsertBraces : true
