@@ -6,8 +6,8 @@ CC                  :=  mpicc
 #LD_FLAGS           := -fopenmp 
 
 ##Debug flags, incase of testing always turn on the address sanitizer ! (clang is recommanded for this)
-CFLAGS       	    := -g -fsanitize=address,undefined,integer -fno-omit-frame-pointer # for mkl add 
-LD_FLAGS            := -g -fsanitize=address,undefined,integer  -Wl,-no_compact_unwind
+CFLAGS       	    := -g -fsanitize=address,undefined -fno-omit-frame-pointer # for mkl add 
+LD_FLAGS            := -g -fsanitize=address,undefined  -Wl,-no_compact_unwind
 
 OPENMP_FLAGS   	    :=  #-DELPH_OMP_PARALLEL_BUILD ## uncomment for openmp build
 

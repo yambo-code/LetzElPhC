@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/constants.h"
 #include "../common/cwalk/cwalk.h"
 #include "../common/dtypes.h"
@@ -82,6 +83,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     */
 
     // Expect wfcs, all are read by the single IO and broadcasted
+
+    ELPH_start_clock("Save I.O");
 
     int mpi_error;
 
@@ -744,6 +747,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     free(elements);
     free(nGmax);
     free(temp_str);
+    ELPH_stop_clock("Save I.O");
 }
 
 // ============ free's

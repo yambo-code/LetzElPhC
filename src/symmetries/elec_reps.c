@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/constants.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
@@ -23,6 +24,7 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
     */
 
     int mpi_error;
+    ELPH_start_clock("Dmats");
 
     const ELPH_float* alat = lattice->alat_vec;
     const ELPH_float* blat = lattice->blat_vec;
@@ -407,4 +409,5 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
         free(counts);
         free(idx_arr);
     }
+    ELPH_stop_clock("Dmats");
 }

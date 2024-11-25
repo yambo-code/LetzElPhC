@@ -5,6 +5,7 @@ q -> Sq
 #include <complex.h>
 #include <stdlib.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/constants.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
@@ -17,6 +18,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
                      ELPH_cmplx* restrict eig_Sq)
 {
     // qpt is in crsytal coordinates (un rotated q point)
+    ELPH_start_clock("Phonon eig rotation");
 
     const ELPH_float* blat = lattice->blat_vec;
     const ND_int natom = lattice->natom;
@@ -161,4 +163,5 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
     free(rot_eig);
     free(exp_Sqr);
     free(exp_qr);
+    ELPH_stop_clock("Phonon eig rotation");
 }

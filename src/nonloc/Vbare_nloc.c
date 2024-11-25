@@ -10,6 +10,7 @@ bare electron-phonon mat elements.
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/constants.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
@@ -70,6 +71,7 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     projectors as they can take lot of memory. Neverthless, it is not very slow
     */
     int mpi_error;
+    ELPH_start_clock("elph non-local");
 
     /*
     First we get the wfcs.
@@ -570,5 +572,6 @@ void add_elphNonLocal(struct WFC* wfcs, struct Lattice* lattice,
     free(wfc_Kp);
     free(GvecK);
     free(GvecKp);
+    ELPH_stop_clock("elph non-local");
 
 }  // end of function

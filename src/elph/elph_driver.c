@@ -10,6 +10,7 @@ THe starting point for the entire code
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/ELPH_timers.h"
 #include "../common/dtypes.h"
 #include "../common/error.h"
 #include "../common/parallel.h"
@@ -26,6 +27,9 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world)
 {
     struct usr_input* input_data;
+    // start the clocks
+    init_ELPH_clocks();
+    //
     // read the input file
     read_input_file(ELPH_input_file, &input_data, comm_world);
     // Note input parameters are broadcasted internally
@@ -111,6 +115,16 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
 
         // get dmat var id for dmats
         if ((nc_err = nc_inq_varid(ncid_dmat, "Dmats", &varid_dmat)))
+        {
+            ERR(nc_err);
+        }
+
+        size_t Dmat_counts[6] = {0, 0, 0, 0, 0, 0};
+        // Make a no-op call to nc_get_vara to avoid deadlocks in some
+        // suitiations. This happens when a procces doesnot make atleast
+        // single read call (for ex when qpool = qiBZ)
+        if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, Dmat_counts,
+                                  Dmat_counts, NULL)))
         {
             ERR(nc_err);
         }
@@ -343,6 +357,13 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     free(mpi_comms);
     fftw_fun(cleanup)();
 
+    // print the clocks
+    if (0 == World_rank_tmp)
+    {
+        print_ELPH_clock_summary();
+    }
+    // cleanup the clocks
+    cleanup_ELPH_clocks();
     // done with the calculation
     print_info_msg(World_rank_tmp, "********** Program ended **********");
 }
