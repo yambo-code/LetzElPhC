@@ -31,7 +31,7 @@ void init_ELPH_clocks(void)
     ELPH_start_clock("Total time");
 }
 
-void ELPH_start_clock(const char *str)
+void ELPH_start_clock(const char* str)
 {
     if (!str)
     {
@@ -39,7 +39,7 @@ void ELPH_start_clock(const char *str)
     }
     double tic = MPI_Wtime();
     // check if this tag already exists
-    struct ELPH_timer *etime = map_get(&timer_map, str);
+    struct ELPH_timer* etime = map_get(&timer_map, str);
 
     size_t count_tmp = 0;
 
@@ -56,7 +56,7 @@ void ELPH_start_clock(const char *str)
     map_set(&timer_map, str, time_set);
 }
 
-void ELPH_stop_clock(const char *str)
+void ELPH_stop_clock(const char* str)
 {
     if (!str)
     {
@@ -64,7 +64,7 @@ void ELPH_stop_clock(const char *str)
     }
     double tok = MPI_Wtime();
     // check if this tag already exists
-    struct ELPH_timer *etime = map_get(&timer_map, str);
+    struct ELPH_timer* etime = map_get(&timer_map, str);
 
     size_t count_tmp = 0;
     if (etime)
@@ -97,7 +97,7 @@ void print_ELPH_clock_summary(void)
     // first end the total time
     ELPH_stop_clock("Total time");
 
-    const char *key;
+    const char* key;
     map_iter_t iter = map_iter(&timer_map);
     fputs("\n", stdout);
     fputs("===================== Wall times =====================\n", stdout);
@@ -110,7 +110,7 @@ void print_ELPH_clock_summary(void)
         {
             continue;
         }
-        struct ELPH_timer *etime = map_get(&timer_map, key);
+        struct ELPH_timer* etime = map_get(&timer_map, key);
         fprintf(stdout, "%-20s  : %12.4f     ( %8zu )\n", key, etime->Wtime,
                 etime->count);
     }

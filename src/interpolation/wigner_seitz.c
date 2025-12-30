@@ -18,18 +18,18 @@
 // we do searching from [-WS_SUPERCELL_SEARCH_SIZE, WS_SUPERCELL_SEARCH_SIZE]
 //
 
-static struct kdtree *setup_ws_tree(const ND_int *grid,
-                                    const ELPH_float *lat_vecs,
+static struct kdtree* setup_ws_tree(const ND_int* grid,
+                                    const ELPH_float* lat_vecs,
                                     const ND_int ws_ssize);
 
-static ND_int get_ws_nearest_superlat(struct kdtree *tree, double *query_pnt,
-                                      const double eps, ELPH_float *pts_buf);
+static ND_int get_ws_nearest_superlat(struct kdtree* tree, double* query_pnt,
+                                      const double eps, ELPH_float* pts_buf);
 
-ND_int build_wigner_seitz_vectors(const ND_int *grid,
-                                  const ELPH_float *lat_vecs, double eps,
-                                  const ELPH_float *rvec_m, ND_int nrvec_m,
-                                  const ELPH_float *rvec_n, ND_int nrvec_n,
-                                  ND_int **ws_vecs, ND_int **ws_degen)
+ND_int build_wigner_seitz_vectors(const ND_int* grid,
+                                  const ELPH_float* lat_vecs, double eps,
+                                  const ELPH_float* rvec_m, ND_int nrvec_m,
+                                  const ELPH_float* rvec_n, ND_int nrvec_n,
+                                  ND_int** ws_vecs, ND_int** ws_degen)
 {
     // Note. you need to free buffer allocated outside of this functions
     // find all vectors T such that |r_m-(r_n+R+T)|(or |(r_n+R+T)-r_m|) is
@@ -51,7 +51,7 @@ ND_int build_wigner_seitz_vectors(const ND_int *grid,
     //
     ELPH_start_clock("Wigner seitz");
 
-    struct kdtree *tree =
+    struct kdtree* tree =
         setup_ws_tree(grid, lat_vecs, WS_SUPERCELL_SEARCH_SIZE);
     if (!tree)
     {
@@ -70,7 +70,7 @@ ND_int build_wigner_seitz_vectors(const ND_int *grid,
     // create a tmp buffer to read points.
     size_t tree_count = 2 * WS_SUPERCELL_SEARCH_SIZE + 1;
     tree_count = tree_count * tree_count * tree_count;
-    ELPH_float *pts_buf = malloc(3 * tree_count * sizeof(*pts_buf));
+    ELPH_float* pts_buf = malloc(3 * tree_count * sizeof(*pts_buf));
     CHECK_ALLOC(pts_buf);
     //
     //
@@ -92,10 +92,10 @@ ND_int build_wigner_seitz_vectors(const ND_int *grid,
     // needed, we can realloc.
     ND_int ws_vec_size = nRmnpts * 2;
 
-    ND_int *ws_vec_buf = malloc(3 * ws_vec_size * sizeof(*ws_vec_buf));
+    ND_int* ws_vec_buf = malloc(3 * ws_vec_size * sizeof(*ws_vec_buf));
     CHECK_ALLOC(ws_vec_buf);
 
-    ND_int *ws_degen_buf = calloc(nRmnpts, sizeof(*ws_degen_buf));
+    ND_int* ws_degen_buf = calloc(nRmnpts, sizeof(*ws_degen_buf));
     CHECK_ALLOC(ws_degen_buf);
     *ws_degen = ws_degen_buf;
     //
@@ -145,7 +145,7 @@ ND_int build_wigner_seitz_vectors(const ND_int *grid,
                 {
                     // realloc.
                     ws_vec_size = ws_vec_size + (MAX(nRmnpts, i_ws_found));
-                    ND_int *realloc_ptr = realloc(
+                    ND_int* realloc_ptr = realloc(
                         ws_vec_buf, 3 * ws_vec_size * sizeof(*ws_vec_buf));
                     if (!realloc_ptr)
                     {
@@ -193,7 +193,7 @@ ND_int build_wigner_seitz_vectors(const ND_int *grid,
     // shrink the buffer
     if (nws_vec_found)
     {
-        ND_int *realloc_ptr =
+        ND_int* realloc_ptr =
             realloc(ws_vec_buf, 3 * nws_vec_found * sizeof(*ws_vec_buf));
         if (realloc_ptr)
         {
@@ -213,12 +213,12 @@ ND_int build_wigner_seitz_vectors(const ND_int *grid,
 
 /* Static functions */
 
-static struct kdtree *setup_ws_tree(const ND_int *grid,
-                                    const ELPH_float *lat_vecs,
+static struct kdtree* setup_ws_tree(const ND_int* grid,
+                                    const ELPH_float* lat_vecs,
                                     const ND_int ws_ssize)
 {
     // build a kdree for superlattice search
-    struct kdtree *tree = kd_create(3);
+    struct kdtree* tree = kd_create(3);
     if (!tree)
     {
         return tree;
@@ -255,8 +255,8 @@ static struct kdtree *setup_ws_tree(const ND_int *grid,
     //
     return tree;
 }
-static ND_int get_ws_nearest_superlat(struct kdtree *tree, double *query_pnt,
-                                      const double eps, ELPH_float *pts_buf)
+static ND_int get_ws_nearest_superlat(struct kdtree* tree, double* query_pnt,
+                                      const double eps, ELPH_float* pts_buf)
 {
     // here we assume that the user gives
     // enough buffer to the function.
@@ -269,7 +269,7 @@ static ND_int get_ws_nearest_superlat(struct kdtree *tree, double *query_pnt,
         return 0;
     }
     // first get the nearest neighbour.
-    struct kdres *nearest = kd_nearest(tree, query_pnt);
+    struct kdres* nearest = kd_nearest(tree, query_pnt);
     if (!nearest)
     {
         error_msg("Nearest neighbor search failed");
@@ -288,7 +288,7 @@ static ND_int get_ws_nearest_superlat(struct kdtree *tree, double *query_pnt,
     // NM : we add a small absoulte tolerance so to protect eps being 0
 
     // now find all within radius
-    struct kdres *range =
+    struct kdres* range =
         kd_nearest_range(tree, query_pnt, nearest_dist + fabs(eps));
     if (!range)
     {
