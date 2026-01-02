@@ -62,6 +62,7 @@ void interpolation_driver(const char* ELPH_input_file,
     init_Pseudo_type(pseudo);
 
     bool interpolate_dvscf = input_data->interpolate_dvscf;
+    bool write_dVbare = false;
 
     ELPH_float* Zvals = NULL;
     ELPH_float alat_scale[3];
@@ -166,10 +167,35 @@ void interpolation_driver(const char* ELPH_input_file,
                            lattice->nfftz_loc * lattice->fft_dims[0] *
                            lattice->fft_dims[1];
 
+    ND_int nfft_loc =
+        lattice->nfftz_loc * lattice->fft_dims[0] * lattice->fft_dims[1];
+    //
     if (interpolate_dvscf)
     {
         dVscfs_co = malloc(phonon->nq_BZ * dvscf_loc_len * sizeof(*dVscfs_co));
         CHECK_ALLOC(dVscfs_co);
+    }
+    // local part
+    ELPH_cmplx* Vlocr = NULL;
+
+    if (interpolate_dvscf || write_dVbare)
+    {
+        Vlocr = malloc(sizeof(*Vlocr) * lattice->nmodes * nfft_loc);
+        // buffer to store local part of the pseudo potential
+        CHECK_ALLOC(Vlocr);
+        //  compute the Vlocg table
+        //// first find the qmax for vloc table
+        ELPH_float qmax_val = fabs(phonon->qpts_iBZ[0]);
+        for (ND_int imax = 0; imax < (phonon->nq_iBZ * 3); ++imax)
+        {
+            if (fabs(phonon->qpts_iBZ[imax]) > qmax_val)
+            {
+                qmax_val = fabs(phonon->qpts_iBZ[imax]);
+            }
+        }
+        // Note this needs to be set before compute the Vlocg table else U.B
+        pseudo->vloc_table->qmax_abs = ceil(fabs(qmax_val)) + 1;
+        create_vlocg_table(lattice, pseudo, mpi_comms);
     }
 
     dyns_co = malloc(phonon->nq_BZ * lattice->nmodes * lattice->nmodes *
@@ -187,7 +213,8 @@ void interpolation_driver(const char* ELPH_input_file,
     // if false, then dvscf is [V,Bx, By, Bz]
     // Always initiate to false
     bool nmags_add_long_range[4] = {false, false, false, false};
-    bool only_induced_part_long_range = false;
+    bool only_induced_part_long_range = true;
+    bool add_dVbare = false;
     // In case dvscf potential contains only part from Hartree +
     // exchange-correlation then we need to remove long_range couloumb only due
     // to change density + induced potential due to dipoles and higher order
@@ -199,12 +226,13 @@ void interpolation_driver(const char* ELPH_input_file,
     {
         // q.e stores dvscf in [V,Bx,By,Bz]
         dvscf_composite_form = false;
-        only_induced_part_long_range = false;
+        only_induced_part_long_range = true;
         nmags_add_long_range[0] = true;
         if (lattice->nmag == 2)
         {
             nmags_add_long_range[1] = true;
         }
+        add_dVbare = true;
     }
 
     ND_int iqpt_tmp = 0;
@@ -228,6 +256,32 @@ void interpolation_driver(const char* ELPH_input_file,
         }
         if (dV_co_tmp)
         {
+            // add the local part incase required
+            if (add_dVbare)
+            {
+                dVlocq(phonon->qpts_iBZ + iqco * 3, lattice, pseudo, eigs_co,
+                       Vlocr, mpi_comms->commK);
+                // add local part from nuclei
+                // lattice->nmodes  * nfft_loc
+                // lattice->nmodes * lattice->nmag
+                for (ND_int imode = 0; imode < lattice->nmodes; ++imode)
+                {
+                    ELPH_cmplx* Vlocr_tmp = Vlocr + imode * nfft_loc;
+                    for (ND_int imag = 0; imag < lattice->nmag; ++imag)
+                    {
+                        if (nmags_add_long_range[imag])
+                        {
+                            ELPH_cmplx* dvscf_tmp =
+                                dV_co_tmp +
+                                (imode * lattice->nmag + imag) * nfft_loc;
+                            for (ND_int ift = 0; ift < nfft_loc; ++ift)
+                            {
+                                dvscf_tmp[ift] += Vlocr_tmp[ift];
+                            }
+                        }
+                    }
+                }
+            }
             // remore long range
             dV_add_longrange(phonon->qpts_iBZ + iqco * 3, lattice, phonon,
                              Zvals, eigs_co, dV_co_tmp, -1,
@@ -497,6 +551,7 @@ void interpolation_driver(const char* ELPH_input_file,
     free(atomic_masses);
     free(dummy1);
     free(ref_pat_basis);
+    free(Vlocr);
 
     free(omega_ph_co);
     free(dVscfs_co);
