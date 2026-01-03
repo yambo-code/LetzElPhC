@@ -131,6 +131,10 @@ void rotate_dvscf(const ELPH_cmplx* dvscf_in, struct symmetry* sym,
         for (int xi = 0; xi < 3; ++xi)
         {
             tau_red[xi] = tau_red[xi] / (2 * ELPH_PI);
+            if (sym->time_rev)
+            {
+                tau_red[xi] = -tau_red[xi];
+            }
         }
 
         // get the inverse of symmetry matrix in reduced cooordiantes
@@ -142,6 +146,10 @@ void rotate_dvscf(const ELPH_cmplx* dvscf_in, struct symmetry* sym,
             for (int xi = 0; xi < 9; ++xi)
             {
                 tmp_sym[xi] = tmp_sym[xi] / (2 * ELPH_PI);
+                if (sym->time_rev)
+                {
+                    tmp_sym[xi] = -tmp_sym[xi];
+                }
             }
             Gemm3x3f(blat, 'T', tmp_sym, 'N', sym_red);
         }
