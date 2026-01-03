@@ -178,8 +178,12 @@ void interpolation_driver(const char* ELPH_input_file,
     // local part
     ELPH_cmplx* Vlocr = NULL;
 
-    if (interpolate_dvscf || write_dVbare)
+    if (write_dVbare)
     {
+        // In case the user wants to dum dVbare, we contruct it. Note that
+        // This is not actually added. Instead, in the long_range_term, the
+        // long_range monopole term is added to completely avoid reconstruting
+        // the full bare
         Vlocr = malloc(sizeof(*Vlocr) * lattice->nmodes * nfft_loc);
         // buffer to store local part of the pseudo potential
         CHECK_ALLOC(Vlocr);
@@ -213,8 +217,7 @@ void interpolation_driver(const char* ELPH_input_file,
     // if false, then dvscf is [V,Bx, By, Bz]
     // Always initiate to false
     bool nmags_add_long_range[4] = {false, false, false, false};
-    bool only_induced_part_long_range = true;
-    bool add_dVbare = false;
+    bool only_induced_part_long_range = false;
     // In case dvscf potential contains only part from Hartree +
     // exchange-correlation then we need to remove long_range couloumb only due
     // to change density + induced potential due to dipoles and higher order
@@ -226,13 +229,12 @@ void interpolation_driver(const char* ELPH_input_file,
     {
         // q.e stores dvscf in [V,Bx,By,Bz]
         dvscf_composite_form = false;
-        only_induced_part_long_range = true;
+        only_induced_part_long_range = false;
         nmags_add_long_range[0] = true;
         if (lattice->nmag == 2)
         {
             nmags_add_long_range[1] = true;
         }
-        add_dVbare = true;
     }
 
     ND_int iqpt_tmp = 0;
@@ -256,32 +258,6 @@ void interpolation_driver(const char* ELPH_input_file,
         }
         if (dV_co_tmp)
         {
-            // add the local part incase required
-            if (add_dVbare)
-            {
-                dVlocq(phonon->qpts_iBZ + iqco * 3, lattice, pseudo, eigs_co,
-                       Vlocr, mpi_comms->commK);
-                // add local part from nuclei
-                // lattice->nmodes  * nfft_loc
-                // lattice->nmodes * lattice->nmag
-                for (ND_int imode = 0; imode < lattice->nmodes; ++imode)
-                {
-                    ELPH_cmplx* Vlocr_tmp = Vlocr + imode * nfft_loc;
-                    for (ND_int imag = 0; imag < lattice->nmag; ++imag)
-                    {
-                        if (nmags_add_long_range[imag])
-                        {
-                            ELPH_cmplx* dvscf_tmp =
-                                dV_co_tmp +
-                                (imode * lattice->nmag + imag) * nfft_loc;
-                            for (ND_int ift = 0; ift < nfft_loc; ++ift)
-                            {
-                                dvscf_tmp[ift] += Vlocr_tmp[ift];
-                            }
-                        }
-                    }
-                }
-            }
             // remore long range
             dV_add_longrange(phonon->qpts_iBZ + iqco * 3, lattice, phonon,
                              Zvals, eigs_co, dV_co_tmp, -1,
