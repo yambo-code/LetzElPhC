@@ -9,6 +9,8 @@ void rearrange_qpt_grid(const ND_int nqpts, const ELPH_cmplx* in_buf,
 
 void find_qpt_grid(const ND_int nqpts, const ELPH_float* qpts, ND_int* q_grid);
 
+ELPH_float* parse_qpt_entries(const char* filename, ND_int* count_out);
+
 void fft_q2R(ELPH_cmplx* data, const ND_int* qgrid, const ND_int nsets);
 
 void fft_R2q_dvscf(const ELPH_cmplx* dataR, const ELPH_float* qpt_crys,

@@ -6,8 +6,11 @@
 #include "fft/fft.h"
 // we must always place complex.h before fftw3.
 #include <complex.h>
+#include <ctype.h>
 #include <fftw3.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,6 +19,7 @@
 #include "common/error.h"
 #include "common/numerical_func.h"
 #include "common/omp_pragma_def.h"
+
 static int qpt_sort_cmp(const void* a, const void* b);
 
 void fft_q2R(ELPH_cmplx* data, const ND_int* qgrid, const ND_int nsets)
@@ -365,5 +369,113 @@ static int qpt_sort_cmp(const void* a, const void* b)
     else
     {
         return kdiff[0] > 0.0 ? 1 : -1;
+    }
+}
+
+ELPH_float* parse_qpt_entries(const char* filename, ND_int* count_out)
+{
+    FILE* fp = fopen(filename, "r");
+    if (!fp)
+    {
+        fprintf(stderr, "Error : Unable to open file %s.\n", filename);
+        return NULL;
+    }
+
+    char line[1024];
+    long long expected_entries = -1;
+    long long current_entry_idx = 0;
+    bool header_found = false;
+
+    ELPH_float* out_buffer = NULL;
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        char* ptr = line;
+        // Skip leading whitespace
+        while (isspace((unsigned char)*ptr))
+        {
+            ptr++;
+        }
+        // skip empty lines or comment lines
+        if (*ptr == '\0' || *ptr == '#')
+        {
+            continue;
+        }
+
+        if (!header_found)
+        {
+            if (sscanf(ptr, "%lld", &expected_entries) == 1)
+            {
+                if (expected_entries <= 0)
+                {
+                    fclose(fp);
+                    return NULL;
+                }
+
+                out_buffer = malloc(expected_entries * 3 * sizeof(*out_buffer));
+                if (!out_buffer)
+                {
+                    fclose(fp);
+                    return NULL;
+                }
+                header_found = true;
+            }
+            else
+            {
+                fclose(fp);
+                return NULL;
+            }
+        }
+        else
+        {
+            // Processing data entries
+            if (current_entry_idx >= expected_entries)
+            {
+                free(out_buffer);
+                fclose(fp);
+                return NULL;
+            }
+
+            double tmp_buffer[3];
+            if (sscanf(ptr, "%lf %lf %lf", &tmp_buffer[0], &tmp_buffer[1],
+                       &tmp_buffer[2]) == 3)
+            {
+                long long offset = current_entry_idx * 3;
+                out_buffer[offset + 0] = tmp_buffer[0];
+                out_buffer[offset + 1] = tmp_buffer[1];
+                out_buffer[offset + 2] = tmp_buffer[2];
+                current_entry_idx++;
+            }
+            else
+            {
+                free(out_buffer);
+                fclose(fp);
+                return NULL;
+            }
+        }
+    }
+
+    fclose(fp);
+    //
+    if (header_found && current_entry_idx == expected_entries)
+    {
+        if (count_out)
+        {
+            *count_out = expected_entries;
+        }
+        return out_buffer;
+    }
+    else
+    {
+        fprintf(stderr,
+                "Error : In file %s, Number of qpt entries are not equal to "
+                "excepted "
+                "number.\n",
+                filename);
+        if (out_buffer)
+        {
+            free(out_buffer);
+        }
+        return NULL;
     }
 }
