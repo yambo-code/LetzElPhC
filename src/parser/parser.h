@@ -30,8 +30,7 @@ struct interpolation_usr_input
     bool loto;                        // if true apply LO-TO splitting
     ELPH_float loto_dir[3];           // LO-TO splitting direction
     ND_int qgrid_fine[3];             // fine grid interpolation.
-    bool write_dVbare;
-    // ewald parameter for bare treatment of long range of bare
+    bool write_dVbare;  // If True, will dump change local part of dVbare
     ELPH_float
         eta_induced;    // ewald parameter for screened long range screened
                         // interactions (dipoles, quadrupoles, phonon dynmats)
