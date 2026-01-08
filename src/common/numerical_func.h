@@ -85,3 +85,6 @@ void matmul_float(const char TransA, const char TransB, const ELPH_float* arr_A,
                   const ELPH_float alpha, const ELPH_float beta,
                   const ND_int ldA, const ND_int ldB, const ND_int ldC,
                   const ND_int m, const ND_int n, const ND_int k);
+
+int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
+                          const ND_int LDA, ELPH_cmplx* A, ELPH_float* w);

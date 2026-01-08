@@ -105,6 +105,10 @@ extern "C"
                 CBLAS_INT* lda, double* w, double _Complex* work,
                 CBLAS_INT* lwork, double* rwork, CBLAS_INT* info);
 
+    void cheev_(char* jobz, char* uplo, CBLAS_INT* n, float _Complex* a,
+                CBLAS_INT* lda, float* w, float _Complex* work,
+                CBLAS_INT* lwork, float* rwork, CBLAS_INT* info);
+
     /*
      * ===========================================================================
      * Prototypes for level 1 BLAS functions (complex are recast as routines)

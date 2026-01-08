@@ -1,5 +1,8 @@
+#include <complex.h>
 #include <math.h>
 #include <mpi.h>
+#include <netcdf.h>
+#include <netcdf_par.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -177,32 +180,6 @@ void interpolation_driver(const char* ELPH_input_file,
     {
         dVscfs_co = malloc(phonon->nq_BZ * dvscf_loc_len * sizeof(*dVscfs_co));
         CHECK_ALLOC(dVscfs_co);
-    }
-    // local part
-    ELPH_cmplx* Vlocr = NULL;
-
-    if (write_dVbare)
-    {
-        // In case the user wants to dum dVbare, we contruct it. Note that
-        // This is not actually added. Instead, in the long_range_term, the
-        // long_range monopole term is added to completely avoid reconstruting
-        // the full bare
-        Vlocr = malloc(sizeof(*Vlocr) * lattice->nmodes * nfft_loc);
-        // buffer to store local part of the pseudo potential
-        CHECK_ALLOC(Vlocr);
-        //  compute the Vlocg table
-        //// first find the qmax for vloc table
-        ELPH_float qmax_val = fabs(phonon->qpts_iBZ[0]);
-        for (ND_int imax = 0; imax < (phonon->nq_iBZ * 3); ++imax)
-        {
-            if (fabs(phonon->qpts_iBZ[imax]) > qmax_val)
-            {
-                qmax_val = fabs(phonon->qpts_iBZ[imax]);
-            }
-        }
-        // Note this needs to be set before compute the Vlocg table else U.B
-        pseudo->vloc_table->qmax_abs = ceil(fabs(qmax_val)) + 1;
-        create_vlocg_table(lattice, pseudo, mpi_comms);
     }
 
     dyns_co = malloc(phonon->nq_BZ * lattice->nmodes * lattice->nmodes *
@@ -393,12 +370,107 @@ void interpolation_driver(const char* ELPH_input_file,
     ND_int nqpts_to_interpolate = qgrid_new[0] * qgrid_new[1] * qgrid_new[2];
     // this will be over written lattern with number of qpts in iBZ
 
-    ELPH_float* qpts_interpolation =
+    ELPH_float* qpts_interpolation = NULL;
+    // in crystal coordinates
+
+    qpts_interpolation =
         malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
+    CHECK_ALLOC(qpts_interpolation);
     // in crystal coordinates
     nqpts_to_interpolate = generate_iBZ_kpts(
         qgrid_new, phonon->nph_sym, phonon->ph_syms, lattice->alat_vec,
         lattice->blat_vec, qpts_interpolation, true);
+
+    // local part
+    ELPH_cmplx* Vlocr = NULL;
+
+    // netcdf variable for writing dVbare (only used when the user asks to
+    // write)
+    int ncid_dVbare = 0, nc_err = 0;
+    int ncvar_dVbare = 0, ncvar_ph_freq = 0, ncvar_ph_eig = 0;
+    //
+    if (write_dVbare)
+    {
+        // In case the user wants to dum dVbare, we contruct it. Note that
+        // This is not actually added. Instead, in the long_range_term, the
+        // long_range monopole term is added to completely avoid reconstruting
+        // the full bare
+        Vlocr = malloc(sizeof(*Vlocr) * lattice->nmodes * nfft_loc);
+        CHECK_ALLOC(Vlocr);
+        // buffer to store local part of the pseudo potential
+        //  compute the Vlocg table
+        //// first find the qmax for vloc table
+        ELPH_float qmax_val = fabs(qpts_interpolation[0]);
+        for (ND_int imax = 0; imax < (nqpts_to_interpolate * 3); ++imax)
+        {
+            if (fabs(qpts_interpolation[imax]) > qmax_val)
+            {
+                qmax_val = fabs(qpts_interpolation[imax]);
+            }
+        }
+        // Note this needs to be set before compute the Vlocg table else U.B
+        pseudo->vloc_table->qmax_abs = ceil(fabs(qmax_val)) + 1;
+        create_vlocg_table(lattice, pseudo, mpi_comms);
+
+        // Create a netcdf and define netcdf dimensions.
+        // World comm must open it (even though for now it is same as CommK and
+        // commQ)
+        if ((nc_err =
+                 nc_create_par("ndb.dVbare", NC_NETCDF4 | NC_CLOBBER,
+                               mpi_comms->commW, MPI_INFO_NULL, &ncid_dVbare)))
+        {
+            ERR(nc_err);
+        }
+        // Donot do prefilling
+        if ((nc_err = ncsetfill(ncid_dVbare, NC_NOFILL)))
+        {
+            fprintf(stderr, "Error setting nc_fill to ndb.dVbare file.");
+            ERR(nc_err);
+        }
+        // Define variables (dVbare, freq, eigs, qpts_reduced)
+        // dVbare
+        ND_int dims[6] = {nqpts_to_interpolate, lattice->nmodes,
+                          lattice->fft_dims[0], lattice->fft_dims[1],
+                          lattice->fft_dims[2], 2};
+        //
+        size_t chunksize[6] = {1, 1, lattice->fft_dims[0], lattice->fft_dims[1],
+                               1, 2};
+        def_ncVar(ncid_dVbare, &ncvar_dVbare, 6, ELPH_NC4_IO_FLOAT, dims,
+                  "dVbare_local",
+                  (char*[]){"nq", "nmodes", "Nx", "Ny", "Nz", "re_im"},
+                  chunksize);
+        // Collective IO
+        if ((nc_err =
+                 nc_var_par_access(ncid_dVbare, ncvar_dVbare, NC_COLLECTIVE)))
+        {
+            ERR(nc_err);
+        }
+        // freq
+        def_ncVar(ncid_dVbare, &ncvar_ph_freq, 2, ELPH_NC4_IO_FLOAT, dims,
+                  "FREQ", (char*[]){"nq", "nmodes"}, NULL);
+        // eigs
+        dims[2] = lattice->natom;
+        dims[3] = 3;
+        dims[4] = 2;
+        def_ncVar(ncid_dVbare, &ncvar_ph_eig, 5, ELPH_NC4_IO_FLOAT, dims,
+                  "POLARIZATION_VECTORS",
+                  (char*[]){"nq", "nmodes", "atom", "pol", "re_im"}, NULL);
+        // qpts_reduced
+        int ncvar_qpt_tmp = 0;
+        dims[1] = 3;
+        def_ncVar(ncid_dVbare, &ncvar_qpt_tmp, 2, ELPH_NC4_IO_FLOAT, dims,
+                  "qpoints", (char*[]){"nq", "pol"}, NULL);
+        // write qpoints now
+        if (0 == mpi_comms->commW_rank)
+        {
+            // qpts in reduced units
+            if ((nc_err = nc_put_var(ncid_dVbare, ncvar_qpt_tmp,
+                                     qpts_interpolation)))
+            {
+                ERR(nc_err);
+            }
+        }
+    }
 
     ELPH_cmplx* dvscf_interpolated = NULL;
     if (dVscfs_co)
@@ -412,6 +484,14 @@ void interpolation_driver(const char* ELPH_input_file,
         malloc(sizeof(*dyn_interpolated) * lattice->nmodes * lattice->nmodes);
     CHECK_ALLOC(dyn_interpolated);
 
+    ELPH_float* ph_freq_iq_interp = NULL;
+    //
+    if (write_dVbare)
+    {
+        ph_freq_iq_interp =
+            malloc(lattice->nmodes * sizeof(*ph_freq_iq_interp));
+        CHECK_ALLOC(ph_freq_iq_interp);
+    }
     // now interpolate
     for (ND_int iq = 0; iq < nqpts_to_interpolate; ++iq)
     {
@@ -467,30 +547,109 @@ void interpolation_driver(const char* ELPH_input_file,
             }
         }
 
-        if (0 == mpi_comms->commW_rank)
+        fft_R2q_dyn(dyns_co, qpt_interpolate, q_grid_co, lattice->natom,
+                    ws_vecs_dyn, n_ws_vecs_dyn, ws_degen_dyn, dyn_interpolated);
+
+        // add back the long range part
+        add_ph_dyn_long_range(qpt_interpolate, lattice, phonon, Ggrid_phonon, 1,
+                              atomic_masses, dyn_mat_asr_lr, input_data->eta_ph,
+                              dyn_interpolated);
+
+        if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank)
         {
             // interpolate dyn file
             snprintf(dvscf_dyn_name, sizeof(dvscf_dyn_name), "dyn%lld",
                      (long long)(iq + 1));
             cwk_path_join(ph_save_interpolated, dvscf_dyn_name, read_buf,
                           sizeof(read_buf));
-
-            fft_R2q_dyn(dyns_co, qpt_interpolate, q_grid_co, lattice->natom,
-                        ws_vecs_dyn, n_ws_vecs_dyn, ws_degen_dyn,
-                        dyn_interpolated);
-
-            // add back the long range part
-            add_ph_dyn_long_range(qpt_interpolate, lattice, phonon,
-                                  Ggrid_phonon, 1, atomic_masses,
-                                  dyn_mat_asr_lr, input_data->eta_ph,
-                                  dyn_interpolated);
             // write dyn file
-            // FIX me write qpoint in alat units q.e
-            // Convert qpoints to
             if (dft_code == DFT_CODE_QE)
             {
-                write_dyn_qe(read_buf, lattice->natom, qpt_interpolate,
+                ELPH_float qpt_tmp_iq[3];
+                for (ND_int ix = 0; ix < 3; ++ix)
+                {
+                    qpt_tmp_iq[ix] = alat_scale[ix] * qpt_interpolate_cart[ix] /
+                                     (2 * ELPH_PI);
+                }
+                write_dyn_qe(read_buf, lattice->natom, qpt_tmp_iq,
                              dyn_interpolated, atomic_masses);
+            }
+        }
+        if (write_dVbare)
+        {
+            // Symmetrize the matrix
+            for (ND_int idim1 = 0; idim1 < lattice->nmodes; idim1++)
+            {
+                for (ND_int jdim1 = 0; jdim1 <= idim1; jdim1++)
+                {
+                    dyn_interpolated[idim1 * lattice->nmodes + jdim1] =
+                        0.5 *
+                        (dyn_interpolated[idim1 * lattice->nmodes + jdim1] +
+                         conj(dyn_interpolated[jdim1 * lattice->nmodes +
+                                               idim1]));
+                }
+            }
+            int lpack_info = diagonalize_hermitian(
+                'V', 'U', lattice->nmodes, lattice->nmodes, dyn_interpolated,
+                ph_freq_iq_interp);
+            if (lpack_info)
+            {
+                error_msg("Error diagonalizing dynamical matrix");
+            }
+            //
+            for (ND_int imode = 0; imode < lattice->nmodes; imode++)
+            {
+                ELPH_float tmp_fq = sqrt(fabs(ph_freq_iq_interp[imode]));
+                if (ph_freq_iq_interp[imode] < 0)
+                {
+                    ph_freq_iq_interp[imode] = -tmp_fq;
+                }
+                else
+                {
+                    ph_freq_iq_interp[imode] = tmp_fq;
+                }
+
+                ELPH_cmplx* eig_tmp_ptr =
+                    dyn_interpolated + imode * lattice->nmodes;
+                for (ND_int jmode = 0; jmode < lattice->nmodes; jmode++)
+                {
+                    ND_int ia = jmode / 3;
+                    eig_tmp_ptr[jmode] /= sqrt(atomic_masses[ia]);
+                }
+            }
+            dVlocq(qpt_interpolate, lattice, pseudo, dyn_interpolated, Vlocr,
+                   mpi_comms->commW);
+            // now write
+
+            size_t startp[6] = {iq, 0, 0, 0, lattice->nfftz_loc_shift, 0};
+            size_t countp[6] = {1,
+                                lattice->nmodes,
+                                lattice->fft_dims[0],
+                                lattice->fft_dims[1],
+                                lattice->nfftz_loc,
+                                2};
+            //
+            if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_dVbare, startp, countp,
+                                      Vlocr)))
+            {
+                ERR(nc_err);
+            }
+            if (0 == mpi_comms->commW_rank)
+            {
+                startp[4] = 0;
+                countp[2] = lattice->natom;
+                countp[3] = 3;
+                countp[4] = 2;
+                if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_ph_freq, startp,
+                                          countp, dyn_interpolated)))
+                {
+                    ERR(nc_err);
+                }
+                if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_ph_eig, startp,
+                                          countp, ph_freq_iq_interp)))
+                {
+                    ERR(nc_err);
+                }
             }
         }
         if (dft_code == DFT_CODE_QE)
@@ -504,8 +663,10 @@ void interpolation_driver(const char* ELPH_input_file,
             }
         }
     }
-
-    if (0 == mpi_comms->commW_rank)
+    //
+    //
+    //
+    if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank)
     {
         char read_buf[1024];
         cwk_path_join(ph_save_interpolated, "dyn0", read_buf, sizeof(read_buf));
@@ -513,6 +674,17 @@ void interpolation_driver(const char* ELPH_input_file,
         write_qpts_qe(read_buf, nqpts_to_interpolate, qpts_interpolation,
                       qgrid_new);
     }
+
+    // close the netcdf file incase opened
+    if (write_dVbare)
+    {
+        if ((nc_err = nc_close(ncid_dVbare)))
+        {
+            ERR(nc_err);
+        }
+    }
+
+    free(ph_freq_iq_interp);
 
     free(ws_vecs_dvscf);
     free(ws_degen_dvscf);

@@ -320,58 +320,6 @@ void find_qpt_grid(const ND_int nqpts, const ELPH_float* qpts, ND_int* q_grid)
     }
 }
 
-/*  Static functions */
-static int qpt_sort_cmp(const void* a, const void* b)
-{
-    /*
-    First sorts along x, then y and finally z
-    This will ensure that the fastest will be z, followed by y and then x
-    */
-    ELPH_float* v1 = *(ELPH_float**)a;
-    ELPH_float* v2 = *(ELPH_float**)b;
-
-    ELPH_float kdiff[3];
-
-    // first bring them to [0,1)
-    for (int i = 0; i < 3; ++i)
-    {
-        ELPH_float k1 = v1[i];
-        k1 -= floor(k1);
-        k1 += ELPH_EPS;
-        k1 -= floor(k1);
-
-        ELPH_float k2 = v2[i];
-        k2 -= floor(k2);
-        k2 += ELPH_EPS;
-        k2 -= floor(k2);
-
-        kdiff[i] = k1 - k2;
-    }
-
-    if (fabs(kdiff[0]) < ELPH_EPS)
-    {
-        if (fabs(kdiff[1]) < ELPH_EPS)
-        {
-            if (fabs(kdiff[2]) < ELPH_EPS)
-            {
-                return 0;
-            }
-            else
-            {
-                return kdiff[2] > 0.0 ? 1 : -1;
-            }
-        }
-        else
-        {
-            return kdiff[1] > 0.0 ? 1 : -1;
-        }
-    }
-    else
-    {
-        return kdiff[0] > 0.0 ? 1 : -1;
-    }
-}
-
 ELPH_float* parse_qpt_entries(const char* filename, ND_int* count_out)
 {
     FILE* fp = fopen(filename, "r");
@@ -477,5 +425,57 @@ ELPH_float* parse_qpt_entries(const char* filename, ND_int* count_out)
             free(out_buffer);
         }
         return NULL;
+    }
+}
+
+/*  Static functions */
+static int qpt_sort_cmp(const void* a, const void* b)
+{
+    /*
+    First sorts along x, then y and finally z
+    This will ensure that the fastest will be z, followed by y and then x
+    */
+    ELPH_float* v1 = *(ELPH_float**)a;
+    ELPH_float* v2 = *(ELPH_float**)b;
+
+    ELPH_float kdiff[3];
+
+    // first bring them to [0,1)
+    for (int i = 0; i < 3; ++i)
+    {
+        ELPH_float k1 = v1[i];
+        k1 -= floor(k1);
+        k1 += ELPH_EPS;
+        k1 -= floor(k1);
+
+        ELPH_float k2 = v2[i];
+        k2 -= floor(k2);
+        k2 += ELPH_EPS;
+        k2 -= floor(k2);
+
+        kdiff[i] = k1 - k2;
+    }
+
+    if (fabs(kdiff[0]) < ELPH_EPS)
+    {
+        if (fabs(kdiff[1]) < ELPH_EPS)
+        {
+            if (fabs(kdiff[2]) < ELPH_EPS)
+            {
+                return 0;
+            }
+            else
+            {
+                return kdiff[2] > 0.0 ? 1 : -1;
+            }
+        }
+        else
+        {
+            return kdiff[1] > 0.0 ? 1 : -1;
+        }
+    }
+    else
+    {
+        return kdiff[0] > 0.0 ? 1 : -1;
     }
 }

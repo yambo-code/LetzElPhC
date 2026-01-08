@@ -3,7 +3,10 @@ This file contails blas wrappers
 */
 #define CBLAS_INT int
 // note the above header must be called before #include "cblas.h"
+#include <complex.h>
 #include <limits.h>
+#include <math.h>
+#include <stdlib.h>
 
 #include "cblas.h"
 #include "elphC.h"
@@ -19,12 +22,18 @@ This file contails blas wrappers
 #define CBLAS_float(FUN_NAME) CBLAS_float_hidden(FUN_NAME)
 #define CBLAS_float_hidden(FUN_NAME) cblas_d##FUN_NAME
 
+#define LAPACK_cmplx(FUN_NAME) LAPACK_cmplx_hidden(FUN_NAME)
+#define LAPACK_cmplx_hidden(FUN_NAME) z##FUN_NAME##_
+
 #else
 #define CBLAS_cmplx(FUN_NAME) CBLAS_cmplx_hidden(FUN_NAME)
 #define CBLAS_cmplx_hidden(FUN_NAME) cblas_c##FUN_NAME
 
 #define CBLAS_float(FUN_NAME) CBLAS_float_hidden(FUN_NAME)
 #define CBLAS_float_hidden(FUN_NAME) cblas_s##FUN_NAME
+
+#define LAPACK_cmplx(FUN_NAME) LAPACK_cmplx_hidden(FUN_NAME)
+#define LAPACK_cmplx_hidden(FUN_NAME) c##FUN_NAME##_
 #endif
 
 static enum CBLAS_TRANSPOSE get_gemmn_T(char Trans);
@@ -69,6 +78,66 @@ void matmul_float(const char TransA, const char TransB, const ELPH_float* arr_A,
 
     CBLAS_float(gemm)(CblasRowMajor, get_gemmn_T(TransA), get_gemmn_T(TransB),
                       m, n, k, alpha, arr_A, ldA, arr_B, ldB, beta, arr_C, ldC);
+}
+
+int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
+                          const ND_int LDA, ELPH_cmplx* A, ELPH_float* w)
+{
+    // Expect in row major format.
+    //
+    if (N < 1)
+    {
+        return 0;
+    }
+
+    CHECK_OVERFLOW_ERROR(N, BLAS_INT_MAX);
+    CHECK_OVERFLOW_ERROR(LDA, BLAS_INT_MAX);
+
+    int n = N;
+    int lda = LDA;
+    int info = 0;
+    char jobz_ = jobz;
+    char uplo_ = uplo;
+
+    ELPH_cmplx wkopt;
+    ELPH_cmplx* work = NULL;
+    int lwork = -1;
+
+    ELPH_float* rwork = malloc((3 * n - 2) * sizeof(*rwork));
+    if (!rwork)
+    {
+        return 1;
+    }
+
+    // lapack is coloum major, so we need to send the transpose i.e we conj
+    for (ND_int i = 0; i < N * N; ++i)
+    {
+        A[i] = conj(A[i]);
+    }
+
+    LAPACK_cmplx(heev)(&jobz_, &uplo_, &n, A, &lda, w, &wkopt, &lwork, rwork,
+                       &info);
+    if (info)
+    {
+        free(rwork);
+        return info;
+    }
+
+    lwork = (int)rint(creal(wkopt) * 1.005);
+
+    work = malloc(lwork * sizeof(*work));
+    if (!work)
+    {
+        free(rwork);
+        return 1;
+    }
+
+    LAPACK_cmplx(heev)(&jobz_, &uplo_, &n, A, &lda, w, work, &lwork, rwork,
+                       &info);
+
+    free(work);
+    free(rwork);
+    return info;
 }
 
 // =================================================================
