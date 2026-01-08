@@ -58,7 +58,7 @@ void init_interpolation_usr_input(struct interpolation_usr_input** input)
     inp->qgrid_fine[2] = 1;
     //
     // The below two defaults are set else where
-    inp->eta_bare = 1.0;
+    inp->write_dVbare = false;
     inp->eta_induced = 1.0;
     inp->eta_ph = 1.0;
 }
@@ -101,7 +101,7 @@ static void Bcast_interpolation_input_data(
                           ELPH_MPI_ND_INT, root, comm);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Bcast(&input->eta_bare, 1, ELPH_MPI_float, root, comm);
+    mpi_error = MPI_Bcast(&input->write_dVbare, 1, MPI_C_BOOL, root, comm);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&input->eta_induced, 1, ELPH_MPI_float, root, comm);
@@ -185,9 +185,9 @@ static int interpolation_input_handler(void* user, const char* section,
         inp->qgrid_fine[2] = atoll(value);
     }
     //
-    else if (strcmp(name, "eta_bare") == 0)
+    else if (strcmp(name, "write_dVbare") == 0)
     {
-        inp->eta_bare = fabs(atof(value));
+        inp->write_dVbare = parse_bool_input(value);
     }
     else if (strcmp(name, "eta_induced") == 0)
     {

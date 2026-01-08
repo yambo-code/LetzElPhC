@@ -20,7 +20,7 @@ nq2 = 1
 
 nq3 = 1
 
-eta_bare = 1.0
+write_dVbare = true
 
 eta_induced = 1.0
 

@@ -264,6 +264,7 @@ static void long_range_2D_kernel(
     ELPH_float cutoff_fac = 1 - exp(-qGp * 0.5) * cos_sin_fac;
 
     ELPH_float q_eps_q = q_G_square;
+    ELPH_float ewald_fac = q_G_square;
     if (epslion)
     {
         // compute (q+G).eps.(q+G)
@@ -281,6 +282,10 @@ static void long_range_2D_kernel(
         }
         //
         q_eps_q += 1.0;
+
+        ELPH_float tmp_buf_ewald[3] = {0.0, 0.0, 0.0};
+        MatVec3f(epslion, qplusG, false, tmp_buf_ewald);
+        ewald_fac = dot3_macro(tmp_buf_ewald, qplusG);
     }
 
     ELPH_float Zval_buf[3] = {0.0, 0.0, 0.0};
@@ -323,7 +328,7 @@ static void long_range_2D_kernel(
     }
     // compute decay factors
     ELPH_float df_bare = exp(-q_G_square * 0.25 / eta_bare);
-    ELPH_float df_ind = exp(-q_G_square * 0.25 / eta_induced);
+    ELPH_float df_ind = exp(-fabs(ewald_fac) * 0.25 / eta_induced);
 
     for (int i = 0; i < 3; ++i)
     {

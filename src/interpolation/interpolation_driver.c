@@ -61,9 +61,12 @@ void interpolation_driver(const char* ELPH_input_file,
     CHECK_ALLOC(pseudo);
     init_Pseudo_type(pseudo);
 
-    bool interpolate_dvscf = input_data->interpolate_dvscf;
-    bool write_dVbare = false;
+    const bool interpolate_dvscf = input_data->interpolate_dvscf;
+    const bool write_dVbare = input_data->write_dVbare;
 
+    // this the ewald summation parameter and is always set to 1
+    const ELPH_float eta_bare = 1.0;
+    //
     ELPH_float* Zvals = NULL;
     ELPH_float alat_scale[3];
     if (dft_code == DFT_CODE_QE)
@@ -262,7 +265,7 @@ void interpolation_driver(const char* ELPH_input_file,
             dV_add_longrange(phonon->qpts_iBZ + iqco * 3, lattice, phonon,
                              Zvals, eigs_co, dV_co_tmp, -1,
                              only_induced_part_long_range, EcutRy,
-                             nmags_add_long_range, input_data->eta_bare,
+                             nmags_add_long_range, eta_bare,
                              input_data->eta_induced, mpi_comms->commK);
             // THe potential here is lattice periodic and not q peridoic.
             // so multiply with e^iqr factor to make it q periodic.
@@ -453,7 +456,7 @@ void interpolation_driver(const char* ELPH_input_file,
             dV_add_longrange(qpt_interpolate, lattice, phonon, Zvals,
                              ref_pat_basis, dvscf_interpolated, 1,
                              only_induced_part_long_range, EcutRy,
-                             nmags_add_long_range, input_data->eta_bare,
+                             nmags_add_long_range, eta_bare,
                              input_data->eta_induced, mpi_comms->commK);
 
             // write to file
