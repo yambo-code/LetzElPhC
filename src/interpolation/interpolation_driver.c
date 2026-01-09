@@ -640,12 +640,12 @@ void interpolation_driver(const char* ELPH_input_file,
                 countp[2] = lattice->natom;
                 countp[3] = 3;
                 countp[4] = 2;
-                if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_ph_freq, startp,
+                if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_ph_eig, startp,
                                           countp, dyn_interpolated)))
                 {
                     ERR(nc_err);
                 }
-                if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_ph_eig, startp,
+                if ((nc_err = nc_put_vara(ncid_dVbare, ncvar_ph_freq, startp,
                                           countp, ph_freq_iq_interp)))
                 {
                     ERR(nc_err);
