@@ -24,30 +24,31 @@ void write_dyn_qe(const char* file_name, ND_int natom, const ELPH_float* qpts,
     }
 
     // Write comment lines
-    fprintf(fp, "%s\n", "Create by LetzElphC.");
-    fprintf(fp, "%s\n", "This is fake dyn file only to be read by LetzElphC.");
+    fprintf(fp, "Dynamical matrix file\n");
+    fprintf(fp, "%s\n",
+            "This is fake dyn file created by LetzElphC, only to be read by "
+            "LetzElphC.");
 
     ND_int ntype = natom;  // set it same as natoms
     ND_int ibrav = -1;     // set to negative (should not be 0)
     //
-    fprintf(fp,
-            "%lld    %lld    %lld    %.8f    %.8f    %.8f    %.8f    %.8f    "
-            "%.8f\n",
+    //  "%3lld %5lld %4lld %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f",
+    fprintf(fp, "%3lld%5lld%4lld%12.7f%12.7f%12.7f%12.7f%12.7f%12.7f\n",
             (long long)ntype, (long long)natom, (long long)ibrav, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0);
 
     // Write atom types and masses
     for (ND_int ia = 0; ia < natom; ia++)
     {
-        fprintf(fp, "%lld    'X%lld'    %.10f\n", (long long)(ia + 1),
+        fprintf(fp, " %4lld 'X%lld' %14.6f\n", (long long)(ia + 1),
                 (long long)(ia + 1), atomic_masses[ia]);
     }
 
     // Write atom positions
     for (ND_int ia = 0; ia < natom; ia++)
     {
-        fprintf(fp, "%lld    %lld    %.10f    %.10f    %.10f\n",
-                (long long)(ia + 1), (long long)(ia + 1), 0.0, 0.0, 0.0);
+        fprintf(fp, "%5lld%5lld%18.10f%18.10f%18.10f\n", (long long)(ia + 1),
+                (long long)(ia + 1), 0.0, 0.0, 0.0);
     }
 
     // For each q-point
@@ -58,18 +59,16 @@ void write_dyn_qe(const char* file_name, ND_int natom, const ELPH_float* qpts,
         const ELPH_cmplx* dyn_mat_q = dyn_mat + iq * 9 * natom * natom;
 
         // Write q-poND_int header
-        fprintf(fp, "\n");
-        fprintf(fp, "Dynamical  Matrix in cartesian axes\n");
-        fprintf(fp, "\n");
-        fprintf(fp, "q = ( %.10f   %.10f   %.10f )\n", qpt[0], qpt[1], qpt[2]);
-        fprintf(fp, "\n");
+        fprintf(fp, "\n     Dynamical  Matrix in cartesian axes\n\n");
+        fprintf(fp, "     q = ( %14.9f%14.9f%14.9f ) \n\n", qpt[0], qpt[1],
+                qpt[2]);
 
         // Write dynamical matrix blocks
         for (ND_int ia = 0; ia < natom; ia++)
         {
             for (ND_int ib = 0; ib < natom; ib++)
             {
-                fprintf(fp, "%lld    %lld\n", (long long)(ia + 1),
+                fprintf(fp, "%5lld%5lld\n", (long long)(ia + 1),
                         (long long)(ib + 1));
 
                 ELPH_float mass_sqrt =
@@ -82,7 +81,7 @@ void write_dyn_qe(const char* file_name, ND_int natom, const ELPH_float* qpts,
                         // but in dynma we store in coloumn major.
                         ND_int idx =
                             iy + ib * 3 + ix * 3 * natom + ia * 3 * 3 * natom;
-                        fprintf(fp, "%.8f   %.8f     ",
+                        fprintf(fp, "%12.8f %12.8f   ",
                                 creal(dyn_mat_q[idx]) * mass_sqrt,
                                 cimag(dyn_mat_q[idx]) * mass_sqrt);
                     }

@@ -8,6 +8,7 @@ These functions are called with high frequency, so need a good optimization
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <tgmath.h>
 
 #include "constants.h"
 #include "elphC.h"

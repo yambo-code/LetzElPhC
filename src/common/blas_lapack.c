@@ -7,6 +7,7 @@ This file contails blas wrappers
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
+#include <tgmath.h>
 
 #include "cblas.h"
 #include "elphC.h"
@@ -84,7 +85,7 @@ int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
                           const ND_int LDA, ELPH_cmplx* A, ELPH_float* w)
 {
     // Expect in row major format.
-    //
+    // Note that ith eigen vector is A[i*ldA]
     if (N < 1)
     {
         return 0;
@@ -93,26 +94,36 @@ int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
     CHECK_OVERFLOW_ERROR(N, BLAS_INT_MAX);
     CHECK_OVERFLOW_ERROR(LDA, BLAS_INT_MAX);
 
-    int n = N;
-    int lda = LDA;
-    int info = 0;
+    CBLAS_INT n = N;
+    CBLAS_INT lda = LDA;
+    CBLAS_INT info = 0;
     char jobz_ = jobz;
-    char uplo_ = uplo;
+    // we need to swap as we are in row major.
+    _Bool is_upper = (uplo == 'U' || uplo == 'u');
+    char uplo_ = is_upper ? 'L' : 'U';
 
     ELPH_cmplx wkopt;
     ELPH_cmplx* work = NULL;
-    int lwork = -1;
+    CBLAS_INT lwork = -1;
 
-    ELPH_float* rwork = malloc((3 * n - 2) * sizeof(*rwork));
+    ELPH_float* rwork = malloc(3 * N * sizeof(*rwork));
     if (!rwork)
     {
-        return 1;
+        return -1;
     }
 
     // lapack is coloum major, so we need to send the transpose i.e we conj
-    for (ND_int i = 0; i < N * N; ++i)
+    for (ND_int i = 0; i < N; ++i)
     {
-        A[i] = conj(A[i]);
+        for (ND_int j = 0; j < N; ++j)
+        {
+            // The if condition ensure we only touch upper or lower
+            if ((is_upper && j >= i) || (!is_upper && j <= i))
+            {
+                ND_int idx = i * LDA + j;
+                A[idx] = conj(A[idx]);
+            }
+        }
     }
 
     LAPACK_cmplx(heev)(&jobz_, &uplo_, &n, A, &lda, w, &wkopt, &lwork, rwork,
@@ -123,13 +134,13 @@ int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
         return info;
     }
 
-    lwork = (int)rint(creal(wkopt) * 1.005);
+    lwork = (CBLAS_INT)rint(creal(wkopt) * 1.005);
 
     work = malloc(lwork * sizeof(*work));
     if (!work)
     {
         free(rwork);
-        return 1;
+        return -1;
     }
 
     LAPACK_cmplx(heev)(&jobz_, &uplo_, &n, A, &lda, w, work, &lwork, rwork,
