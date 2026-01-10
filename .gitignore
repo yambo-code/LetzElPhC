@@ -16,6 +16,7 @@ docs/*
 !docs/main.pdf
 !docs/logo.pdf
 !docs/logo.png
+!docs/*.md
 examples/qe/silicon/*/*
 !examples/qe/silicon/nscf/*.in
 !examples/qe/silicon/ph/*.in
