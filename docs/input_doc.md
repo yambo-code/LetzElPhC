@@ -73,13 +73,13 @@ These variables control the interpolation of electron-phonon matrix elements, in
 
 ### `ph_save_dir`
 * **Type:** `STRING`
-* **Default:** `'ph_save'`
+* **Default:** `ph_save`
 * **Description:**
     Directory path containing the phonon save data to be read.
 
 ### `ph_save_interpolation_dir`
 * **Type:** `STRING`
-* **Default:** `'ph_save_interpolation'`
+* **Default:** `ph_save_interpolation`
 * **Description:**
     Directory path where the interpolation results will be written.
 
@@ -97,10 +97,10 @@ These variables control the interpolation of electron-phonon matrix elements, in
 
 ### `asr_kind`
 * **Type:** `STRING`
-* **Default:** `'simple'`
+* **Default:** `simple`
 * **Description:**
     Specifies the type of Acoustic Sum Rule to apply.
-    * Example: `'simple'`
+    * Example: `simple`
 
 ### `loto`
 * **Type:** `LOGICAL`
