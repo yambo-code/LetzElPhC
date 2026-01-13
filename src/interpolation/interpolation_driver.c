@@ -589,13 +589,29 @@ void interpolation_driver(const char* ELPH_input_file,
                                                idim1]));
                 }
             }
-            int lpack_info = diagonalize_hermitian(
-                'V', 'U', lattice->nmodes, lattice->nmodes, dyn_interpolated,
-                ph_freq_iq_interp);
-            if (lpack_info)
+            // Note:
+            // We should diagonalize on on single cpu and BCast eig_vecs. This
+            // is because, in case of small numerical diff, we might get
+            // different eig values on different cpus which will be diaster.
+            if (0 == mpi_comms->commQ_rank)
             {
-                error_msg("Error diagonalizing dynamical matrix");
+                int lpack_info = diagonalize_hermitian(
+                    'V', 'U', lattice->nmodes, lattice->nmodes,
+                    dyn_interpolated, ph_freq_iq_interp);
+                if (lpack_info)
+                {
+                    error_msg("Error diagonalizing dynamical matrix");
+                }
             }
+            mpi_error = MPI_Bcast(ph_freq_iq_interp, lattice->nmodes,
+                                  ELPH_MPI_float, 0, mpi_comms->commQ);
+            MPI_error_msg(mpi_error);
+
+            mpi_error =
+                MPI_Bcast(dyn_interpolated, lattice->nmodes * lattice->nmodes,
+                          ELPH_MPI_cmplx, 0, mpi_comms->commQ);
+            MPI_error_msg(mpi_error);
+
             //
             for (ND_int imode = 0; imode < lattice->nmodes; imode++)
             {
