@@ -66,7 +66,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     supported) These variables are not allocated here
     ---
     Lattice :
-    dimesnion : (read from input )
+    dimension : (read from input )
     ---
     pseudo :
     NOTE : ph_save_dir must be available on all processes
@@ -103,13 +103,13 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
             "Some cpus do not contain plane waves. Over parallelization !.");
     }
 
-    int dbid, ppid, tempid, retval;  // file ids for ns.db1 , pp_pwscf*
+    int nsELid, nsWFid,nsLATid, ppid, tempid, retval;  // file ids for ns.db1 , pp_pwscf*
 
     size_t temp_str_len = strlen(ph_save_dir) + strlen(SAVEdir) + 100;
     char* temp_str = malloc(temp_str_len);
     CHECK_ALLOC(temp_str);
 
-    int nkBZ;  // total kpoints in BZ
+    int nkBZ,NB,NSPINOR,NSPIN,TR,NSYM,nKIBZ,NG,NCOMP;  // total kpoints in BZ
 
     char* elements = malloc(3 * 104);  // coded 104 elements
     CHECK_ALLOC(elements);
@@ -130,7 +130,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     /*****/
     if (Comm->commW_rank == 0)
     {
-        cwk_path_join(SAVEdir, "ndb.kindx", temp_str, temp_str_len);
+        cwk_path_join(SAVEdir, "ndb.KPT_indexes", temp_str, temp_str_len);
 
         if ((retval = nc_open(temp_str, NC_NOWRITE, &tempid)))
         {
@@ -165,27 +165,54 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     // set nBZ
     lattice->nkpts_BZ = nkBZ;
     // printf("Debug-%d \n",1);
-    ELPH_float dimensions[18];
     if (Comm->commW_rank == 0)
     {
-        cwk_path_join(SAVEdir, "ns.db1", temp_str, temp_str_len);
-        if ((retval = nc_open(temp_str, NC_NOWRITE, &dbid)))
+        cwk_path_join(SAVEdir, "ns.electrons", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsELid)))
         {
             ERR(retval);
         }
-        quick_read(dbid, "DIMENSIONS", dimensions);
+    	quick_read(nsELid, "number_of_bands", &NB);
+    	quick_read(nsELid, "number_of_k-points", &nKIBZ);
+    	quick_read(nsELid, "spinor_components", &NSPINOR);
+    	quick_read(nsELid, "spin_polarizations", &NSPIN);
     }
-    /* bcast ELPH_float dimensions[18] */
-    mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, Comm->commW);
+
+    mpi_error = MPI_Bcast(&NB, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+    mpi_error = MPI_Bcast(&nKIBZ, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+    mpi_error = MPI_Bcast(&NSPINOR, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+    mpi_error = MPI_Bcast(&NSPIN, 1, MPI_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    lattice->nspinor = rint(dimensions[11]);
-    lattice->nspin = rint(dimensions[12]);
-    lattice->timerev = rint(dimensions[9]);
-    lattice->total_bands = rint(dimensions[5]);
-    lattice->nsym = rint(dimensions[10]);
-    lattice->nkpts_iBZ = rint(dimensions[6]);
-    ;
+    if (Comm->commW_rank == 0)
+    {
+        cwk_path_join(SAVEdir, "ns.lattices", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsLATid)))
+        {
+            ERR(retval);
+        }
+    	quick_read(nsLATid, "Time_reversal", &TR);
+    	quick_read(nsLATid, "N_of_symmetries", &NSYM);
+        quick_read(nsLATid, "N_of_RL_vectors", &NG); 
+    }
+
+    mpi_error = MPI_Bcast(&TR, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+    mpi_error = MPI_Bcast(&NSYM, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+    mpi_error = MPI_Bcast(&NG, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
+
+    lattice->nspinor = NSPINOR;
+    lattice->nspin = NSPIN;
+    lattice->timerev = TR;
+    lattice->total_bands = NB;
+    lattice->nsym = NSYM;
+    lattice->nkpts_iBZ = nKIBZ;
 
     int nibz = lattice->nkpts_iBZ;
 
@@ -222,7 +249,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     ELPH_float lat_param[3];
     if (Comm->commW_rank == 0)
     {
-        quick_read(dbid, "LATTICE_PARAMETER", lat_param);
+        quick_read(nsLATid, "LATTICE_PARAMETER", lat_param);
     }
     /*Bcast ELPH_float lat_param[3] */
     mpi_error = MPI_Bcast(lat_param, 3, ELPH_MPI_float, 0, Comm->commW);
@@ -247,10 +274,10 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         ELPH_float* kiBZtmp = malloc(sizeof(ELPH_float) * 3 * nibz);
         CHECK_ALLOC(kiBZtmp);
 
-        quick_read(dbid, "LATTICE_VECTORS", lattice->alat_vec);
-        quick_read(dbid, "SYMMETRY",
+        quick_read(nsLATid, "LATTICE_VECTORS", lattice->alat_vec);
+        quick_read(nsLATid, "SYMMETRY",
                    sym_temp);                   // transpose is read (nsym, 3,3)
-        quick_read(dbid, "K-POINTS", kiBZtmp);  // (3,nibz)
+        quick_read(nsELid, "K-POINTS", kiBZtmp);  // (3,nibz)
 
         // for now yambo does not support frac. trans. so set it to 0
         /*
@@ -340,7 +367,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     ELPH_float ntype;
     if (Comm->commW_rank == 0)
     {
-        quick_read(dbid, "number_of_atom_species", &ntype);
+        quick_read(nsLATid, "number_of_atom_species", &ntype);
     }
     /* Bcast ELPH_float ntype */
     mpi_error = MPI_Bcast(&ntype, 1, ELPH_MPI_float, 0, Comm->commW);
@@ -359,8 +386,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
         ELPH_float* atomic_numbers = natom_per_type + pseudo->ntype;
 
-        quick_read(dbid, "N_ATOMS", natom_per_type);
-        quick_read(dbid, "atomic_numbers", atomic_numbers);
+        quick_read(nsLATid, "N_ATOMS", natom_per_type);
+        quick_read(nsLATid, "atomic_numbers", atomic_numbers);
 
         lattice->natom = 0;  // Bcast
         for (ND_int ia = 0; ia < pseudo->ntype; ++ia)
@@ -377,8 +404,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
             malloc(sizeof(ELPH_float) * pseudo->ntype * nspec_max * 3);
         CHECK_ALLOC(atom_pos_temp);
 
-        quick_read(dbid, "ATOM_MAP", atomic_map);
-        quick_read(dbid, "ATOM_POS", atom_pos_temp);
+        quick_read(nsLATid, "ATOM_MAP", atomic_map);
+        quick_read(nsLATid, "ATOM_POS", atom_pos_temp);
 
         lattice->atom_type = malloc(sizeof(int) * lattice->natom);  // Bcast
         CHECK_ALLOC(lattice->atom_type);
@@ -450,15 +477,23 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     /* allocate arrays of arrays for wfc, gvsc, Fk */
     if (Comm->commW_rank == 0)
     {
-        quick_read(dbid, "WFC_NG", nGmax);
+        cwk_path_join(SAVEdir, "ns.wf", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsWFid)))
+        {
+            ERR(retval);
+        }
+        quick_read(nsWFid, "WFC_NG", nGmax);
+        quick_read(nsWFid, "WF_COMPONENTS", &NCOMP);
     }
     /* Bcast ELPH_float * nGmax */
     mpi_error = MPI_Bcast(nGmax, nibz, ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
+    mpi_error = MPI_Bcast(&NCOMP, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
 
     // dimensions[]
-    ND_int ng_total = rint(dimensions[7]);
-    ND_int ng_shell = rint(dimensions[8]);
+    ND_int ng_total = NG;
+    ND_int ng_shell = NCOMP;
     ELPH_float* totalGvecs = malloc(sizeof(ELPH_float) * 3 * ng_total);
     CHECK_ALLOC(totalGvecs);
 
@@ -467,9 +502,13 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     if (Comm->commW_rank == 0)
     {
-        quick_read(dbid, "G-VECTORS", totalGvecs);
-        quick_read(dbid, "WFC_GRID", Gvecidxs);
-        if ((retval = nc_close(dbid)))
+        quick_read(nsLATid, "G-VECTORS", totalGvecs);
+        quick_read(nsWFid, "WFC_GRID", Gvecidxs);
+        if ((retval = nc_close(nsELid)))
+        {
+            ERR(retval);
+        }
+        if ((retval = nc_close(nsLATid)))
         {
             ERR(retval);
         }

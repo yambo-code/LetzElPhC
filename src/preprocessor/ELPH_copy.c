@@ -10,7 +10,7 @@
 #include "common/error.h"
 // above two headers are found in both windows and posix systems.
 
-int check_dir_exists(const char *dir_path)
+int check_dir_exists(const char* dir_path)
 {
     // returns 0 if directory exists.
     struct stat dir_info;
@@ -29,15 +29,15 @@ int check_dir_exists(const char *dir_path)
     }
 }
 
-int copy_files(const char *file_read, const char *file_write)
+int copy_files(const char* file_read, const char* file_write)
 {
     // returns 0 if copying is sucuessful.
-    FILE *frd = fopen(file_read, "rb");
+    FILE* frd = fopen(file_read, "rb");
     if (!frd)
     {
         return ERR_FILE_OPEN_READ;
     }
-    FILE *fwr = fopen(file_write, "wb");
+    FILE* fwr = fopen(file_write, "wb");
     if (!fwr)
     {
         fclose(frd);
