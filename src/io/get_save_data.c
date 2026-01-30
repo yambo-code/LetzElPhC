@@ -30,7 +30,7 @@ static void quick_read(const int ncid, char* var_name, void* data_out);
 
 static void alloc_and_set_Gvec(
     ELPH_float* gvec, const ND_int ik, const ELPH_float* totalGvecs,
-    const ND_int ng_total, const ELPH_float* Gvecidxs, const ND_int ng_shell,
+    const ND_int ng_total, const int* Gvecidxs, const ND_int ng_shell,
     const ELPH_float* lat_param, const ND_int nG, const ND_int nG_shift);
 
 static void quick_read_sub(const int ncid, char* var_name, const size_t* startp,
@@ -364,16 +364,16 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                  nkBZ, 3, 3);
 
     // read number of atomic types
-    ELPH_float ntype;
+    int ntype;
     if (Comm->commW_rank == 0)
     {
         quick_read(nsLATid, "number_of_atom_species", &ntype);
     }
     /* Bcast ELPH_float ntype */
-    mpi_error = MPI_Bcast(&ntype, 1, ELPH_MPI_float, 0, Comm->commW);
+    mpi_error = MPI_Bcast(&ntype, 1, MPI_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    pseudo->ntype = rint(ntype);
+    pseudo->ntype = ntype;
 
     /* Read atomic positions */
     char* atom_symbols = NULL;  // only needs to defined at W_rank = 0;
@@ -464,8 +464,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                           ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    ELPH_float* nGmax =
-        malloc(sizeof(ELPH_float) *
+    int* nGmax =
+        malloc(sizeof(*nGmax) *
                nibz);  // max number of gvectors for each wfc in iBZ
     CHECK_ALLOC(nGmax);
 
@@ -486,7 +486,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         quick_read(nsWFid, "WF_COMPONENTS", &NCOMP);
     }
     /* Bcast ELPH_float * nGmax */
-    mpi_error = MPI_Bcast(nGmax, nibz, ELPH_MPI_float, 0, Comm->commW);
+    mpi_error = MPI_Bcast(nGmax, nibz, MPI_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
     mpi_error = MPI_Bcast(&NCOMP, 1, MPI_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
@@ -497,7 +497,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     ELPH_float* totalGvecs = malloc(sizeof(ELPH_float) * 3 * ng_total);
     CHECK_ALLOC(totalGvecs);
 
-    ELPH_float* Gvecidxs = malloc(sizeof(ELPH_float) * nibz * ng_shell);
+    int* Gvecidxs = malloc(sizeof(int) * nibz * ng_shell);
     CHECK_ALLOC(Gvecidxs);
 
     if (Comm->commW_rank == 0)
@@ -519,7 +519,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     MPI_error_msg(mpi_error);
 
     mpi_error =
-        MPI_Bcast(Gvecidxs, nibz * ng_shell, ELPH_MPI_float, 0, Comm->commW);
+        MPI_Bcast(Gvecidxs, nibz * ng_shell,MPI_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
     // ! Warning, Only read only mode for opening files
 
@@ -865,11 +865,11 @@ void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
 // ============ static functions
 static void alloc_and_set_Gvec(
     ELPH_float* gvec, const ND_int ik, const ELPH_float* totalGvecs,
-    const ND_int ng_total, const ELPH_float* Gvecidxs, const ND_int ng_shell,
+    const ND_int ng_total, const int* Gvecidxs, const ND_int ng_shell,
     const ELPH_float* lat_param, const ND_int nG, const ND_int nG_shift)
 {
     // sets the gvecs for each wfc
-    const ELPH_float* gidx_temp = Gvecidxs + ik * ng_shell;
+    const int* gidx_temp = Gvecidxs + ik * ng_shell;
 
     for (ND_int ig = 0; ig < nG; ++ig)
     {
