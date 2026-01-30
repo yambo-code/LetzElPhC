@@ -62,7 +62,8 @@ plugins:
   - search
 
 nav:
-  - Home:
+  - Home: index.md
+  - About:
       - About the Code: about/about_the_code.md
       - Acknowledgments: about/acknowledgments.md
       - License: about/license.md
