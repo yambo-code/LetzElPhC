@@ -303,3 +303,42 @@ bool parse_bool_input(const char* str)
     // Default to false for unrecognized input
     return false;
 }
+
+void strip_quotes(char* s)
+{
+    char* start = s;
+    char* end;
+    char quote;
+
+    if (!s || !*s)
+    {
+        return;
+    }
+
+    /* Must start and end with same quote */
+    quote = s[0];
+    end = s + strlen(s) - 1;
+
+    if ((quote == '"' || quote == '\'') && *end == quote)
+    {
+        /* Move inside the quotes */
+        start++;
+        end--;
+
+        /* Trim leading whitespace inside quotes */
+        while (start <= end && isspace((unsigned char)*start))
+        {
+            start++;
+        }
+
+        /* Trim trailing whitespace inside quotes */
+        while (end >= start && isspace((unsigned char)*end))
+        {
+            end--;
+        }
+
+        /* Copy cleaned string back */
+        memmove(s, start, (size_t)(end - start + 1));
+        s[end - start + 1] = '\0';
+    }
+}
