@@ -280,7 +280,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         }
         quick_read_float(nsLATid, "SYMMETRY",
                          sym_temp);  // transpose is read (nsym, 3,3)
-        quick_read_float(nsLATid, "K-POINTS", kiBZtmp);  // (3,nibz)
+        quick_read_float(nsELid, "K-POINTS", kiBZtmp);  // (3,nibz)
 
         // for now yambo does not support frac. trans. so set it to 0
         /*
@@ -824,20 +824,17 @@ static void quick_read_float(const int ncid, char* var_name,
         ERR(retval);  // get the varible id of the file
     }
 
-    if (sizeof(*data_out) == sizeof(double))
+#if defined(COMPILE_ELPH_DOUBLE)
+    if ((retval = nc_get_var_double(ncid, varid, data_out)))
     {
-        if ((retval = nc_get_var_double(ncid, varid, data_out)))
-        {
-            ERR(retval);
-        }
+        ERR(retval);
     }
-    else if (sizeof(*data_out) == sizeof(float))
+#else
+    if ((retval = nc_get_var_float(ncid, varid, data_out)))
     {
-        if ((retval = nc_get_var_float(ncid, varid, data_out)))
-        {
-            ERR(retval);
-        }
+        ERR(retval);
     }
+#endif
 }
 
 static void quick_read_sub(const int ncid, char* var_name, const size_t* startp,
