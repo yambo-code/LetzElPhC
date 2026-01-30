@@ -5,7 +5,7 @@ copyright: "Copyright &copy; 2026 Muralidhar Nalabothula"
   #toc_depth: 1
 theme:
   name: material
-  custom_dir: theme_overrides
+  custom_dir: docs/theme_overrides
   logo: assets/logo.png
   favicon: assets/logo.png
   features:
