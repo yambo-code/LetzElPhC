@@ -1,0 +1,21 @@
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/single/lib/libslepc.so 
+-Wl,-rpath=/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/single/lib 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/single/lib/libpetsc.so 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/libscalapack.a  
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/liblapack.a 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/libblas.a 
+-L/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib  -liotk 
+-L/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib/  -lnetcdff 
+-L/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib/  -lnetcdf 
+-L/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib/libhdf5hl_fortran.a 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib/libhdf5_hl.a 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib/libhdf5_fortran.a 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib/libhdf5.a 
+-lz  -ldl  -lm  -Wl,-rpath 
+-Wl,/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/v4/parallel/lib 
+-L/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/  -lxcf90  -lxcf03  -lxc 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/libfftw3.a 
+ -L/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/no_gpu/lib  -ldevXlib 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/liblapack.a 
+/opt/libs/yambo/gcc-15.2.0/mpich-4.3.1/gfortran/mpifort/lib/libblas.a  -lm
