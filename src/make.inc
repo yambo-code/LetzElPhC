@@ -20,6 +20,7 @@ NETCDF_INC          :=  -I/Users/murali/softwares/core/include
 NETCDF_LIB 	        :=  -L/Users/murali/softwares/core/lib -lnetcdf
 HDF5_LIB            :=  -L/opt/homebrew/lib  -lhdf5
 
+
 INC_DIRS            := 
 LIBS                := 
 

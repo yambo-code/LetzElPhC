@@ -122,14 +122,17 @@ static int elph_input_handler(void* user, const char* section, const char* name,
     else if (strcmp(name, "save_dir") == 0)
     {
         strncpy_custom(inp->save_dir, value, READ_STR_LEN);
+        strip_quotes(inp->save_dir);
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
         strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
+        strip_quotes(inp->ph_save_dir);
     }
     else if (strcmp(name, "kernel") == 0)
     {
         strncpy_custom(inp->kernel_str, value, READ_STR_LEN);
+        strip_quotes(inp->kernel_str);
         lowercase_str(inp->kernel_str);
     }
     else if (strcmp(name, "convention") == 0)
