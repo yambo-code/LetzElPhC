@@ -1,0 +1,78 @@
+repo_name: LetzElPhC
+repo_url: https://github.com/yambo-code/LetzElPhC
+site_name: LetzElPhC Documentation
+copyright: "Copyright &copy; 2026 Muralidhar Nalabothula"
+  #toc_depth: 1
+theme:
+  name: material
+  custom_dir: theme_overrides
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  features:
+    - navigation.tabs
+      #- toc.integrate
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+extra_javascript:
+  - https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js
+  - javascripts/mermaid-init.js
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+extra_css:
+  - assets/stylesheets/custom.css
+plugins:
+  - search
+
+nav:
+  - Home:
+      - About the Code: about/about_the_code.md
+      - Acknowledgments: about/acknowledgments.md
+      - License: about/license.md
+  - Installation: install.md
+  - Usage: usage/usage.md
+  - Input Variables:
+      - ELPH Calculation: inputs/elph_inputs.md
+      - Interpolation Calculation: inputs/interpolation_inputs.md
+  - Tutorials:
+      - Silicon Walkthrough: tutorials/silicon_walkthrough.md
+      - Exciton-Phonon & Luminescence: tutorials/exciton_phonon.md
+  - Testing: tests.md
+  
