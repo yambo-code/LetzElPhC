@@ -713,7 +713,8 @@ void interpolation_driver(const char* ELPH_input_file,
     //
     //
     //
-    if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank)
+    if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank &&
+        0 == strlen(input_data->qlist_file))
     {
         char read_buf[1024];
         cwk_path_join(ph_save_interpolated, "dyn0", read_buf, sizeof(read_buf));
