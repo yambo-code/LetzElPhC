@@ -144,7 +144,7 @@ static int interpolation_input_handler(void* user, const char* section,
     else if (strcmp(name, "asr_kind") == 0)
     {
         strncpy_custom(inp->asr_kind, value, sizeof(inp->asr_kind));
-        strip_quotes(inp->asr_kind);
+        strip_quotes_in_string(inp->asr_kind);
         lowercase_str(inp->asr_kind);
     }
     else if (strcmp(name, "interpolate_dvscf") == 0)
@@ -168,12 +168,12 @@ static int interpolation_input_handler(void* user, const char* section,
     else if (strcmp(name, "ph_save_dir") == 0)
     {
         strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
-        strip_quotes(inp->ph_save_dir);
+        strip_quotes_in_string(inp->ph_save_dir);
     }
     else if (strcmp(name, "ph_save_interpolation_dir") == 0)
     {
         strncpy_custom(inp->ph_save_interpolation_dir, value, READ_STR_LEN);
-        strip_quotes(inp->ph_save_interpolation_dir);
+        strip_quotes_in_string(inp->ph_save_interpolation_dir);
     }
     else if (strcmp(name, "nq1") == 0)
     {
@@ -204,7 +204,7 @@ static int interpolation_input_handler(void* user, const char* section,
     else if (strcmp(name, "qlist_file") == 0)
     {
         strncpy_custom(inp->qlist_file, value, READ_STR_LEN);
-        strip_quotes(inp->qlist_file);
+        strip_quotes_in_string(inp->qlist_file);
     }
     else
     {

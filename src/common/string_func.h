@@ -30,4 +30,4 @@ void str_replace_chars(char* str_in, const char* delimters,
 // given a string, returns bool
 bool parse_bool_input(const char* str);
 
-void strip_quotes(char* s);
+void strip_quotes_in_string(char* s);

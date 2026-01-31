@@ -304,7 +304,7 @@ bool parse_bool_input(const char* str)
     return false;
 }
 
-void strip_quotes(char* s)
+void strip_quotes_in_string(char* s)
 {
     char* start = s;
     char* end;
