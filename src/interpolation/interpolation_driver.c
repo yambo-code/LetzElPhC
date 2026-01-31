@@ -373,14 +373,45 @@ void interpolation_driver(const char* ELPH_input_file,
     ELPH_float* qpts_interpolation = NULL;
     // in crystal coordinates
 
-    qpts_interpolation =
-        malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
-    CHECK_ALLOC(qpts_interpolation);
-    // in crystal coordinates
-    nqpts_to_interpolate = generate_iBZ_kpts(
-        qgrid_new, phonon->nph_sym, phonon->ph_syms, lattice->alat_vec,
-        lattice->blat_vec, qpts_interpolation, true);
+    if (0 == strlen(input_data->qlist_file))
+    {
+        qpts_interpolation =
+            malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
+        CHECK_ALLOC(qpts_interpolation);
+        // in crystal coordinates
+        struct symmetry* symms_iBZexpand =
+            input_data->nosym ? NULL : phonon->ph_syms;
+        nqpts_to_interpolate = generate_iBZ_kpts(
+            qgrid_new, phonon->nph_sym, symms_iBZexpand, lattice->alat_vec,
+            lattice->blat_vec, qpts_interpolation, true);
+    }
+    else
+    {
+        if (0 == mpi_comms->commW_rank)
+        {
+            qpts_interpolation = parse_qpt_entries(input_data->qlist_file,
+                                                   &nqpts_to_interpolate);
+            if (!qpts_interpolation)
+            {
+                error_msg("Reading qpoint file failed.");
+            }
+        }
 
+        mpi_error = MPI_Bcast(&nqpts_to_interpolate, 1, ELPH_MPI_ND_INT, 0,
+                              mpi_comms->commW);
+        MPI_error_msg(mpi_error);
+
+        if (0 != mpi_comms->commW_rank)
+        {
+            qpts_interpolation =
+                malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
+            CHECK_ALLOC(qpts_interpolation);
+        }
+
+        mpi_error = MPI_Bcast(qpts_interpolation, 3 * nqpts_to_interpolate,
+                              ELPH_MPI_float, 0, mpi_comms->commW);
+        MPI_error_msg(mpi_error);
+    }
     // local part
     ELPH_cmplx* Vlocr = NULL;
 
