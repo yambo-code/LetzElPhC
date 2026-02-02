@@ -81,8 +81,8 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
             }
             char* per_vec_str = xml_get_ipert->txt;
 
-            if (parser_doubles_from_string(per_vec_str, pat_tmp_read) !=
-                (2 * nmodes))
+            if (parse_floats_from_string(per_vec_str, pat_tmp_read,
+                                         2 * nmodes) != (2 * nmodes))
             {
                 error_msg("Reading patterns.xml file failed");
             }
