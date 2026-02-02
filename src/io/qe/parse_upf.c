@@ -4,6 +4,9 @@ Only Local part, grids , valance electron info are read rest are available in
 yambo
 */
 
+#include "parse_upf.h"
+
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,17 +16,13 @@ yambo
 #include "common/error.h"
 #include "common/string_func.h"
 #include "elphC.h"
-#include "io.h"
 #include "io/ezxml/ezxml.h"
 
 static void parse_upf2(FILE* fp, struct local_pseudo* loc_pseudo);
 
 static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo);
 
-static void get_upf2_element(FILE* fp, char* atomic_sym);
-
-static void get_upf1_element(FILE* fp, char* atomic_sym);
-
+static int get_upf_version(FILE* fp);
 // ===================================================================================
 
 void parse_upf(const char* filename, struct local_pseudo* loc_pseudo)
@@ -34,26 +33,7 @@ void parse_upf(const char* filename, struct local_pseudo* loc_pseudo)
         error_msg("Unable to open the upf file");
     }
 
-    int upf_version = 0;
-    char start_str[100];
-    fgets(start_str, 100, fp);
-    if (strstr(start_str, "PP_INFO"))
-    {
-        upf_version = 1;
-    }
-    else if (strstr(start_str, "UPF version"))
-    {
-        upf_version = 2;
-    }
-    else
-    {
-        error_msg("Only UPF-1 or UPF-2 file formats supported");
-    }
-
-    if (fseek(fp, 0, SEEK_SET) != 0)
-    {
-        error_msg("error setting the start seek for upf file");
-    }
+    int upf_version = get_upf_version(fp);
 
     if (upf_version == 1)
     {
@@ -67,51 +47,6 @@ void parse_upf(const char* filename, struct local_pseudo* loc_pseudo)
     {
         error_msg("Only UPF-1 or UPF-2 file formats supported");
     }
-    fclose(fp);
-}
-
-void get_upf_element(const char* filename, char* atomic_sym)
-{
-    FILE* fp = fopen(filename, "r");
-    if (fp == NULL)
-    {
-        error_msg("Unable to open the upf file");
-    }
-
-    int upf_version = 0;
-    char start_str[100];
-    fgets(start_str, 100, fp);
-    if (strstr(start_str, "<PP_INFO>"))
-    {
-        upf_version = 1;
-    }
-    else if (strstr(start_str, "<UPF version"))
-    {
-        upf_version = 2;
-    }
-    else
-    {
-        error_msg("Only UPF-1 or UPF-2 file formats supported");
-    }
-
-    if (fseek(fp, 0, SEEK_SET) != 0)
-    {
-        error_msg("error setting the start seek for upf file");
-    }
-
-    if (upf_version == 1)
-    {
-        get_upf1_element(fp, atomic_sym);
-    }
-    else if (upf_version == 2)
-    {
-        get_upf2_element(fp, atomic_sym);
-    }
-    else
-    {
-        error_msg("Only UPF-1 or UPF-2 file formats supported");
-    }
-
     fclose(fp);
 }
 
@@ -200,16 +135,17 @@ static void parse_upf2(FILE* fp, struct local_pseudo* loc_pseudo)
     loc_pseudo->rab_grid = malloc(sizeof(ELPH_float) * ngrid);
     CHECK_ALLOC(loc_pseudo->rab_grid);
 
-    if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) !=
-        ngrid)
+    if (parse_floats_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic,
+                                 ngrid) != ngrid)
     {
         error_msg("Parsing local potential from upf-2 failed");
     }
-    if (parser_doubles_from_string(mesh->txt, loc_pseudo->r_grid) != ngrid)
+    if (parse_floats_from_string(mesh->txt, loc_pseudo->r_grid, ngrid) != ngrid)
     {
         error_msg("Parsing radial mesh from upf-2 failed");
     }
-    if (parser_doubles_from_string(dmesh->txt, loc_pseudo->rab_grid) != ngrid)
+    if (parse_floats_from_string(dmesh->txt, loc_pseudo->rab_grid, ngrid) !=
+        ngrid)
     {
         error_msg("Parsing Rab from upf-2 failed");
     }
@@ -351,16 +287,17 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
     loc_pseudo->rab_grid = malloc(sizeof(ELPH_float) * ngrid);
     CHECK_ALLOC(loc_pseudo->rab_grid);
 
-    if (parser_doubles_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic) !=
-        ngrid)
+    if (parse_floats_from_string(loc_pot->txt, loc_pseudo->Vloc_atomic,
+                                 ngrid) != ngrid)
     {
         error_msg("Parsing local potential from upf-1 failed");
     }
-    if (parser_doubles_from_string(mesh->txt, loc_pseudo->r_grid) != ngrid)
+    if (parse_floats_from_string(mesh->txt, loc_pseudo->r_grid, ngrid) != ngrid)
     {
         error_msg("Parsing radial mesh from upf-1 failed");
     }
-    if (parser_doubles_from_string(dmesh->txt, loc_pseudo->rab_grid) != ngrid)
+    if (parse_floats_from_string(dmesh->txt, loc_pseudo->rab_grid, ngrid) !=
+        ngrid)
     {
         error_msg("Parsing Rab from upf-1 failed");
     }
@@ -370,98 +307,30 @@ static void parse_upf1(FILE* fp, struct local_pseudo* loc_pseudo)
 }
 
 //----
-
-static void get_upf2_element(FILE* fp, char* atomic_sym)
+static int get_upf_version(FILE* fp)
 {
-    /*
-    atomic_sym must be atleast 3 bytes long
-    */
+    // This funtion must rewind(fp)
+    int upf_version = 0;
+    char start_str[100];
+    fgets(start_str, 100, fp);
+    if (strstr(start_str, "<PP_INFO>"))
+    {
+        upf_version = 1;
+    }
+    else if (strstr(start_str, "<UPF version"))
+    {
+        upf_version = 2;
+    }
+    else
+    {
+        error_msg("Only UPF-1 or UPF-2 file formats supported");
+    }
+
     if (fseek(fp, 0, SEEK_SET) != 0)
     {
         error_msg("error setting the start seek for upf file");
     }
-
-    atomic_sym[2] = '\0';
-
-    ezxml_t upfFP = ezxml_parse_fp(fp);
-    if (upfFP == NULL)
-    {
-        error_msg("Reading from pseudo potential file failed");
-    }
-
-    /* Read header details */
-
-    ezxml_t header = ezxml_get(upfFP, "PP_HEADER", -1);
-    if (header == NULL)
-    {
-        error_msg("Reading header from pseudo potential file failed");
-    }
-
-    const char* temp_upf_ptr = ezxml_attr(header, "element");
-    if (temp_upf_ptr == NULL)
-    {
-        error_msg("Reading element from pseudo potential file failed");
-    }
-    // get the element
-    memcpy(atomic_sym, temp_upf_ptr, sizeof(char) * 2);
-    ezxml_free(upfFP);
-}
-
-//----
-
-static void get_upf1_element(FILE* fp, char* atomic_sym)
-{
-    /*
-    atomic_sym must be atleast 3 bytes long
-    */
-    if (fseek(fp, 0, SEEK_SET) != 0)
-    {
-        error_msg("error setting the start seek for upf file");
-    }
-
-    atomic_sym[2] = '\0';
-    char* xml_buf = malloc(1000);
-    CHECK_ALLOC(xml_buf);
-
-    bool read_header = false;
-    while (fgets(xml_buf, 1000, fp))
-    {
-        if (strstr(xml_buf, "<PP_HEADER>"))
-        {
-            read_header = true;
-            break;
-        }
-    }
-    if (!read_header)
-    {
-        error_msg("Unable to parse header info from upf file");
-    }
-
-    // Now read line by line
-    fgets(xml_buf, 1000, fp);  // version number
-    fgets(xml_buf, 1000, fp);  // element label
-    char tmp_read[30];
-    char* token_tmp = strtok(xml_buf, " ");
-    sscanf(token_tmp, "%s", tmp_read);
-    size_t atm_lab_size = strlen(tmp_read);
-    if (atm_lab_size > 2)
-    {
-        error_msg("Buffer over when reading element from upf file");
-    }
-    strcpy(atomic_sym, tmp_read);
-    if (atm_lab_size == 1)
-    {
-        atomic_sym[1] = ' ';
-    }
-
-    fgets(xml_buf, 1000, fp);  // pseudo type
-    if (!strstr(xml_buf, "NC"))
-    {
-        error_msg("Pseudo potential is not norm conserving");
-    }
-
-    free(xml_buf);
-    xml_buf = NULL;
+    return upf_version;
 }
 
 //----

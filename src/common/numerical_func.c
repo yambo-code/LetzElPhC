@@ -8,6 +8,7 @@ These functions are called with high frequency, so need a good optimization
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <tgmath.h>
 
 #include "constants.h"
 #include "elphC.h"
@@ -176,14 +177,15 @@ ELPH_float simpson(const ELPH_float* func_vals, const ELPH_float* dx,
         sum += 2.0 * func_vals[i] * dx[i];
     }
 
-    /* add/remove the last point if npts is odd/even */
     if (npts % 2 != 0)
     {
         sum += func_vals[npts - 1] * dx[npts - 1];
     }
     else
     {
-        sum -= func_vals[npts - 2] * dx[npts - 2];
+        sum -= func_vals[npts - 3] * dx[npts - 3] * 0.25;
+        sum += func_vals[npts - 2] * dx[npts - 2];
+        sum += func_vals[npts - 1] * dx[npts - 1] * 1.25;
     }
 
     return sum / 3.0;

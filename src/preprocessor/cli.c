@@ -2,9 +2,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "ELPH_getopt.h"
+#include "common/dtypes.h"
 #include "common/string_func.h"
 #include "elphC.h"
 #include "preprocessor.h"
@@ -26,13 +28,16 @@ void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
     bool help_cmd = false;
     bool ver_cmd = false;
     bool pp_cmd = false;
+    bool interpolate_cmd = false;
 
     const struct option long_options[] = {
         {"help", no_argument, NULL, 'h'},
         {"version", no_argument, NULL, 'v'},
         {"pp", no_argument, NULL, 'p'},
+        {"interpolate", no_argument, NULL, 'i'},
         {"code", required_argument, NULL, 'c'},
-        {"F", required_argument, NULL, 'f'}};
+        {"F", required_argument, NULL, 'f'},
+        {0, 0, 0, 0}};
 
     int ch;
     int longindex;
@@ -49,6 +54,9 @@ void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
                 break;
             case 'p':
                 pp_cmd = true;
+                break;
+            case 'i':
+                interpolate_cmd = true;
                 break;
             case 'c':
                 // get the code
@@ -84,6 +92,11 @@ void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
     else if (pp_cmd)
     {
         calc_info->calc = CALC_PH_SAVE_CREATE;
+        return;
+    }
+    else if (interpolate_cmd)
+    {
+        calc_info->calc = CALC_INTERPOLATION;
         return;
     }
     else

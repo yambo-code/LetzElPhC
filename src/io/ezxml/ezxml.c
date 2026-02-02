@@ -219,7 +219,8 @@ char* ezxml_decode(char* s, char** ent, char t)
 
     for (s = r;;)
     {
-        while (*s && *s != '&' && (*s != '%' || t != '%') && !isspace(*s))
+        while (*s && *s != '&' && (*s != '%' || t != '%') &&
+               !isspace((unsigned char)(*s)))
         {
             s++;
         }
@@ -287,7 +288,7 @@ char* ezxml_decode(char* s, char** ent, char t)
                 s++;  // not a known entity
             }
         }
-        else if ((t == ' ' || t == '*') && isspace(*s))
+        else if ((t == ' ' || t == '*') && isspace((unsigned char)(*s)))
         {
             *(s++) = ' ';
         }
@@ -756,7 +757,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
         attr = (char**)EZXML_NIL;
         d = ++s;
 
-        if (isalpha(*s) || *s == '_' || *s == ':' || *s < '\0')
+        if (isalpha((unsigned char)(*s)) || *s == '_' || *s == ':' || *s < '\0')
         {  // new tag
             if (!root->cur)
             {
@@ -764,7 +765,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
             }
 
             s += strcspn(s, EZXML_WS "/>");
-            while (isspace(*s))
+            while (isspace((unsigned char)(*s)))
             {
                 *(s++) = '\0';  // null terminate tag name
             }
@@ -786,7 +787,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
                 attr[l] = s;       // set attribute name
 
                 s += strcspn(s, EZXML_WS "=/>");
-                if (*s == '=' || isspace(*s))
+                if (*s == '=' || isspace((unsigned char)(*s)))
                 {
                     *(s++) = '\0';  // null terminate tag attribute name
                     q = *(s += strspn(s, EZXML_WS "="));
@@ -817,7 +818,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
                         }
                     }
                 }
-                while (isspace(*s))
+                while (isspace((unsigned char)(*s)))
                 {
                     s++;
                 }
@@ -864,7 +865,7 @@ ezxml_t ezxml_parse_str(char* s, size_t len)
             {
                 return &root->xml;
             }
-            if (isspace(*s = q))
+            if (isspace((unsigned char)(*s = q)))
             {
                 s += strspn(s, EZXML_WS);
             }

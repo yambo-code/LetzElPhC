@@ -9,6 +9,7 @@ This file contains functions which are os dependent.
 
 #include "ELPH_copy.h"
 #include "common/cwalk/cwalk.h"
+#include "common/dtypes.h"
 #include "common/error.h"
 #include "common/string_func.h"
 #include "elphC.h"
@@ -271,8 +272,13 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     for (ND_int itype = 0; itype < ntype; ++itype)
     {
-        char* tmp_str =
-            ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
+        ezxml_t pseudo_file_xml =
+            ezxml_get(atom_specs, "species", (int)itype, "pseudo_file", -1);
+        if (NULL == pseudo_file_xml)
+        {
+            error_msg("Error reading pseudo pot file");
+        }
+        char* tmp_str = pseudo_file_xml->txt;
 
         cwk_path_join_multiple(
             (const char*[]){out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,

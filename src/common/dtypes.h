@@ -39,6 +39,25 @@ struct kernel_info
     enum ELPH_screening screening;
 };
 
+enum calc_type
+{
+    CALC_ELPH,            // initiate elph calculation
+    CALC_PH_SAVE_CREATE,  // preprocess (creating ph_save_dir)
+    CALC_HELP,            // help
+    CALC_VERSION,         // print version
+    CALC_INTERPOLATION    // interpolation
+};
+
+struct calc_details
+{
+    enum calc_type calc;
+    enum ELPH_dft_code code;
+    char input_file[512];
+    // name of the input file.
+    // can be elph input or DFT-Phonon input
+    // base on calc_type
+};
+
 struct symmetry
 {
     ELPH_float Rmat[9];
@@ -88,9 +107,9 @@ struct Lattice
     ND_int fft_dims[3];
     // fft dimensions
     ND_int nfftz_loc;
-    // number of FFT vecs in this cpu
+    // number of FFTz vecs in this cpu
     ND_int nfftz_loc_shift;
-    // global index of first fft vector
+    // global index of first fftz vector
     ELPH_float alat_vec[9];
     // Lattice vectors a[i] = alat[:,i]
     ELPH_float blat_vec[9];
@@ -282,18 +301,4 @@ struct ELPH_MPI_Comms
     the division commRq contains {0,2} , {1,3}, in 1st commQ and {4,5} and {5,7}
     in 2nd commQ
     */
-};
-
-/* This struct contains all the input file details */
-struct usr_input
-{
-    // system varibles
-    int nkpool;         // k point parallelization
-    int nqpool;         // q point parallelization
-    int start_bnd;      // starting band
-    int end_bnd;        // last band
-    char* save_dir;     // save dir
-    char* ph_save_dir;  // ph_save directory
-    char* kernel_str;   // level of screening to include
-    bool kminusq;       // true if convention is "yambo" else false
 };

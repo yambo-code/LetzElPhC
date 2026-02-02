@@ -13,12 +13,13 @@
 #include "common/parallel.h"
 #include "elphC.h"
 #include "io/mpi_bcast.h"
+#include "parse_upf.h"
 #include "qe_io.h"
 #include "symmetries/symmetries.h"
 
 void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
-                      const char* ph_save_dir, char*** pseudo_pots,
-                      const struct ELPH_MPI_Comms* Comm)
+                      struct Pseudo* pseudo, const char* ph_save_dir,
+                      ELPH_float* alat_param, const struct ELPH_MPI_Comms* Comm)
 {
     /*
     This functions gets basic ground state data and phonon data from q.e
@@ -71,10 +72,12 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     // qpts must be divided to get then cart units
     // now get the basic info from
     ELPH_float alat[3];
+    char** pseudo_pots = NULL;
     char* PSEUDO_DIR = NULL;
     bool ph_tim_rev;
 
     ND_int natoms = 0;
+    pseudo->ntype = 0;
 
     ELPH_float* ph_sym_mats = NULL;
     ELPH_float* ph_sym_tau = NULL;
@@ -87,7 +90,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     bool phTensors_present[3] = {false, false, false};
     // {epsilon, Zborn, Qpole}
 
-    ELPH_float lat_vec[9];  // a[:,i] is ith lattice vector
+    ELPH_float* lat_vec = lattice->alat_vec;  // a[:,i] is ith lattice vector
     if (Comm->commW_rank == 0)
     {
         cwk_path_join(ph_save_dir, "data-file-schema.xml", tmp_buffer,
@@ -95,7 +98,9 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
         parse_qexml(tmp_buffer, &natoms, lat_vec, alat, &lattice->dimension,
                     &lattice->is_soc_present, &lattice->nmag, lattice->fft_dims,
                     &phonon->nph_sym, &ph_sym_mats, &ph_sym_tau, &ph_trevs,
-                    &ph_mag_symm, &ph_tim_rev, &PSEUDO_DIR, pseudo_pots);
+                    &ph_mag_symm, &ph_tim_rev, &PSEUDO_DIR, &pseudo_pots,
+                    &lattice->nspinor, &pseudo->ntype, &lattice->atom_type,
+                    &lattice->atomic_pos);
 
         // free pseudo pots, no longer need
         free(PSEUDO_DIR);
@@ -105,6 +110,10 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
         // exists)
         cwk_path_join(ph_save_dir, "tensors.xml", tmp_buffer, temp_str_len);
         read_ph_tensors_qe(tmp_buffer, natoms, phonon);
+        // read quadrupole
+        cwk_path_join(ph_save_dir, "quadrupole.fmt", tmp_buffer, temp_str_len);
+        read_quadrupole_fmt(tmp_buffer, &phonon->Qpole, natoms);
+
         if (phonon->epsilon)
         {
             phTensors_present[0] = true;
@@ -123,12 +132,41 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     //
     mpi_error = MPI_Bcast(&natoms, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
+    //
+    lattice->natom = natoms;
+    lattice->nmodes = 3 * lattice->natom;
 
+    mpi_error = MPI_Bcast(&lattice->nspinor, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
+    mpi_error = MPI_Bcast(&pseudo->ntype, 1, ELPH_MPI_ND_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
+    if (Comm->commW_rank)
+    {
+        lattice->atomic_pos = malloc(3 * natoms * sizeof(*lattice->atomic_pos));
+        CHECK_ALLOC(lattice->atomic_pos);
+
+        lattice->atom_type = malloc(natoms * sizeof(*lattice->atom_type));
+        CHECK_ALLOC(lattice->atom_type);
+    }
+
+    mpi_error = MPI_Bcast(lattice->atomic_pos, 3 * natoms, ELPH_MPI_float, 0,
+                          Comm->commW);
+    MPI_error_msg(mpi_error);
+
+    mpi_error = MPI_Bcast(lattice->atom_type, natoms, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
+    //
     mpi_error = MPI_Bcast(phTensors_present, 3, MPI_C_BOOL, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(lat_vec, 9, ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
+    //
+    lattice->volume = fabs(det3x3(lat_vec));
+    reciprocal_vecs(lat_vec, lattice->blat_vec);
 
     mpi_error =
         MPI_Bcast(lattice->fft_dims, 3, ELPH_MPI_ND_INT, 0, Comm->commW);
@@ -136,6 +174,10 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
 
     mpi_error = MPI_Bcast(alat, 3, ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
+    if (alat_param)
+    {
+        memcpy(alat_param, alat, sizeof(alat));
+    }
 
     mpi_error = MPI_Bcast(&lattice->dimension, 1, MPI_CHAR, 0, Comm->commW);
     MPI_error_msg(mpi_error);
@@ -157,10 +199,9 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     MPI_error_msg(mpi_error);
 
     ELPH_float blat[9];
-    reciprocal_vecs(lat_vec, blat);
     for (int ix = 0; ix < 9; ++ix)
     {
-        blat[ix] /= (2.0f * ELPH_PI);
+        blat[ix] = lattice->blat_vec[ix] / (2.0f * ELPH_PI);
     }
 
     // allocate and bcast dielectric, born charges, Quadrapoles (if present)
@@ -286,7 +327,6 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     free(ph_trevs);
     free(ph_sym_mats);
     free(ph_sym_tau);
-    free(tmp_buffer);
 
     phonon->qpts_BZ = malloc(phonon->nq_BZ * 3 * sizeof(ELPH_float));
     CHECK_ALLOC(phonon->qpts_BZ);
@@ -325,4 +365,29 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
         // convert to crystal coordinates
         MatVec3f(lat_vec, qcart_tmp, true, qpt_tmp);
     }
+    // Read local part of pseudo information
+    pseudo->loc_pseudo = malloc(pseudo->ntype * sizeof(struct local_pseudo));
+    CHECK_ALLOC(pseudo->loc_pseudo);
+    if (Comm->commW_rank == 0)
+    {
+        for (ND_int itype = 0; itype < pseudo->ntype; ++itype)
+        {
+            cwk_path_join(ph_save_dir, pseudo_pots[itype], tmp_buffer,
+                          temp_str_len);
+
+            parse_upf(tmp_buffer, pseudo->loc_pseudo + itype);
+            free(pseudo_pots[itype]);
+        }
+        free(pseudo_pots);
+        pseudo_pots = NULL;
+    }
+    // Bcast all the pseudo information
+    pseudo->ngrid_max = 0;
+    for (ND_int itype = 0; itype < pseudo->ntype; ++itype)
+    {
+        Bcast_local_pseudo(pseudo->loc_pseudo + itype, true, 0, Comm->commW);
+        ND_int ngrid_pot = pseudo->loc_pseudo[itype].ngrid;
+        pseudo->ngrid_max = MAX(pseudo->ngrid_max, ngrid_pot);
+    }
+    free(tmp_buffer);
 }

@@ -12,7 +12,8 @@ void lowercase_str(char* str);
 
 // Extract all float values from given string
 // if out == NULL, it return number of float it parsed
-ND_int parser_doubles_from_string(const char* str, ELPH_float* out);
+ND_int parse_floats_from_string(const char* str, ELPH_float* out,
+                                ND_int out_size);
 
 // Check if given string starts with a substring
 bool string_start_with(char* str, char* compare_str, bool trim);
@@ -25,3 +26,8 @@ char* str_reverse_in_place(char* str);
 
 void str_replace_chars(char* str_in, const char* delimters,
                        const char* replace_chars);
+
+// given a string, returns bool
+bool parse_bool_input(const char* str);
+
+void strip_quotes(char* s);

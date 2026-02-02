@@ -44,7 +44,7 @@ int copy_files(const char* file_read, const char* file_write)
         return ERR_FILE_OPEN_WRITE;
     }
 
-    char read_buf[BUFSIZ];  // BUFSIZ is defined in <stdio.h>
+    unsigned char read_buf[BUFSIZ];  // BUFSIZ is defined in <stdio.h>
     size_t nbytes;
 
     int err_code = 0;

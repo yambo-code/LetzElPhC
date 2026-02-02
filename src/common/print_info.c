@@ -81,7 +81,7 @@ void print_input_info(const char* save_dir, const char* ph_save_dir,
     }
     else
     {
-        print_info_msg(Comm->commW_rank, "Number of OMP Threads : 1");
+        print_info_msg(Comm->commW_rank, "Number of OMP Threads   : 1");
     }
 #endif
 }

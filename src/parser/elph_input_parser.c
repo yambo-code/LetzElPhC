@@ -7,23 +7,24 @@
 #include "common/dtypes.h"
 #include "common/error.h"
 #include "common/string_func.h"
-#include "io.h"
-#include "io/inih/ini.h"
+#include "parser.h"
+#include "parser/inih/ini.h"
 
 #define READ_STR_LEN 600
 
-static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm);
-static int handler(void* user, const char* section, const char* name,
-                   const char* value);
+static void Bcast_elph_input_data(struct elph_usr_input* input, int root,
+                                  MPI_Comm comm);
+static int elph_input_handler(void* user, const char* section, const char* name,
+                              const char* value);
 
-// function to alloc, initiate usr_input
-void init_usr_input(struct usr_input** input)
+// function to alloc, initiate elph_usr_input
+void init_elph_usr_input(struct elph_usr_input** input)
 {
     // this function also sets defaults for the user input file
-    *input = malloc(sizeof(struct usr_input));
+    *input = malloc(sizeof(struct elph_usr_input));
     CHECK_ALLOC(*input);
 
-    struct usr_input* inp = *input;
+    struct elph_usr_input* inp = *input;
 
     inp->save_dir = calloc(READ_STR_LEN * 3, 1);
     CHECK_ALLOC(inp->save_dir);
@@ -42,14 +43,15 @@ void init_usr_input(struct usr_input** input)
     inp->kminusq = false;  // default is standard
 }
 
-// function to free usr_input struct data
-void free_usr_input(struct usr_input* input)
+// function to free elph_usr_input struct data
+void free_elph_usr_input(struct elph_usr_input* input)
 {
     free(input->save_dir);
     free(input);
 }
 
-static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
+static void Bcast_elph_input_data(struct elph_usr_input* input, int root,
+                                  MPI_Comm comm)
 {
     int mpi_error;
 
@@ -75,10 +77,13 @@ static void Bcast_input_data(struct usr_input* input, int root, MPI_Comm comm)
     MPI_error_msg(mpi_error);
 }
 
-static int handler(void* user, const char* section, const char* name,
-                   const char* value)
+static int elph_input_handler(void* user, const char* section, const char* name,
+                              const char* value)
 {
-    struct usr_input* inp = user;
+    UNUSED_VAR(section);
+    // All the new inputs are added here.
+    // Note : Set the defaults in init_elph_usr_input function.
+    struct elph_usr_input* inp = user;
 
     // check if value is just an empty string
     size_t nospace_len = 0;
@@ -97,6 +102,7 @@ static int handler(void* user, const char* section, const char* name,
         error_msg("Invalid input");
     }
 
+    // add inputs from here. use else if
     if (strcmp(name, "nkpool") == 0)
     {
         inp->nkpool = atoi(value);
@@ -116,14 +122,17 @@ static int handler(void* user, const char* section, const char* name,
     else if (strcmp(name, "save_dir") == 0)
     {
         strncpy_custom(inp->save_dir, value, READ_STR_LEN);
+        strip_quotes(inp->save_dir);
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
         strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
+        strip_quotes(inp->ph_save_dir);
     }
     else if (strcmp(name, "kernel") == 0)
     {
         strncpy_custom(inp->kernel_str, value, READ_STR_LEN);
+        strip_quotes(inp->kernel_str);
         lowercase_str(inp->kernel_str);
     }
     else if (strcmp(name, "convention") == 0)
@@ -145,18 +154,19 @@ static int handler(void* user, const char* section, const char* name,
     }
     else
     {
-        error_msg("Invalid variable in input file.");
+        error_msg("Invalid variable in the elph input file.");
     }
 
     return 1;
 }
 
-void read_input_file(const char* input_file, struct usr_input** input_data,
-                     MPI_Comm MPI_world_comm)
+void read_elph_input_file(const char* input_file,
+                          struct elph_usr_input** input_data,
+                          MPI_Comm MPI_world_comm)
 {
     // input_data must be free outside
 
-    init_usr_input(input_data);
+    init_elph_usr_input(input_data);
 
     int mpi_world_rank, mpi_error;
 
@@ -165,11 +175,11 @@ void read_input_file(const char* input_file, struct usr_input** input_data,
 
     if (mpi_world_rank == 0)
     {
-        if (ini_parse(input_file, handler, *input_data) < 0)
+        if (ini_parse(input_file, elph_input_handler, *input_data) < 0)
         {
             error_msg("Cannot open input file.");
         }
     }
     // broad cast;
-    Bcast_input_data(*input_data, 0, MPI_world_comm);
+    Bcast_elph_input_data(*input_data, 0, MPI_world_comm);
 }

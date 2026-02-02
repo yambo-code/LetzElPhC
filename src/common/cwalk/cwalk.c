@@ -163,7 +163,9 @@ static bool cwk_path_is_string_equal(const char* first, const char* second,
         are_both_separators = strchr(separators[path_style], *first) != NULL &&
                               strchr(separators[path_style], *second) != NULL;
 
-        if (tolower(*first) != tolower(*second) && !are_both_separators)
+        if (tolower((unsigned char)(*first)) !=
+                tolower((unsigned char)(*second)) &&
+            !are_both_separators)
         {
             return false;
         }

@@ -10,6 +10,7 @@
 #include "common/constants.h"
 #include "common/dtypes.h"
 #include "common/error.h"
+#include "common/numerical_func.h"
 #include "common/string_func.h"
 #include "elphC.h"
 #include "io/ezxml/ezxml.h"
@@ -27,14 +28,20 @@ and outputs phonon polarization vectors
 
 static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
                               ELPH_float* qpts, ELPH_float* omega,
-                              ELPH_cmplx* pol_vecs);
+                              ELPH_cmplx* pol_vecs, ELPH_float* amass);
 
 static ND_int read_dyn_xml(FILE* fp, struct Lattice* lattice, ELPH_float* qpts,
-                           ELPH_float* omega, ELPH_cmplx* pol_vecs);
+                           ELPH_float* omega, ELPH_cmplx* pol_vecs,
+                           ELPH_float* amass);
+
+static bool is_dyn_xml(FILE* fp);
 
 ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
-                   ELPH_float* qpts, ELPH_float* omega, ELPH_cmplx* pol_vecs)
+                   ELPH_float* qpts, ELPH_float* omega, ELPH_cmplx* pol_vecs,
+                   ELPH_float* amass)
 {
+    // if amass (atomic masses in au) is NULL, will be ignored
+    //
     // First, open the file
     FILE* fp = fopen(dyn_file, "r");
     if (fp == NULL)
@@ -45,44 +52,16 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
 
     ND_int nq_found = 0;
 
-    bool is_xml_format = false;
+    bool is_xml_format = is_dyn_xml(fp);
     // First check if it is xml file
-    if (true)
-    {
-        // the if(true) is to create a small scope
-        char line[1024];
-        while (fgets(line, sizeof(line), fp))
-        {
-            // Skip leading whitespace
-            char* p = line;
-            while (isspace(*p))
-            {
-                p++;
-            }
-
-            // Skip empty lines
-            if (*p == '\0')
-            {
-                continue;
-            }
-
-            // Check for '<?xml'
-            if (strstr(p, "<?xml") != NULL)
-            {
-                is_xml_format = true;
-            }
-            break;
-        }
-        rewind(fp);
-    }
 
     if (is_xml_format)
     {
-        nq_found = read_dyn_xml(fp, lattice, qpts, omega, pol_vecs);
+        nq_found = read_dyn_xml(fp, lattice, qpts, omega, pol_vecs, amass);
     }
     else
     {
-        nq_found = read_dyn_qe_old(fp, lattice, qpts, omega, pol_vecs);
+        nq_found = read_dyn_qe_old(fp, lattice, qpts, omega, pol_vecs, amass);
     }
     fclose(fp);
     return nq_found;
@@ -90,7 +69,7 @@ ND_int read_dyn_qe(const char* dyn_file, struct Lattice* lattice,
 
 static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
                               ELPH_float* qpts, ELPH_float* omega,
-                              ELPH_cmplx* pol_vecs)
+                              ELPH_cmplx* pol_vecs, ELPH_float* amass)
 {
     /*
     // reads all the dynamical matrices in the file
@@ -110,7 +89,7 @@ static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // this line has 9 floats
-    if (parser_doubles_from_string(read_buf, read_fbuf) != 9)
+    if (parse_floats_from_string(read_buf, read_fbuf, DYN_FLOAT_BUF_SIZE) != 9)
     {
         error_msg("Error reading line 3 in dyn file");
     }
@@ -156,7 +135,8 @@ static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
     for (ND_int i = 0; i < natom; ++i)
     {
         fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-        if (parser_doubles_from_string(read_buf, read_fbuf) != 5)
+        if (parse_floats_from_string(read_buf, read_fbuf, DYN_FLOAT_BUF_SIZE) !=
+            5)
         {
             error_msg("Failed to read atomic masses from dyn file");
         }
@@ -207,7 +187,7 @@ static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
 
         ELPH_float* qpt_tmp = qpts + nq_found * 3;
 
-        if (parser_doubles_from_string(read_buf, qpt_tmp) != 3)
+        if (parse_floats_from_string(read_buf, qpt_tmp, 3) != 3)
         {
             error_msg("error reading qpoint from dynamat files");
         }
@@ -240,7 +220,8 @@ static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
                 {
                     fgets(read_buf, DYN_READ_BUF_SIZE, fp);  // read dynmat
                     // get the values of dynamical matrix
-                    if (parser_doubles_from_string(read_buf, read_fbuf) != 6)
+                    if (parse_floats_from_string(read_buf, read_fbuf,
+                                                 DYN_FLOAT_BUF_SIZE) != 6)
                     {
                         error_msg(
                             "error reading dynamical matrix from dynamat "
@@ -301,6 +282,11 @@ static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
         ++nq_found;
     }
 
+    if (amass)
+    {
+        memcpy(amass, atm_mass, natom * sizeof(*amass));
+    }
+
     free(work_array);
     free(omega2);
     free(dyn_mat_tmp);
@@ -318,7 +304,8 @@ static ND_int read_dyn_qe_old(FILE* fp, struct Lattice* lattice,
 }
 
 static ND_int read_dyn_xml(FILE* fp, struct Lattice* lattice, ELPH_float* qpts,
-                           ELPH_float* omega, ELPH_cmplx* pol_vecs)
+                           ELPH_float* omega, ELPH_cmplx* pol_vecs,
+                           ELPH_float* amass)
 {
     /*
     Reads dynamical matrices from QE XML format file.
@@ -341,8 +328,20 @@ static ND_int read_dyn_xml(FILE* fp, struct Lattice* lattice, ELPH_float* qpts,
     }
 
     // Read basic parameters
-    int ntypes = atoi(ezxml_get(geom_info, "NUMBER_OF_TYPES", -1)->txt);
-    int natoms = atoi(ezxml_get(geom_info, "NUMBER_OF_ATOMS", -1)->txt);
+    ezxml_t xml_ntype = ezxml_get(geom_info, "NUMBER_OF_TYPES", -1);
+    if (!xml_ntype)
+    {
+        error_msg("Error parsing number of types");
+    }
+    int ntypes = atoi(xml_ntype->txt);
+
+    ezxml_t xml_natoms = ezxml_get(geom_info, "NUMBER_OF_ATOMS", -1);
+    if (!xml_natoms)
+    {
+        error_msg("Error parsing number of atoms");
+    }
+    int natoms = atoi(xml_natoms->txt);
+
     int nmodes = natoms * 3;
 
     if (natoms != lattice->natom)
@@ -443,7 +442,7 @@ static ND_int read_dyn_xml(FILE* fp, struct Lattice* lattice, ELPH_float* qpts,
             error_msg("Error reading q-point from XML");
         }
         const char* q_str = qpt_xml->txt;
-        if (parser_doubles_from_string(q_str, qpt_tmp) != 3)
+        if (parse_floats_from_string(q_str, qpt_tmp, 3) != 3)
         {
             error_msg("Error reading q-point from XML");
         }
@@ -464,7 +463,8 @@ static ND_int read_dyn_xml(FILE* fp, struct Lattice* lattice, ELPH_float* qpts,
                 const char* phi_str = dynr_xml->txt;
 
                 ELPH_float phi_vals[18];
-                if (parser_doubles_from_string(phi_str, phi_vals) != 18)
+                if (parse_floats_from_string(phi_str, phi_vals,
+                                             ARRAY_LEN(phi_vals)) != 18)
                 {
                     error_msg("Error reading dynamical matrix from XML");
                 }
@@ -527,6 +527,12 @@ static ND_int read_dyn_xml(FILE* fp, struct Lattice* lattice, ELPH_float* qpts,
         nq_found++;
     }
 
+    // copy atomic masses
+    if (amass)
+    {
+        memcpy(amass, atm_mass, natoms * sizeof(*amass));
+    }
+
     // Clean up
     free(atm_mass);
     free(dyn_mat_tmp);
@@ -560,16 +566,16 @@ void read_qpts_qe(const char* dyn0_file, ND_int* nqpt_iBZ, ND_int* nqpt_fullBZ,
     char* read_buf = malloc(DYN_READ_BUF_SIZE);
     CHECK_ALLOC(read_buf);
 
-    int qgrid[3];
+    long long int qgrid[3];
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-    if (sscanf(read_buf, "%d %d %d", qgrid, qgrid + 1, qgrid + 2) != 3)
+    if (sscanf(read_buf, "%lld %lld %lld", qgrid, qgrid + 1, qgrid + 2) != 3)
     {
         error_msg("Error reading qgrid from dyn0 file");
     }
 
-    int nq_iBZ_tmp;
+    long long int nq_iBZ_tmp;
     fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-    if (sscanf(read_buf, "%d", &nq_iBZ_tmp) != 1)
+    if (sscanf(read_buf, "%lld", &nq_iBZ_tmp) != 1)
     {
         error_msg("Error reading 2nd line from dyn0 file");
     }
@@ -585,10 +591,10 @@ void read_qpts_qe(const char* dyn0_file, ND_int* nqpt_iBZ, ND_int* nqpt_fullBZ,
     // now read list of qpoints
     for (ND_int i = 0; i < *nqpt_iBZ; ++i)
     {
-        float qpt_tmp[3];
+        double qpt_tmp[3];
         fgets(read_buf, DYN_READ_BUF_SIZE, fp);
-        if (sscanf(read_buf, "%f %f %f", qpt_tmp, qpt_tmp + 1, qpt_tmp + 2) !=
-            3)
+        if (sscanf(read_buf, "%lf %lf %lf", qpt_tmp, qpt_tmp + 1,
+                   qpt_tmp + 2) != 3)
         {
             error_msg("Error reading qpoint from dyn0 file");
         }
@@ -600,4 +606,36 @@ void read_qpts_qe(const char* dyn0_file, ND_int* nqpt_iBZ, ND_int* nqpt_fullBZ,
 
     free(read_buf);
     fclose(fp);
+}
+
+static bool is_dyn_xml(FILE* fp)
+{
+    // must be rewind(fp) at the end.
+    // the if(true) is to create a small scope
+    bool is_xml_format = false;
+    char line[1024];
+    while (fgets(line, sizeof(line), fp))
+    {
+        // Skip leading whitespace
+        char* p = line;
+        while (isspace((unsigned char)(*p)))
+        {
+            p++;
+        }
+
+        // Skip empty lines
+        if (*p == '\0')
+        {
+            continue;
+        }
+
+        // Check for '<?xml'
+        if (strstr(p, "<?xml") != NULL)
+        {
+            is_xml_format = true;
+        }
+        break;
+    }
+    rewind(fp);
+    return is_xml_format;
 }

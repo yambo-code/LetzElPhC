@@ -139,13 +139,13 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
         calloc(3 * npw_k2_loc, sizeof(ELPH_float));  // S2*k2 gvecs
     CHECK_ALLOC(G_S2k2);
 
-    // compute the ulm vec i.e S2K2 + G = R*S1*k1 = > G = R*S1*k1-S2K2
-    // C'_G-G0 = C_G. we need to add -G0 = S2*k2-R*S1*k1;
+    // compute the ulm vec i.e  G0 = S2*k2-R*S1*k1
+    // C'_{G+G0} = C_G. we need to add G0 ;
 
     ELPH_float SymRS1[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};  // R@S1 matrix
     Gemm3x3f(Rsym_mat, 'N', Sym1, 'N', SymRS1);
 
-    // Compute the ulmvec i.e -G0 = S2*k2-R*S1*k1
+    // Compute the ulmvec i.e G0 = S2*k2-R*S1*k1
     ELPH_float ulm_vec[3] = {0, 0, 0};  // (in cart)
     MatVec3f(Sym2, k2_vec, false, ulm_vec);
     // first compute and store S2K2 in ulm_vec
@@ -384,7 +384,7 @@ void electronic_reps(const struct WFC* wfcs, const struct Lattice* lattice,
             wfc_RS1k + ispin * lattice->nbnds * npw_spinor_k1, Dkmn_rep_tmp,
             1.0, 0.0, npw_spinor_k1, npw_spinor_k1, lattice->nbnds,
             lattice->nbnds, lattice->nbnds, npw_spinor_k1);
-        // (nba,pw)@ (nbn,pw)^C
+        // (nb,pw)^* @(na,pw).T
         // reduce to root node
         ELPH_cmplx* Dkmn_ptr = NULL;
         if (Comm->commK_rank == 0)

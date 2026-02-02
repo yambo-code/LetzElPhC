@@ -22,7 +22,8 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
                  ND_int* nmag, ND_int* fft_dims, ND_int* nph_sym,
                  ELPH_float** ph_sym_mats, ELPH_float** ph_sym_tau,
                  bool** ph_trevs, bool* ph_mag_symm, bool* ph_tim_rev,
-                 char** pseudo_dir, char*** pseudo_pots)
+                 char** pseudo_dir, char*** pseudo_pots, int* nspinor,
+                 ND_int* ntype, int** atomic_type, ELPH_float** atomic_positons)
 {
     /*
     get pseudo potential information, fft information from xml file
@@ -34,6 +35,10 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
     *is_soc_present = false;
     *dim = '3';
     *nmag = 1;
+    if (nspinor)
+    {
+        *nspinor = 1;
+    }
 
     // check if there is any assume_isolated tag in xml file
     FILE* fp = fopen(xml_file, "r");
@@ -91,15 +96,25 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
     {
         error_msg("error ntyp attribute from data-file-schema.xml file");
     }
-    ND_int ntype = atoll(tmp_str);
-    *pseudo_pots = malloc(sizeof(char*) * ntype);
+    ND_int atomic_ntypes = atoll(tmp_str);
+    if (ntype)
+    {
+        *ntype = atomic_ntypes;
+    }
+    //
+    *pseudo_pots = malloc(sizeof(char*) * (atomic_ntypes));
     CHECK_ALLOC(*pseudo_pots);
 
     char** pot_tmp = *pseudo_pots;
 
-    for (ND_int itype = 0; itype < ntype; ++itype)
+    char* atom_type_symbol =
+        calloc((atomic_ntypes) * 16, sizeof(*atom_type_symbol));
+    CHECK_ALLOC(atom_type_symbol);
+
+    for (ND_int itype = 0; itype < atomic_ntypes; ++itype)
     {
-        xml_tmp = ezxml_get(atom_specs, "species", itype, "pseudo_file", -1);
+        xml_tmp =
+            ezxml_get(atom_specs, "species", (int)itype, "pseudo_file", -1);
         if (!xml_tmp)
         {
             error_msg("Parsing species from data-file-schema.xml file");
@@ -110,6 +125,30 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         CHECK_ALLOC(pot_tmp[itype]);
 
         strcpy(pot_tmp[itype], tmp_str);
+
+        // read atomic type
+        xml_tmp = ezxml_get(atom_specs, "species", (int)itype, "");
+        if (!xml_tmp)
+        {
+            error_msg(
+                "error reading atomic spices from data-file-schema.xml "
+                "file");
+        }
+        tmp_str = ezxml_attr(xml_tmp, "name");
+        if (!tmp_str)
+        {
+            error_msg("error name attribute from data-file-schema.xml file");
+        }
+        // remove white spaces
+        while (isspace((unsigned char)(*tmp_str)))
+        {
+            ++tmp_str;
+        }
+        if (strlen(tmp_str) > 15)
+        {
+            error_msg("Atomic Name is very long.");
+        }
+        strncpy_custom(atom_type_symbol + 16 * itype, tmp_str, 16);
     }
 
     // get number of atoms
@@ -125,7 +164,6 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("error nat attribute from data-file-schema.xml file");
     }
     *natoms = atoll(tmp_str);
-    //
     // get alat
     tmp_str = ezxml_attr(xml_tmp, "alat");
     if (!tmp_str)
@@ -135,6 +173,69 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
     alat[0] = atof(tmp_str);
     alat[1] = alat[0];
     alat[2] = alat[0];
+    //
+    // read atomic positons and set its type.
+    int* atom_type = malloc((*natoms) * sizeof(*atom_type));
+    CHECK_ALLOC(atom_type);
+    if (atomic_type)
+    {
+        *atomic_type = atom_type;
+    }
+    //
+    ELPH_float* atomic_pos = NULL;
+    if (atomic_positons)
+    {
+        atomic_pos = malloc(3 * (*natoms) * sizeof(*atomic_pos));
+        CHECK_ALLOC(atomic_pos);
+        *atomic_positons = atomic_pos;
+    }
+    //
+    for (ND_int ia = 0; ia < *natoms; ++ia)
+    {
+        xml_tmp = ezxml_get(qexml, "output", 0, "atomic_structure", 0,
+                            "atomic_positions", 0, "atom", (int)ia, "");
+        if (!xml_tmp)
+        {
+            error_msg(
+                "Parsing atomic_positions from data-file-schema.xml file");
+        }
+        tmp_str = ezxml_attr(xml_tmp, "name");
+        if (!tmp_str)
+        {
+            error_msg("error name attribute from data-file-schema.xml file");
+        }
+        while (isspace((unsigned char)(*tmp_str)))
+        {
+            ++tmp_str;
+        }
+        //
+        int itype = -1;
+        for (int it = 0; it < atomic_ntypes; ++it)
+        {
+            if (!strcmp(atom_type_symbol + 16 * it, tmp_str))
+            {
+                itype = it;
+                break;
+            }
+        }
+        if (itype < 0)
+        {
+            error_msg("Cannot find atomic type.");
+        }
+        //
+        atom_type[ia] = itype;
+        //
+        if (atomic_positons)
+        {
+            tmp_str = xml_tmp->txt;
+            if (parse_floats_from_string(tmp_str, atomic_pos + 3 * ia, 3) != 3)
+            {
+                error_msg("Error parsing atomic positions");
+            }
+        }
+    }
+    //
+    //
     // get fft dims
     xml_tmp = ezxml_get(qexml, "output", 0, "basis_set", 0, "fft_grid", -1);
     if (!xml_tmp)
@@ -173,7 +274,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing a1 from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    if (parser_doubles_from_string(tmp_str, a_tmp_read) != 3)
+    if (parse_floats_from_string(tmp_str, a_tmp_read, 3) != 3)
     {
         error_msg("Error parsing a1 vec from data-file-schema.xml");
     }
@@ -189,7 +290,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing a2 from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    if (parser_doubles_from_string(tmp_str, a_tmp_read) != 3)
+    if (parse_floats_from_string(tmp_str, a_tmp_read, 3) != 3)
     {
         error_msg("Error parsing a2 vec from data-file-schema.xml");
     }
@@ -205,7 +306,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing a3 from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    if (parser_doubles_from_string(tmp_str, a_tmp_read) != 3)
+    if (parse_floats_from_string(tmp_str, a_tmp_read, 3) != 3)
     {
         error_msg("Error parsing a3 vec from data-file-schema.xml");
     }
@@ -225,7 +326,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
     }
     tmp_str = xml_tmp->txt;
     //
-    strcpy(tmp_read, tmp_str);
+    strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
     lowercase_str(tmp_read);
 
     if (strstr(tmp_read, "true"))
@@ -242,7 +343,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing magnetization, lsda from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    strcpy(tmp_read, tmp_str);
+    strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
     lowercase_str(tmp_read);
 
     if (strstr(tmp_read, "true"))
@@ -260,7 +361,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing noinv from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    strcpy(tmp_read, tmp_str);
+    strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
     lowercase_str(tmp_read);
 
     if (strstr(tmp_read, "true"))
@@ -289,12 +390,16 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
             error_msg("Parsing noncolin from data-file-schema.xml file");
         }
         tmp_str = xml_tmp->txt;
-        strcpy(tmp_read, tmp_str);
+        strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
         lowercase_str(tmp_read);
 
         if (strstr(tmp_read, "true"))
         {
             is_non_collinear = true;
+            if (nspinor)
+            {
+                *nspinor = 2;
+            }
         }
 
         if (is_non_collinear)
@@ -308,7 +413,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
             }
             tmp_str = xml_tmp->txt;
 
-            strcpy(tmp_read, tmp_str);
+            strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
             lowercase_str(tmp_read);
 
             if (strstr(tmp_read, "true"))
@@ -387,13 +492,14 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         // rotation matrix (stored in transposed order) and frac .translation
         // are store in crystals coordinates parse rotation (in crystal units)
         // S_cart = (alat@S_crys^T@blat^T)
-        xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", isym, "rotation", -1);
+        xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", (int)isym, "rotation", -1);
         if (!xml_tmp)
         {
             error_msg("Parsing rotation from data-file-schema.xml file");
         }
         tmp_str = xml_tmp->txt;
-        if (parser_doubles_from_string(tmp_str, (*ph_sym_mats) + 9 * isym) != 9)
+        if (parse_floats_from_string(tmp_str, (*ph_sym_mats) + 9 * isym, 9) !=
+            9)
         {
             error_msg(
                 "Error parsing symmetry matrices from data-file-schema.xml");
@@ -402,7 +508,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         // parse translation (in crystal units) tau_cart = alat@tau_crys
         // It should be noted that we use Sx + v convention, but qe uses S(x+v)
         // so our v = S*tau_qe
-        xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", isym,
+        xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", (int)isym,
                             "fractional_translation", -1);
         if (!xml_tmp)
         {
@@ -411,14 +517,14 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
                 "file");
         }
         tmp_str = xml_tmp->txt;
-        if (parser_doubles_from_string(tmp_str, (*ph_sym_tau) + 3 * isym) != 3)
+        if (parse_floats_from_string(tmp_str, (*ph_sym_tau) + 3 * isym, 3) != 3)
         {
             error_msg(
                 "Error parsing frac. trans. vecs from data-file-schema.xml");
         }
         // check if this symmetry corresponds to time_reversal symmetry for nmag
         // == 4
-        xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", isym, "info", -1);
+        xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", (int)isym, "info", -1);
         if (!xml_tmp)
         {
             error_msg("Parsing symmetry info from data-file-schema.xml file");
@@ -426,7 +532,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         const char* trev_tmp_str = ezxml_attr(xml_tmp, "time_reversal");
         if (trev_tmp_str)
         {
-            strcpy(tmp_read, trev_tmp_str);
+            strncpy_custom(tmp_read, trev_tmp_str, ELPH_XML_READ_LINE_SIZE);
             lowercase_str(tmp_read);
 
             if (strstr(tmp_read, "true"))
@@ -519,6 +625,15 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         *ph_tim_rev = false;
     }
 
+    if (!atomic_type)
+    {
+        free(atom_type);
+    }
+    if (!atomic_positons)
+    {
+        free(atomic_pos);
+    }
+    free(atom_type_symbol);
     free(tmp_read);
     ezxml_free(qexml);
     fclose(fp);

@@ -91,10 +91,10 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     const bool timerevk = lattice->syms[ksym].time_rev;
 
     ELPH_float ulmveckq[3];
-    // ulmveckq is shift that is applyed to k+q vector
-    // i.e -(Skq*kq - S*k - q)
-    ELPH_float tempSkq[3] = {0, 0, 0};  // S2*k2
-    ELPH_float tempSk[3] = {0, 0, 0};   // S1*k1
+    // ulmveckq is G shift that is applyed to k+q wfc
+    // i.e ulmveckq = (Skq*kq - S*k - q)
+    ELPH_float tempSkq[3] = {0, 0, 0};  //
+    ELPH_float tempSk[3] = {0, 0, 0};   //
     ELPH_float taukq_crys[3], tauk_crys[3];
     // fractional translation in crystal coordinates
     ELPH_float kvecSkq[3], kvecSk[3];
@@ -104,19 +104,19 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
     MatVec3f(symk, kvec, false, tempSk);
 
     MatVec3f(lat_vec, tempSk, true, kvecSk);
+    // compute k + q
     for (int xi = 0; xi < 3; ++xi)
     {
         kvecSkq[xi] = kvecSk[xi] + qpt[xi];
     }
-    // note that tempSkq = kvecSkq + G
-
+    // Now subtract k from Skq in cart units
+    // i.e now tempSkq contains q + G
     for (int xi = 0; xi < 3; ++xi)
     {
         tempSkq[xi] -= tempSk[xi];
     }
-
     // convert qpt to cartisian coord
-    // tempSkq is Skq*kq - S*k
+    // and store it in tempSk
     MatVec3f(blat, qpt, false, tempSk);
     // store qpt( in cart units ) in tempSk
     for (int xi = 0; xi < 3; ++xi)
@@ -137,13 +137,12 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
         tauk_crys[xi] = tauk_crys[xi] / (2 * ELPH_PI);
     }
 
-    // Skq+G = Sk + q => G = Sk+q-Skq
+    // Finally get the ulmvec by subtracting q from q+G
     for (int xi = 0; xi < 3; ++xi)
     {
         ulmveckq[xi] = (tempSkq[xi] - tempSk[xi]);
     }
-    // note in the above we store -G0 as we add -G0 to all gvectors
-
+    // now rotate and shitf (only for k+q vector) G vectors
     rotateGvecs(Gkq, symkq, npwkq, lat_vec, false, true, ulmveckq, gSkq_buf);
     rotateGvecs(Gk, symk, npwk, lat_vec, false, true, NULL, gSk_buf);
 

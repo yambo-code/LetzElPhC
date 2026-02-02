@@ -17,7 +17,9 @@
 
 #define ELPH_OMP_ATOMIC _Pragma("omp atomic")
 
-#define ELPH_OMP_PAR_COLLAPSE_3 _Pragma("omp for collapse(3)")
+#define ELPH_OMP_PAR_COLLAPSE_3 _Pragma("omp parallel for collapse(3)")
+
+#define ELPH_OMP_PAR_COLLAPSE_2 _Pragma("omp parallel for collapse(2)")
 
 #define ELPH_OMP_SINGLE _Pragma("omp single")
 #else
@@ -36,6 +38,8 @@
 #define ELPH_OMP_ATOMIC
 
 #define ELPH_OMP_PAR_COLLAPSE_3
+
+#define ELPH_OMP_PAR_COLLAPSE_2
 
 #define ELPH_OMP_SINGLE
 #endif

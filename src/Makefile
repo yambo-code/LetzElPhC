@@ -4,11 +4,12 @@ TARGET 		 :=  lelphc
 
 #### make start here
 
-SUBDIR = nonloc io/ezxml io/inih io \
+SUBDIR = nonloc io/ezxml parser/inih io \
 		 io/qe common dvloc elph wfc \
 		 symmetries fft common/cwalk \
 		 preprocessor interpolation \
-		 common/ELPH_hash_map
+		 common/ELPH_hash_map phonon \
+		 common/kdtree parser
 
 .SUFFIXES :
 

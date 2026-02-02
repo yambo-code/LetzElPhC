@@ -51,7 +51,7 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
         cwk_path_join(ph_save_dir, small_buf, tmp_char_buf, tmp_char_buf_len);
 
         ND_int ndyn_read =
-            read_dyn_qe(tmp_char_buf, lattice, qpts, omega_ph, eig);
+            read_dyn_qe(tmp_char_buf, lattice, qpts, omega_ph, eig, NULL);
         if (ndyn_read != 1)
         {
             error_msg(
