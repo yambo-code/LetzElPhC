@@ -36,8 +36,8 @@ void init_interpolation_usr_input(struct interpolation_usr_input** input)
     inp->ph_save_interpolation_dir = inp->ph_save_dir + READ_STR_LEN;
     inp->qlist_file = inp->ph_save_dir + 2 * READ_STR_LEN;
 
-    strncpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
-    strncpy_custom(inp->ph_save_interpolation_dir, "ph_save_interpolation",
+    strlcpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
+    strlcpy_custom(inp->ph_save_interpolation_dir, "ph_save_interpolation",
                    READ_STR_LEN);
     strcpy(inp->qlist_file, "");
     // qlist_file will be set to NULL later if no list is given.
@@ -47,7 +47,7 @@ void init_interpolation_usr_input(struct interpolation_usr_input** input)
     //
     inp->nosym = false;
     memset(inp->asr, 0, sizeof(inp->asr));
-    strncpy_custom(inp->asr, "no", sizeof(inp->asr));
+    strlcpy_custom(inp->asr, "no", sizeof(inp->asr));
     //
     inp->loto = false;
     inp->loto_dir[0] = 0.0;
@@ -143,7 +143,7 @@ static int interpolation_input_handler(void* user, const char* section,
     }
     else if (strcmp(name, "asr") == 0)
     {
-        strncpy_custom(inp->asr, value, sizeof(inp->asr));
+        strlcpy_custom(inp->asr, value, sizeof(inp->asr));
         strip_quotes_in_string(inp->asr);
         lowercase_str(inp->asr);
     }
@@ -167,12 +167,12 @@ static int interpolation_input_handler(void* user, const char* section,
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
-        strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
+        strlcpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
         strip_quotes_in_string(inp->ph_save_dir);
     }
     else if (strcmp(name, "ph_save_interpolation_dir") == 0)
     {
-        strncpy_custom(inp->ph_save_interpolation_dir, value, READ_STR_LEN);
+        strlcpy_custom(inp->ph_save_interpolation_dir, value, READ_STR_LEN);
         strip_quotes_in_string(inp->ph_save_interpolation_dir);
     }
     else if (strcmp(name, "nq1") == 0)
@@ -203,7 +203,7 @@ static int interpolation_input_handler(void* user, const char* section,
     //
     else if (strcmp(name, "qlist_file") == 0)
     {
-        strncpy_custom(inp->qlist_file, value, READ_STR_LEN);
+        strlcpy_custom(inp->qlist_file, value, READ_STR_LEN);
         strip_quotes_in_string(inp->qlist_file);
     }
     else

@@ -19,7 +19,7 @@ void set_kernel(const char* kernel_str, struct kernel_info* kernel)
 {
     size_t name_str_size = sizeof(kernel->name_str) - 1;
     kernel->name_str[name_str_size] = '\0';
-    strncpy_custom(kernel->name_str, kernel_str, name_str_size);
+    strlcpy_custom(kernel->name_str, kernel_str, name_str_size);
 
     if (!strcmp(kernel_str, "dfpt"))
     {

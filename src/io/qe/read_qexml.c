@@ -148,7 +148,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         {
             error_msg("Atomic Name is very long.");
         }
-        strncpy_custom(atom_type_symbol + 16 * itype, tmp_str, 16);
+        strlcpy_custom(atom_type_symbol + 16 * itype, tmp_str, 16);
     }
 
     // get number of atoms
@@ -326,7 +326,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
     }
     tmp_str = xml_tmp->txt;
     //
-    strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
+    strlcpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
     lowercase_str(tmp_read);
 
     if (strstr(tmp_read, "true"))
@@ -343,7 +343,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing magnetization, lsda from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
+    strlcpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
     lowercase_str(tmp_read);
 
     if (strstr(tmp_read, "true"))
@@ -361,7 +361,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         error_msg("Parsing noinv from data-file-schema.xml file");
     }
     tmp_str = xml_tmp->txt;
-    strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
+    strlcpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
     lowercase_str(tmp_read);
 
     if (strstr(tmp_read, "true"))
@@ -390,7 +390,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
             error_msg("Parsing noncolin from data-file-schema.xml file");
         }
         tmp_str = xml_tmp->txt;
-        strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
+        strlcpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
         lowercase_str(tmp_read);
 
         if (strstr(tmp_read, "true"))
@@ -413,7 +413,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
             }
             tmp_str = xml_tmp->txt;
 
-            strncpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
+            strlcpy_custom(tmp_read, tmp_str, ELPH_XML_READ_LINE_SIZE);
             lowercase_str(tmp_read);
 
             if (strstr(tmp_read, "true"))
@@ -532,7 +532,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         const char* trev_tmp_str = ezxml_attr(xml_tmp, "time_reversal");
         if (trev_tmp_str)
         {
-            strncpy_custom(tmp_read, trev_tmp_str, ELPH_XML_READ_LINE_SIZE);
+            strlcpy_custom(tmp_read, trev_tmp_str, ELPH_XML_READ_LINE_SIZE);
             lowercase_str(tmp_read);
 
             if (strstr(tmp_read, "true"))

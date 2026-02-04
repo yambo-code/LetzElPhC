@@ -71,7 +71,7 @@ void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
                 }
                 break;
             case 'f':
-                strncpy_custom(calc_info->input_file, optarg, 512);
+                strlcpy_custom(calc_info->input_file, optarg, 512);
                 break;
             case '?':
                 fprintf(stderr, "Unsupported argument given.\n");

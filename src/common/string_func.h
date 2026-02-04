@@ -5,7 +5,7 @@
 #include "elphC.h"
 
 // safer strncpy version
-char* strncpy_custom(char* restrict dest, const char* restrict src,
+char* strlcpy_custom(char* restrict dest, const char* restrict src,
                      size_t count);
 
 // lower case a string

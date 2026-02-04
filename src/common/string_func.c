@@ -10,7 +10,7 @@
 This file contains some useful string functions
 */
 
-char* strncpy_custom(char* restrict dest, const char* restrict src,
+char* strlcpy_custom(char* restrict dest, const char* restrict src,
                      size_t count)
 {
     if (count == 0)
@@ -87,34 +87,45 @@ ND_int parse_floats_from_string(const char* str, ELPH_float* out,
 
 bool string_start_with(char* str, char* compare_str, bool trim)
 {
-    /*
-    Check if given string starts with a substring
-    */
     if (str == NULL || compare_str == NULL)
     {
         return false;
     }
-    //
-    char* a;
-    char* b;
-    a = str;
-    b = compare_str;
+
+    char* a = str;
+    char* b = compare_str;
+
     if (trim)
     {
-        while (isspace((unsigned char)(*a)))
+        // Trim leading whitespace
+        while (isspace((unsigned char)*a))
         {
             ++a;
         }
-        while (isspace((unsigned char)(*b)))
+        while (isspace((unsigned char)*b))
         {
             ++b;
         }
     }
-    if (b[0] != a[0])
+
+    // Determine length of compare_str without trailing whitespace
+    size_t blen = strlen(b);
+    if (trim)
+    {
+        while (blen > 0 && isspace((unsigned char)b[blen - 1]))
+        {
+            --blen;
+        }
+    }
+
+    // If compare string is empty after trimming
+    if (blen == 0)
     {
         return false;
     }
-    return !strncmp(a, b, strlen(b));
+
+    // Compare only up to trimmed length
+    return strncmp(a, b, blen) == 0;
 }
 
 bool string_end_with(char* str, char* compare_str, bool trim)
