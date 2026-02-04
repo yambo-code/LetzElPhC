@@ -258,7 +258,7 @@ void str_replace_chars(char* str_in, const char* delimters,
     }
 }
 
-static int my_strcasecmp(const char* a, const char* b)
+int my_strcasecmp(const char* a, const char* b)
 {
     if (!a || !b)
     {

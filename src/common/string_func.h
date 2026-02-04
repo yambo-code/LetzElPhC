@@ -32,3 +32,5 @@ void str_replace_chars(char* str_in, const char* delimters,
 bool parse_bool_input(const char* str);
 
 void strip_quotes_in_string(char* s);
+
+int my_strcasecmp(const char* a, const char* b);
