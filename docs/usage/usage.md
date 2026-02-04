@@ -129,7 +129,7 @@ convention      = standard
 
 LetzElPhC utilizes a hierarchical parallelization scheme involving **q-pools**, **k-pools**, and **plane-wave** distribution.
 
-!!! warning "Requirement"
+!!! danger "Requirement"
     The total number of CPUs must be divisible by `nkpool * nqpool`.
 
 **Example:** Running on **12 CPUs** with `nkpool = 3` and `nqpool = 2`:
@@ -218,10 +218,10 @@ ph_save_interpolation_dir = ph_save_interpolation
 interpolate_dvscf = true
 # Whether to interpolate the deformation potential (dvscf)
 
-asr = true
-# Apply Acoustic Sum Rule (ASR). Can be true/false (or 1/0, .true./.false.)
+nosym =false 
+# Remove symmetries. Can be true/false (or 1/0, .true./.false.)
 
-asr_kind = "simple"
+asr = "simple"
 # Type of ASR to apply (e.g., "simple")
 
 loto = false

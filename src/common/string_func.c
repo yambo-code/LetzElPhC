@@ -10,18 +10,27 @@
 This file contains some useful string functions
 */
 
-char* strncpy_custom(char* dest, const char* src, size_t count)
+char* strncpy_custom(char* restrict dest, const char* restrict src,
+                     size_t count)
 {
-    // this does strncpy(dest,src,n-1) and sets nth element as \0
-    if (1 == count)
+    if (count == 0)
     {
-        dest[0] = '\0';
+        return dest;
     }
-    else if (count > 1)
+
+    char* d = dest;
+    const char* s = src;
+    size_t n = count;
+
+    while (--n > 0 && *s)
     {
-        strncpy(dest, src, count - 1);
-        dest[count - 1] = '\0';
+        *d++ = *s++;
+        // Copy until count runs out or src ends
     }
+
+    *d = '\0';
+    // Always ensure null termination
+
     return dest;
 }
 
@@ -49,35 +58,28 @@ ND_int parse_floats_from_string(const char* str, ELPH_float* out,
     if out == NULL, it returns number of floats found in the string.
     */
     const char* p = str;
-    char* q;
-    double temp_val;
+    char* end;
     ND_int count = 0;
 
     while (*p)
     {
-        if (isdigit((unsigned char)(*p)) ||
-            ((*p == '-' || *p == '+') && isdigit((unsigned char)(*(p + 1)))))
+        double val = strtod(p, &end);
+        // Attempt to parse a double
+
+        if (p == end)
         {
-            temp_val = strtod(p, &q);
-
-            if (p == q)
-            {
-                break;
-            }
-            else
-            {
-                p = q;
-            }
-
-            if (out != NULL && count < out_size)
-            {
-                out[count] = temp_val;
-            }
-            ++count;
+            p++;
+            // No conversion occurred, advance manually to skip non-numeric char
         }
         else
         {
-            ++p;
+            if (out != NULL && count < out_size)
+            {
+                out[count] = val;
+            }
+            count++;
+            p = end;
+            // Advance p to where strtod stopped parsing
         }
     }
     return count;
@@ -124,38 +126,58 @@ bool string_end_with(char* str, char* compare_str, bool trim)
     {
         return false;
     }
-    //
-    char* temp_str =
-        malloc(sizeof(char) * (strlen(str) + strlen(compare_str) + 2));
-    CHECK_ALLOC(temp_str);
 
-    char* a = temp_str;
-    char* b = temp_str + strlen(str) + 1;
+    size_t s_len = strlen(str);
+    size_t c_len = strlen(compare_str);
 
-    strcpy(a, str);
-    strcpy(b, compare_str);
+    if (c_len == 0)
+    {
+        return true;
+    }
+    if (s_len == 0)
+    {
+        return false;
+    }
 
-    str_reverse_in_place(a);
-    str_reverse_in_place(b);
+    const char* s_end = str + s_len - 1;
+    // Point to the last character of str
+
+    const char* c_start = compare_str;
+
+    const char* c_end = compare_str + c_len - 1;
+    // Point to the last character of compare_str
+
     if (trim)
     {
-        while (isspace((unsigned char)(*a)))
+        while (s_end >= str && isspace((unsigned char)*s_end))
         {
-            ++a;
+            s_end--;
+            // Backtrack past trailing whitespace in str
         }
-        while (isspace((unsigned char)(*b)))
+        while (c_end >= compare_str && isspace((unsigned char)*c_end))
         {
-            ++b;
+            c_end--;
+            // Backtrack past trailing whitespace in compare_str
+        }
+        while (c_start <= c_end && isspace((unsigned char)*c_start))
+        {
+            c_start++;
+            // trim leading whitespace in compare_str
         }
     }
 
-    bool ret_value = !strncmp(a, b, strlen(b));
-    if (b[0] != a[0])
+    while (c_end >= c_start)
     {
-        ret_value = false;
+        if (s_end < str || *s_end != *c_end)
+        {
+            return false;
+        }
+
+        s_end--;
+        c_end--;
     }
-    free(temp_str);
-    return ret_value;
+
+    return true;
 }
 
 char* str_reverse_in_place(char* str)
@@ -191,21 +213,36 @@ char* str_reverse_in_place(char* str)
 void str_replace_chars(char* str_in, const char* delimters,
                        const char* replace_chars)
 {
-    ND_int ndelimters = strlen(delimters);
-    // if  ndelimters != strlen(replace_chars) buffer overflow
-
-    ND_int str_in_len = strlen(str_in);
-
-    for (ND_int i = 0; i < str_in_len; ++i)
+    if (!str_in || !delimters || !replace_chars)
     {
-        for (ND_int j = 0; j < ndelimters; ++j)
-        {
-            if (str_in[i] == delimters[j])
-            {
-                str_in[i] = replace_chars[j];
-                break;
-            }
-        }
+        return;
+    }
+
+    unsigned char map[256];
+    // Create a generic map where each char maps to itself initially
+
+    for (int i = 0; i < 256; ++i)
+    {
+        map[i] = (unsigned char)i;
+    }
+
+    const char* d = delimters;
+    const char* r = replace_chars;
+
+    while (*d && *r)
+    {
+        map[(unsigned char)*d] = (unsigned char)*r;
+        // Update the map: delimiter character points to replacement character
+        d++;
+        r++;
+    }
+
+    char* p = str_in;
+    while (*p)
+    {
+        *p = (char)map[(unsigned char)*p];
+        // Replace in O(1) using the lookup table
+        p++;
     }
 }
 

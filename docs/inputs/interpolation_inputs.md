@@ -18,18 +18,22 @@ These variables control the interpolation calculations.
     * **Description:**
         If True, the code interpolates the deformation potential ($\delta V_{scf}$). 
 
-=== "asr"
+=== "nosym"
     * **Type:** `LOGICAL`
-    * **Default:** `True`
+    * **Default:** `False`
     * **Description:**
-        If `True`, applies the Acoustic Sum Rule (ASR) to enforce translational invariance.
+        If `True`, no symmetries are used; i.e., dynamical matrices and dvscf are
+        printed on the full Brillouin zone.
 
-=== "asr_kind"
+
+=== "asr"
     * **Type:** `STRING`
-    * **Default:** `simple`
+    * **Default:** `no`
     * **Description:**
         Specifies the type of Acoustic Sum Rule to apply.
-        * Example: `simple`
+        * `no`: No acoustic sum rule applied  
+        * `simple`: Simple acoustic sum rule (corrects only the diagonal matrix elements)  
+        * `crystal`: Acoustic sum rule imposed via optimized correction of the force constants
 
 === "loto"
     * **Type:** `LOGICAL`
@@ -98,5 +102,5 @@ These variables control the interpolation calculations.
             Number of qpoints given in the list
             Q1x Q1y Q1z
             Q2x Q2y Q2z
-            # is comment line and will be skiped
+            # Use # to comment. It will be skiped when reading
             ```
