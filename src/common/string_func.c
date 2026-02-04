@@ -13,6 +13,7 @@ This file contains some useful string functions
 char* strlcpy_custom(char* restrict dest, const char* restrict src,
                      size_t count)
 {
+    // copies MAX(count,strlen(src)) characters into dest pointer
     if (count == 0)
     {
         return dest;
