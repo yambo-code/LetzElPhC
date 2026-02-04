@@ -11,6 +11,7 @@
 #include "common/numerical_func.h"
 #include "common/string_func.h"
 #include "elphC.h"
+#include "phonon.h"
 
 enum asr_kind asr_kind_from_string(const char* str)
 {
@@ -49,11 +50,207 @@ enum asr_kind asr_kind_from_string(const char* str)
     return ASR_NONE;
 }
 
-void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
-                             const ND_int nat, ELPH_cmplx* frc,
-                             const ELPH_float* atomic_pos,
-                             const ELPH_float* lat_vecs, const ND_int* ws_vecs,
-                             const ND_int n_ws_vecs, const ND_int* ws_degen)
+void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
+                                          const ND_int nat)
+{
+    if (mode == ASR_NONE || !Zborn || !nat)
+    {
+        return;
+    }
+
+    ND_int total_elements = 3 * 3 * nat;
+
+    if (mode == ASR_SIMPLE)
+    {
+        /* ==============================
+         * SIMPLE RULE
+         * ==============================
+         */
+        for (ND_int i = 0; i < 3; i++)
+        {
+            for (ND_int j = 0; j < 3; j++)
+            {
+                ELPH_float sum = 0.0;
+
+                for (ND_int na = 0; na < nat; na++)
+                {
+                    sum += Zborn[na * 9 + i * 3 + j];
+                }
+
+                ELPH_float avg = sum / nat;
+
+                for (ND_int na = 0; na < nat; na++)
+                {
+                    Zborn[na * 9 + i * 3 + j] -= avg;
+                }
+            }
+        }
+    }
+    else
+    {
+        /* ==============================
+         * CRYSTAL RULE
+         * ==============================
+         */
+        ND_int zeu_dim = total_elements;
+        ND_int zeu_u_dim = 18 * zeu_dim;
+
+        ELPH_float* zeu_u = calloc(zeu_u_dim, sizeof(ELPH_float));
+        CHECK_ALLOC(zeu_u);
+
+        ELPH_float* zeu_new = malloc(zeu_dim * sizeof(ELPH_float));
+        CHECK_ALLOC(zeu_new);
+
+        memcpy(zeu_new, Zborn, zeu_dim * sizeof(ELPH_float));
+
+        ND_int p = 0;
+        /* Initialize translational sum rules in zeu_u */
+        for (ND_int i = 0; i < 3; i++)
+        {
+            for (ND_int j = 0; j < 3; j++)
+            {
+                for (ND_int iat = 0; iat < nat; iat++)
+                {
+                    ND_int idx = p * zeu_dim + (iat * 9 + i * 3 + j);
+                    zeu_u[idx] = 1.0;
+                }
+                p++;
+            }
+        }
+
+        /* Gram-Schmidt Orthonormalization */
+        ELPH_float* zeu_w = calloc(zeu_dim, sizeof(ELPH_float));
+        CHECK_ALLOC(zeu_w);
+        //
+        ELPH_float* zeu_x = calloc(zeu_dim, sizeof(ELPH_float));
+        CHECK_ALLOC(zeu_x);
+        //
+        ELPH_float* tempZeu = calloc(zeu_dim, sizeof(ELPH_float));
+        CHECK_ALLOC(tempZeu);
+
+        /* zeu_less stores indices, so it must be ND_int */
+        ND_int* zeu_less = calloc(18, sizeof(ND_int));
+        CHECK_ALLOC(zeu_less);
+
+        ELPH_float scalar;
+        ND_int nzeu_less = 0;
+        ND_int r;
+
+        for (ND_int k = 0; k < p; k++)
+        {
+            memcpy(zeu_w, zeu_u + k * zeu_dim,
+                   total_elements * sizeof(ELPH_float));
+            memcpy(zeu_x, zeu_u + k * zeu_dim,
+                   total_elements * sizeof(ELPH_float));
+
+            for (ND_int q = 0; q < k; q++)
+            {
+                r = 1;
+                for (ND_int iZeu_less = 0; iZeu_less < nzeu_less; iZeu_less++)
+                {
+                    if (zeu_less[iZeu_less] == q)
+                    {
+                        r = 0;
+                    }
+                }
+
+                if (r != 0)
+                {
+                    memcpy(tempZeu, zeu_u + q * zeu_dim,
+                           total_elements * sizeof(ELPH_float));
+
+                    /* Dot product (zeu_x . tempZeu) */
+                    scalar = 0.0;
+                    for (ND_int z = 0; z < total_elements; z++)
+                    {
+                        scalar += zeu_x[z] * tempZeu[z];
+                    }
+
+                    for (ND_int x = 0; x < total_elements; x++)
+                    {
+                        zeu_w[x] -= scalar * tempZeu[x];
+                    }
+                }
+            }
+
+            /* Dot product (zeu_w . zeu_w) */
+            ELPH_float norm2 = 0.0;
+            for (ND_int z = 0; z < total_elements; z++)
+            {
+                norm2 += zeu_w[z] * zeu_w[z];
+            }
+
+            if (sqrt(norm2) > ELPH_EPS)
+            {
+                ELPH_float inv_sqrt_norm = 1.0 / sqrt(norm2);
+                for (ND_int x = 0; x < total_elements; x++)
+                {
+                    zeu_u[k * zeu_dim + x] = zeu_w[x] * inv_sqrt_norm;
+                }
+            }
+            else
+            {
+                zeu_less[nzeu_less] = k;
+                nzeu_less++;
+            }
+        }
+
+        /* Projection */
+        for (ND_int ii = 0; ii < zeu_dim; ++ii)
+        {
+            zeu_w[ii] = 0.0;
+        }
+
+        for (ND_int k = 0; k < p; k++)
+        {
+            r = 1;
+            for (ND_int izeu_less = 0; izeu_less < nzeu_less; izeu_less++)
+            {
+                if (zeu_less[izeu_less] == k)
+                {
+                    r = 0;
+                }
+            }
+
+            if (r != 0)
+            {
+                memcpy(zeu_x, zeu_u + k * zeu_dim,
+                       total_elements * sizeof(ELPH_float));
+
+                /* Dot product (zeu_x . zeu_new) */
+                scalar = 0.0;
+                for (ND_int z = 0; z < total_elements; z++)
+                {
+                    scalar += zeu_x[z] * zeu_new[z];
+                }
+
+                for (ND_int x = 0; x < total_elements; x++)
+                {
+                    zeu_w[x] += scalar * zeu_u[k * zeu_dim + x];
+                }
+            }
+        }
+
+        for (ND_int x = 0; x < total_elements; x++)
+        {
+            Zborn[x] = zeu_new[x] - zeu_w[x];
+        }
+
+        free(zeu_u);
+        free(zeu_new);
+        free(zeu_w);
+        free(zeu_x);
+        free(tempZeu);
+        free(zeu_less);
+    }
+}
+
+void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
+                                const ND_int nat, ELPH_cmplx* frc,
+                                const ELPH_float* atomic_pos,
+                                const ELPH_float* lat_vecs,
+                                const ND_int* ws_vecs, const ND_int n_ws_vecs,
+                                const ND_int* ws_degen)
 
 {
     if (mode == ASR_NONE)
@@ -77,13 +274,8 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
     ND_int dim_na = nat * dim_i;
     ND_int dim_total = n_grid * dim_na;
 
-    /* // ---------------------------------------------------------------------
-     */
-
     /*    CASE 1: Simple ASR */
     /*    Sum_nb Phi(na, nb) = 0 */
-    /*    ---------------------------------------------------------------------
-     */
     if (mode == ASR_SIMPLE)
     {
         for (ND_int na = 0; na < nat; na++)
@@ -92,7 +284,7 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
             {
                 for (ND_int j = 0; j < 3; j++)
                 {
-                    ELPH_cmplx sum = 0.0 + 0.0 * I;
+                    ELPH_cmplx sum = 0.0;
                     ND_int base_na_i_j = na * dim_i + i * dim_nb + j;
 
                     for (ND_int g = 0; g < n_grid; g++)
@@ -113,12 +305,7 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
         return;
     }
 
-    // ---------------------------------------------------------------------
-
-    /*        CASE 2: Projection Methods, cyrstal and all */
-    /*        ---------------------------------------------------------------------
-     */
-
+    /* CASE 2: Projection Methods, cyrstal and all */
     ND_int n_trans = 9;
     ND_int n_rot = 0;
     ND_int n_huang = 0;
@@ -143,14 +330,13 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
         CHECK_ALLOC(u[k]);
         for (ND_int z = 0; z < dim_total; z++)
         {
-            u[k][z] = 0.0 + 0.0 * I;
+            u[k][z] = 0.0;
         }
     }
 
     // Stream index for ws_vecs
     ND_int ws_stream_idx = 0;
 
-    ND_int p_trans_start = 0;
     ND_int p_rot_start = 9 * nat;
     ND_int p_huang_start = p_rot_start + 9 * nat;
 
@@ -187,7 +373,7 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
                     for (ND_int j = 0; j < 3; j++)
                     {
                         ND_int p_idx = (na * 3 + i) * 3 + j;
-                        u[p_idx][blk_offset + i * dim_nb + j] = 1.0 + 0.0 * I;
+                        u[p_idx][blk_offset + i * dim_nb + j] = 1.0;
                     }
                 }
 
@@ -213,7 +399,7 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
                         // Read Integer Wigner-Seitz Vector
                         if (ws_stream_idx >= n_ws_vecs)
                         {
-                            error_msg("Wigner seitz vectors Out of bound.");
+                            error_msg("Wigner seitz vectors out of bound.");
                         }
                         ND_int t_int[3];
                         t_int[0] = ws_vecs[3 * ws_stream_idx];
@@ -227,9 +413,7 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
                         for (int d = 0; d < 3; d++)
                         {
                             t_vec_cart[d] = lat_vecs[d * 3 + 0] * t_int[0] +
-
                                             lat_vecs[d * 3 + 1] * t_int[1] +
-
                                             lat_vecs[d * 3 + 2] * t_int[2];
                         }
 
@@ -285,9 +469,9 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
                             ND_int p_rot =
                                 p_rot_start + (ax * 3 + i) * nat + na;
                             u[p_rot][blk_offset + i * dim_nb + ax1] -=
-                                (sum_r[ax2] + 0.0 * I);
+                                (sum_r[ax2]);
                             u[p_rot][blk_offset + i * dim_nb + ax2] +=
-                                (sum_r[ax1] + 0.0 * I);
+                                (sum_r[ax1]);
                         }
                     }
 
@@ -296,123 +480,94 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
                     {
                         // 1. yx
                         u[p_huang_start + 0][blk_offset + 0 * dim_nb + 0] -=
+                            (sum_rr[0][1]);
 
-                            (sum_rr[0][1] + 0.0 * I);
                         u[p_huang_start + 0][blk_offset + 0 * dim_nb + 1] +=
-
-                            (sum_rr[0][0] + 0.0 * I);
+                            (sum_rr[0][0]);
 
                         // 2. zx
                         u[p_huang_start + 1][blk_offset + 0 * dim_nb + 0] -=
-
-                            (sum_rr[0][2] + 0.0 * I);
+                            (sum_rr[0][2]);
                         u[p_huang_start + 1][blk_offset + 0 * dim_nb + 2] +=
-
-                            (sum_rr[0][0] + 0.0 * I);
+                            (sum_rr[0][0]);
 
                         // 3. xx-yy
                         u[p_huang_start + 2][blk_offset + 0 * dim_nb + 0] -=
-
-                            (sum_rr[1][1] + 0.0 * I);
+                            (sum_rr[1][1]);
                         u[p_huang_start + 2][blk_offset + 1 * dim_nb + 1] +=
-
-                            (sum_rr[0][0] + 0.0 * I);
+                            (sum_rr[0][0]);
 
                         // 4. yz (pair 1)
                         u[p_huang_start + 3][blk_offset + 0 * dim_nb + 0] -=
-
-                            (sum_rr[1][2] + 0.0 * I);
+                            (sum_rr[1][2]);
                         u[p_huang_start + 3][blk_offset + 1 * dim_nb + 2] +=
-
-                            (sum_rr[0][0] + 0.0 * I);
+                            (sum_rr[0][0]);
 
                         // 5. xx-zz
                         u[p_huang_start + 4][blk_offset + 0 * dim_nb + 0] -=
-
-                            (sum_rr[2][2] + 0.0 * I);
+                            (sum_rr[2][2]);
                         u[p_huang_start + 4][blk_offset + 2 * dim_nb + 2] +=
-
-                            (sum_rr[0][0] + 0.0 * I);
+                            (sum_rr[0][0]);
 
                         // 6. xy
                         u[p_huang_start + 5][blk_offset + 0 * dim_nb + 1] -=
-
-                            (sum_rr[0][2] + 0.0 * I);
+                            (sum_rr[0][2]);
                         u[p_huang_start + 5][blk_offset + 0 * dim_nb + 2] +=
-
-                            (sum_rr[0][1] + 0.0 * I);
+                            (sum_rr[0][1]);
 
                         // 7. xy (pair 2)
                         u[p_huang_start + 6][blk_offset + 0 * dim_nb + 1] -=
-
-                            (sum_rr[1][1] + 0.0 * I);
+                            (sum_rr[1][1]);
                         u[p_huang_start + 6][blk_offset + 1 * dim_nb + 1] +=
-
-                            (sum_rr[0][1] + 0.0 * I);
+                            (sum_rr[0][1]);
 
                         // 8. yz (pair 2)
                         u[p_huang_start + 7][blk_offset + 0 * dim_nb + 1] -=
-
-                            (sum_rr[1][2] + 0.0 * I);
+                            (sum_rr[1][2]);
                         u[p_huang_start + 7][blk_offset + 1 * dim_nb + 2] +=
-
-                            (sum_rr[0][1] + 0.0 * I);
+                            (sum_rr[0][1]);
 
                         // 9. zz
                         u[p_huang_start + 8][blk_offset + 0 * dim_nb + 1] -=
-
-                            (sum_rr[2][2] + 0.0 * I);
+                            (sum_rr[2][2]);
                         u[p_huang_start + 8][blk_offset + 2 * dim_nb + 2] +=
-
-                            (sum_rr[0][1] + 0.0 * I);
+                            (sum_rr[0][1]);
 
                         // 10. yy
                         u[p_huang_start + 9][blk_offset + 0 * dim_nb + 2] -=
-
-                            (sum_rr[1][1] + 0.0 * I);
+                            (sum_rr[1][1]);
                         u[p_huang_start + 9][blk_offset + 1 * dim_nb + 1] +=
-
-                            (sum_rr[0][2] + 0.0 * I);
+                            (sum_rr[0][2]);
 
                         // 11. yz (pair 3)
                         u[p_huang_start + 10][blk_offset + 0 * dim_nb + 2] -=
-
-                            (sum_rr[1][2] + 0.0 * I);
+                            (sum_rr[1][2]);
                         u[p_huang_start + 10][blk_offset + 1 * dim_nb + 2] +=
-
-                            (sum_rr[0][2] + 0.0 * I);
+                            (sum_rr[0][2]);
 
                         // 12. zz (pair 2)
                         u[p_huang_start + 11][blk_offset + 0 * dim_nb + 2] -=
-
-                            (sum_rr[2][2] + 0.0 * I);
+                            (sum_rr[2][2]);
                         u[p_huang_start + 11][blk_offset + 2 * dim_nb + 2] +=
-
-                            (sum_rr[0][2] + 0.0 * I);
+                            (sum_rr[0][2]);
 
                         // 13. zy
                         u[p_huang_start + 12][blk_offset + 1 * dim_nb + 1] -=
-
-                            (sum_rr[1][2] + 0.0 * I);
+                            (sum_rr[1][2]);
                         u[p_huang_start + 12][blk_offset + 1 * dim_nb + 2] +=
-
-                            (sum_rr[1][1] + 0.0 * I);
+                            (sum_rr[1][1]);
 
                         // 14. yy-zz (pair 2)
                         u[p_huang_start + 13][blk_offset + 1 * dim_nb + 1] -=
-
-                            (sum_rr[2][2] + 0.0 * I);
+                            (sum_rr[2][2]);
                         u[p_huang_start + 13][blk_offset + 2 * dim_nb + 2] +=
-
-                            (sum_rr[1][1] + 0.0 * I);
+                            (sum_rr[1][1]);
 
                         // 15. yz (final)
                         u[p_huang_start + 14][blk_offset + 1 * dim_nb + 2] -=
-
-                            (sum_rr[2][2] + 0.0 * I);
+                            (sum_rr[2][2]);
                         u[p_huang_start + 14][blk_offset + 2 * dim_nb + 2] +=
-
-                            (sum_rr[1][2] + 0.0 * I);
+                            (sum_rr[1][2]);
                     }
                 }
             }
@@ -420,7 +575,6 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
     }
 
     /* --------------------------------------------------------------------- */
-
     /* 4. Symmetrization */
     /* --------------------------------------------------------------------- */
 
@@ -475,10 +629,8 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
     }
 
     /*  --------------------------------------------------------------------- */
-
     /*    5. Gram-Schmidt Orthogonalization */
-    /*    ---------------------------------------------------------------------
-     */
+    /*  --------------------------------------------------------------------- */
 
     ELPH_cmplx* w = malloc(dim_total * sizeof(ELPH_cmplx));
     CHECK_ALLOC(w);
@@ -525,16 +677,13 @@ void apply_acoustic_sum_rule(enum asr_kind mode, const ND_int* qgrid,
         }
     }
 
-    /* // ---------------------------------------------------------------------
-     */
-
-    /*    6. Projection and Subtraction */
-    /*    ---------------------------------------------------------------------
-     */
+    /* ---------------------------------------------------------------------*/
+    /*     6. Projection and Subtraction */
+    /*  ---------------------------------------------------------------------*/
 
     for (ND_int z = 0; z < dim_total; z++)
     {
-        w[z] = 0.0 + 0.0 * I;
+        w[z] = 0.0;
     }
 
     for (ND_int k = 0; k < active_count; k++)

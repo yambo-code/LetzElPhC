@@ -67,6 +67,9 @@ void interpolation_driver(const char* ELPH_input_file,
     const bool interpolate_dvscf = input_data->interpolate_dvscf;
     const bool write_dVbare = input_data->write_dVbare;
 
+    const enum asr_kind asr_fc = asr_kind_from_string(input_data->asr);
+    const enum asr_kind asr_born = asr_kind_from_string(input_data->asr);
+    //
     // this the ewald summation parameter and is always set to 1
     const ELPH_float eta_bare = 1.0;
     //
@@ -82,6 +85,9 @@ void interpolation_driver(const char* ELPH_input_file,
         error_msg("Only qe is supported currently.");
     }
     //
+    // Apply acoustic sum rule for born charges
+    apply_acoustic_sum_rule_born_charges(asr_born, phonon->Zborn,
+                                         lattice->natom);
     //
     // We need atomic masses
     ELPH_float* atomic_masses = malloc(sizeof(*atomic_masses) * lattice->natom);
@@ -366,6 +372,11 @@ void interpolation_driver(const char* ELPH_input_file,
 
     // fourier transform phonons
     fft_q2R(dyns_co, q_grid_co, lattice->nmodes * lattice->nmodes);
+    // Apply Acoustic sum rule for force constants
+    apply_acoustic_sum_rule_fc(asr_fc, q_grid_co, lattice->natom, dyns_co,
+                               lattice->atomic_pos, lattice->alat_vec,
+                               ws_vecs_dyn, n_ws_vecs_dyn, ws_degen_dyn);
+
     //
     ND_int nqpts_to_interpolate = qgrid_new[0] * qgrid_new[1] * qgrid_new[2];
     // this will be over written lattern with number of qpts in iBZ
