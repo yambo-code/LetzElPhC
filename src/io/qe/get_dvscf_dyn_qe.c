@@ -35,6 +35,10 @@ void get_dvscf_dyn_qe(const char* ph_save_dir, struct Lattice* lattice,
         CHECK_ALLOC(pat_vecs);
     }
 
+    // Note : It is very important to note that we must read eigenvectors by a
+    // single cpu and then broadcast to all others. This is because
+    // small numerical accuracies can lead different
+    // phases when diagonalizing dynmats.
     if (Comm->commQ_rank == 0)
     {
         if (dvscf != NULL)

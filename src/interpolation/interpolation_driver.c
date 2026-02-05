@@ -350,6 +350,17 @@ void interpolation_driver(const char* ELPH_input_file,
     compute_dyn_lr_asr_correction(lattice, phonon, Ggrid_phonon, atomic_masses,
                                   input_data->eta_ph, dyn_mat_asr_lr);
 
+    ELPH_cmplx* fc_lr = NULL;
+    if (asr_fc == ASR_ALL || asr_fc == ASR_ALL_HUANG)
+    {
+        // In case, we apply rotational sum rules, then we also need long range
+        // force constants.
+        // See C. Lin et al.: npj Comput. Mater. 8, 236 (2022)
+        fc_lr = malloc(phonon->nq_BZ * lattice->nmodes * lattice->nmodes *
+                       sizeof(*fc_lr));
+        CHECK_ALLOC(fc_lr);
+    }
+
     // FIX ME need to parallize
     for (ND_int i = 0; i < phonon->nq_BZ; ++i)
     {
@@ -359,24 +370,64 @@ void interpolation_driver(const char* ELPH_input_file,
         ELPH_cmplx* pol_vecs_iq =
             dyns_co + iq * lattice->nmodes * lattice->nmodes;
 
+        ELPH_cmplx* fc_lr_iq = NULL;
+
         pol_vecs_to_dyn(omega_ph_co + iq * lattice->nmodes, lattice->natom,
                         atomic_masses, pol_vecs_iq);
-
+        if (fc_lr)
+        {
+            fc_lr_iq = fc_lr + iq * lattice->nmodes * lattice->nmodes;
+            memcpy(fc_lr_iq, pol_vecs_iq,
+                   lattice->nmodes * lattice->nmodes * sizeof(*fc_lr));
+        }
         const ELPH_float* qpt_iq_tmp = phonon->qpts_BZ + 3 * i;
         // remove long range part
         add_ph_dyn_long_range(qpt_iq_tmp, lattice, phonon, Ggrid_phonon, -1,
                               atomic_masses, dyn_mat_asr_lr, input_data->eta_ph,
                               pol_vecs_iq);
         //
+        // for long range force constants
+        if (fc_lr)
+        {
+            for (ND_int ii = 0; ii < (lattice->nmodes * lattice->nmodes); ++ii)
+            {
+                fc_lr_iq[ii] -= pol_vecs_iq[ii];
+            }
+        }
     }
 
     // fourier transform phonons
     fft_q2R(dyns_co, q_grid_co, lattice->nmodes * lattice->nmodes);
+    //
+    // IN case of rotational sum rules, we also need to add long range force
+    // constants
+    if (fc_lr)
+    {
+        fft_q2R(fc_lr, q_grid_co, lattice->nmodes * lattice->nmodes);
+        //
+        for (ND_int ii = 0;
+             ii < (phonon->nq_BZ * lattice->nmodes * lattice->nmodes); ++ii)
+        {
+            dyns_co[ii] += fc_lr[ii];
+        }
+    }
     // Apply Acoustic sum rule for force constants
     apply_acoustic_sum_rule_fc(asr_fc, q_grid_co, lattice->natom, dyns_co,
                                lattice->atomic_pos, lattice->alat_vec,
                                ws_vecs_dyn, n_ws_vecs_dyn, ws_degen_dyn);
 
+    // now remove the long range force constants incase they are added
+    if (fc_lr)
+    {
+        for (ND_int ii = 0;
+             ii < (phonon->nq_BZ * lattice->nmodes * lattice->nmodes); ++ii)
+        {
+            dyns_co[ii] -= fc_lr[ii];
+        }
+    }
+    // free fc_lr, no longer needed.
+    free(fc_lr);
+    fc_lr = NULL;
     //
     ND_int nqpts_to_interpolate = qgrid_new[0] * qgrid_new[1] * qgrid_new[2];
     // this will be over written lattern with number of qpts in iBZ

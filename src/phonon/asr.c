@@ -253,6 +253,7 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                                 const ND_int* ws_degen)
 
 {
+    // C. Lin et al.: npj Comput. Mater. 8, 236 (2022)
     if (mode == ASR_NONE)
     {
         return;
