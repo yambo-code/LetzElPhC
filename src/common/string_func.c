@@ -367,15 +367,15 @@ void strip_quotes_in_string(char* s)
         return;
     }
 
-    size_t str_len = strlen(s);
+    size_t s_len = strlen(s);
     // return incase of single quotes
-    if (str_len == 1)
+    if (s_len == 1)
     {
         return;
     }
     /* Must start and end with same quote */
     quote = s[0];
-    end = s + str_len - 1;
+    end = s + s_len - 1;
 
     if ((quote == '"' || quote == '\'') && *end == quote)
     {
