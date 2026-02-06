@@ -72,7 +72,7 @@ void compute_dyn_lr_asr_correction(struct Lattice* lattice,
         dyn_mat_asr[i] = 0.0;
     }
 
-    if (!phonon->epsilon || !phonon->Zborn)
+    if (!phonon->epsilon || (!phonon->Zborn && !phonon->Qpole))
     {
         return;
     }

@@ -225,6 +225,9 @@ char* str_reverse_in_place(char* str)
 void str_replace_chars(char* str_in, const char* delimters,
                        const char* replace_chars)
 {
+    // It is responsiblity of the user to give same number of
+    // delimters and replace_chars. Note that '\0' is not allowed
+    // in delimters but is allowed in replace_chars.
     if (!str_in || !delimters || !replace_chars)
     {
         return;
@@ -241,7 +244,7 @@ void str_replace_chars(char* str_in, const char* delimters,
     const char* d = delimters;
     const char* r = replace_chars;
 
-    while (*d && *r)
+    while (*d)
     {
         map[(unsigned char)*d] = (unsigned char)*r;
         // Update the map: delimiter character points to replacement character
