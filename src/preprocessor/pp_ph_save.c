@@ -1,6 +1,7 @@
 /*
 This file contains functions which are os dependent.
 */
+#include <ctype.h>
 #include <errno.h>
 #include <mpi.h>
 #include <stdbool.h>
@@ -61,12 +62,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    char* read_buf = malloc(4 * PH_X_INP_READ_BUF_SIZE);
+    char* read_buf = malloc(3 * PH_X_INP_READ_BUF_SIZE);
     CHECK_ALLOC(read_buf);
 
     char* key_str = read_buf + PH_X_INP_READ_BUF_SIZE;
     char* val_str = read_buf + 2 * PH_X_INP_READ_BUF_SIZE;
-    char* tmp_buf = read_buf + 3 * PH_X_INP_READ_BUF_SIZE;
 
     char* inputs_vals = malloc(5 * PH_X_INP_READ_BUF_SIZE);
     CHECK_ALLOC(inputs_vals);
@@ -102,82 +102,153 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     while (fgets(read_buf, PH_X_INP_READ_BUF_SIZE, fp))
     {
         // remove comments
-        str_replace_chars(read_buf, ",'\"!", "   \0");
+        // str_replace_chars(read_buf, ",'\"!", "   \0");
+        char* comment = strchr(read_buf, '!');
+        if (comment)
+        {
+            *comment = '\0';
+        }
 
         if (strlen(read_buf) == 0)
         {
             continue;
         }
-        // now read key
-        char* token = strtok(read_buf, "=");
-        strlcpy_custom(key_str, token, PH_X_INP_READ_BUF_SIZE);
-        // lower case the key
-        lowercase_str(key_str);
-        //  read value
-        token = strtok(NULL, "=");
-        if (token)
+        // read keys and values
+        const char* p = read_buf;
+        while (*p)
         {
-            strlcpy_custom(val_str, token, PH_X_INP_READ_BUF_SIZE);
-        }
-        else
-        {
-            // line does not contain key value
-            continue;
-        }
-
-        // remove spaces
-        sscanf(key_str, "%s", tmp_buf);
-        strlcpy_custom(key_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
-
-        sscanf(val_str, "%s", tmp_buf);
-        strlcpy_custom(val_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
-
-        if (!strcmp(key_str, "ldisp"))
-        {
-            // lowercase val_str
-            lowercase_str(val_str);
-
-            if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") ||
-                !strcmp(val_str, "t"))
+            // Skip leading delimiters (spaces, commas)
+            while (*p && (isspace((unsigned char)*p) || *p == ','))
             {
-                ldisp = true;
+                p++;
             }
-        }
-        //
-        else if (!strcmp(key_str, "outdir"))
-        {
-            strlcpy_custom(out_dir, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "fildyn"))
-        {
-            strlcpy_custom(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "fildvscf"))
-        {
-            strlcpy_custom(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "fildrho"))
-        {
-            strlcpy_custom(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "prefix"))
-        {
-            strlcpy_custom(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "electron_phonon"))
-        {
-            // lowercase val_str
-            lowercase_str(val_str);
-
-            if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") ||
-                !strcmp(val_str, "wannier"))
+            if (*p == '\0')
             {
-                elph_yambo = true;
+                break;
+            }
+
+            ND_int k_idx = 0;
+            // Read Key
+            while (*p && *p != '=' && !isspace((unsigned char)*p))
+            {
+                // Gfortran ignores , in key, very weird, this is not supported
+                // here
+                if (k_idx < PH_X_INP_READ_BUF_SIZE - 1)
+                {
+                    key_str[k_idx++] = *p;
+                }
+                p++;  // Always advance p even if buffer is full to avoid stuck
+                      // loop
+            }
+            key_str[k_idx] = '\0';  // Safe because we checked < SIZE - 1
+
+            // Find Assignment Operator '='
+            while (*p && *p != '=')
+            {
+                p++;
+            }
+            if (*p == '=')
+            {
+                p++;
+            }
+
+            // Skip whitespace after '='
+            while (*p && isspace((unsigned char)*p))
+            {
+                p++;
+            }
+
+            // Read Value
+            ND_int v_idx = 0;
+            if (*p == '\'' || *p == '"')
+            {
+                // we want to remove quotes
+                // Quoted Value
+                char quote_type = *p++;
+
+                while (*p && *p != quote_type)
+                {
+                    if (v_idx < PH_X_INP_READ_BUF_SIZE - 1)
+                    {
+                        val_str[v_idx++] = *p;
+                    }
+                    p++;
+                }
+                if (*p == quote_type)
+                {
+                    p++;
+                }
+            }
+            else
+            {
+                // Unquoted Value (stop at comma or space)
+                while (*p && *p != ',' && !isspace((unsigned char)*p))
+                {
+                    if (v_idx < PH_X_INP_READ_BUF_SIZE - 1)
+                    {
+                        val_str[v_idx++] = *p;
+                    }
+                    p++;
+                }
+            }
+            val_str[v_idx] = '\0';  // Safe null termination
+
+            // No value return
+            if (0 == v_idx)
+            {
+                continue;
+            }
+
+            // lowercase key
+            lowercase_str(key_str);
+
+            if (!strcmp(key_str, "ldisp"))
+            {
+                // lowercase val_str
+                lowercase_str(val_str);
+
+                if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") ||
+                    !strcmp(val_str, "t") || !strcmp(val_str, "true"))
+                {
+                    ldisp = true;
+                }
+            }
+            //
+            else if (!strcmp(key_str, "outdir"))
+            {
+                strlcpy_custom(out_dir, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "fildyn"))
+            {
+                strlcpy_custom(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "fildvscf"))
+            {
+                strlcpy_custom(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "fildrho"))
+            {
+                strlcpy_custom(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "prefix"))
+            {
+                strlcpy_custom(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "electron_phonon"))
+            {
+                // lowercase val_str
+                lowercase_str(val_str);
+
+                if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") ||
+                    !strcmp(val_str, "wannier"))
+                {
+                    elph_yambo = true;
+                }
             }
         }
     }
