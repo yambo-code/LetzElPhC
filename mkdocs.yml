@@ -72,6 +72,8 @@ nav:
   - Input Variables:
       - ELPH Calculation: inputs/elph_inputs.md
       - Interpolation Calculation: inputs/interpolation_inputs.md
+  - Theory:
+      - Acoustic Sum Rules: theory/asr.md
   - Tutorials:
       - Silicon Walkthrough: tutorials/silicon_walkthrough.md
       - Exciton-Phonon & Luminescence: tutorials/exciton_phonon.md
