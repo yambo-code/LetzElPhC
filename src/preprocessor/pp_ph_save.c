@@ -102,12 +102,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     while (fgets(read_buf, PH_X_INP_READ_BUF_SIZE, fp))
     {
         // remove comments
-        // str_replace_chars(read_buf, ",'\"!", "   \0");
-        char* comment = strchr(read_buf, '!');
-        if (comment)
-        {
-            *comment = '\0';
-        }
+        strip_comment_in_string(read_buf, '!', true);
 
         if (strlen(read_buf) == 0)
         {

@@ -1,6 +1,7 @@
 #include "string_func.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -398,5 +399,55 @@ void strip_quotes_in_string(char* s)
         /* Copy cleaned string back */
         memmove(s, start, (size_t)(end - start + 1));
         s[end - start + 1] = '\0';
+    }
+}
+
+void strip_comment_in_string(char* buf, const char comment_char,
+                             const bool ignore_in_quotes)
+{
+    if (!buf)
+    {
+        return;
+    }
+
+    if (!ignore_in_quotes)
+    {
+        char* p = strchr(buf, comment_char);
+        if (p)
+        {
+            *p = '\0';
+        }
+        return;
+    }
+
+    char* p = buf;
+    char quote = 0;
+
+    while (*p)
+    {
+        if (quote)
+        {
+            if (*p == '\\' && p[1])
+            {
+                p++;  // skip escaped char
+            }
+            else if (*p == quote)
+            {
+                quote = 0;
+            }
+        }
+        else
+        {
+            if (*p == '"' || *p == '\'')
+            {
+                quote = *p;
+            }
+            else if (*p == comment_char)
+            {
+                *p = '\0';
+                break;
+            }
+        }
+        p++;
     }
 }

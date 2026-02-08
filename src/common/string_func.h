@@ -34,3 +34,6 @@ bool parse_bool_input(const char* str);
 void strip_quotes_in_string(char* s);
 
 int my_strcasecmp(const char* a, const char* b);
+
+void strip_comment_in_string(char* buf, const char comment_char,
+                             const bool ignore_in_quotes);

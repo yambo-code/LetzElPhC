@@ -803,6 +803,86 @@ void test_strip_quotes_in_string_comprehensive(void)
 }
 
 /* -------------------------------------------------------
+Test: strip_comment_in_string
+------------------------------------------------------- */
+
+void test_remove_comments_in_string_comprehensive(void)
+{
+    /* Basic truncation */
+    char s1[] = "hello # comment";
+    strip_comment_in_string(s1, '#', false);
+    ASSERT_STR_EQ(s1, "hello ");
+
+    /* No comment present */
+    char s2[] = "hello world";
+    strip_comment_in_string(s2, '#', false);
+    ASSERT_STR_EQ(s2, "hello world");
+
+    /* Comment at start */
+    char s3[] = "#full comment";
+    strip_comment_in_string(s3, '#', false);
+    ASSERT_STR_EQ(s3, "");
+
+    /* Ignore comments inside quotes */
+    char s4[] = "\"hello # world\" # tail";
+    strip_comment_in_string(s4, '#', true);
+    ASSERT_STR_EQ(s4, "\"hello # world\" ");
+
+    /* Single quotes */
+    char s5[] = "'abc # def' # comment";
+    strip_comment_in_string(s5, '#', true);
+    ASSERT_STR_EQ(s5, "'abc # def' ");
+
+    /* Quotes not ignored */
+    char s6[] = "\"abc # def\" # comment";
+    strip_comment_in_string(s6, '#', false);
+    ASSERT_STR_EQ(s6, "\"abc ");
+
+    /* Escaped quote inside string */
+    char s7[] = "\"abc \\\" # still quoted\" # end";
+    strip_comment_in_string(s7, '#', true);
+    ASSERT_STR_EQ(s7, "\"abc \\\" # still quoted\" ");
+
+    /* Multiple comment characters */
+    char s8[] = "abc#def#ghi";
+    strip_comment_in_string(s8, '#', true);
+    ASSERT_STR_EQ(s8, "abc");
+
+    /* Different comment char */
+    char s9[] = "hello ! comment";
+    strip_comment_in_string(s9, '!', true);
+    ASSERT_STR_EQ(s9, "hello ");
+
+    /* Empty string */
+    char s10[] = "";
+    strip_comment_in_string(s10, '#', true);
+    ASSERT_STR_EQ(s10, "");
+
+    /* Only comment char */
+    char s11[] = "#";
+    strip_comment_in_string(s11, '#', true);
+    ASSERT_STR_EQ(s11, "");
+
+    /* Unterminated quote */
+    char s12[] = "\"unterminated # still inside";
+    strip_comment_in_string(s12, '#', true);
+    ASSERT_STR_EQ(s12, "\"unterminated # still inside");
+
+    /* Mixed quotes */
+    char s13[] = "\"abc ' # def\" # end";
+    strip_comment_in_string(s13, '#', true);
+    ASSERT_STR_EQ(s13, "\"abc ' # def\" ");
+
+    /* Comment at end */
+    char s14[] = "abc#";
+    strip_comment_in_string(s14, '#', true);
+    ASSERT_STR_EQ(s14, "abc");
+
+    /* NULL pointer (should not crash) */
+    strip_comment_in_string(NULL, '#', true);
+}
+
+/* -------------------------------------------------------
    Test runner
    ------------------------------------------------------- */
 
@@ -820,6 +900,7 @@ int main(void)
     test_my_strcasecmp_comprehensive();
     test_parse_bool_input_comprehensive();
     test_strip_quotes_in_string_comprehensive();
+    test_remove_comments_in_string_comprehensive();
 
     printf("\n");
     printf("=====================================\n");
