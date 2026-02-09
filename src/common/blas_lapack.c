@@ -187,10 +187,14 @@ ND_int orthogonal_projection(const ND_int M, const ND_int N, const ND_int LDA,
     CBLAS_INT info = 0;
 
     // Pivot array (must be zero-initialized for free pivoting)
-    CBLAS_INT* jpvt = calloc(n_lapack, sizeof(*jpvt));
+    CBLAS_INT* jpvt = malloc(n_lapack * sizeof(*jpvt));
     if (!jpvt)
     {
         return -1;
+    }
+    for (ND_int i = 0; i < n_lapack; ++i)
+    {
+        jpvt[i] = 0;
     }
 
     // Tau array (scalar factors of reflectors)
