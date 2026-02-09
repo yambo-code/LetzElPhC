@@ -14,7 +14,7 @@ This file contains some useful string functions
 char* strlcpy_custom(char* restrict dest, const char* restrict src,
                      size_t count)
 {
-    // copies MAX(count,strlen(src)) characters into dest pointer
+    // copies MIN(count-1,strlen(src)) characters into dest pointer
     if (count == 0)
     {
         return dest;
@@ -303,48 +303,17 @@ bool parse_bool_input(const char* str)
         return false;
     }
 
-    // Check for Fortran-style logicals: .true. or .false. (case-insensitive)
-    if (*s == '.')
-    {
-        s++;  // s now points to the first character after the dot
-
-        // Check for .true. (5 characters: t, r, u, e, .)
-        if (tolower((unsigned char)s[0]) == 't' &&
-            tolower((unsigned char)s[1]) == 'r' &&
-            tolower((unsigned char)s[2]) == 'u' &&
-            tolower((unsigned char)s[3]) == 'e' && s[4] == '.' &&
-            s[5] == '\0')  // Ensure it is the end of the string
-        {
-            return true;
-        }
-        // Check for .false. (6 characters: f, a, l, s, e, .)
-        else if (tolower((unsigned char)s[0]) == 'f' &&
-                 tolower((unsigned char)s[1]) == 'a' &&
-                 tolower((unsigned char)s[2]) == 'l' &&
-                 tolower((unsigned char)s[3]) == 's' &&
-                 tolower((unsigned char)s[4]) == 'e' && s[5] == '.' &&
-                 s[6] == '\0')  // Ensure it is the end of the string
-        {
-            return false;
-        }
-
-        error_msg(
-            ".true./true/yes/on/1 or .false./false/no/off/0 (case insensitive) "
-            "are only accepted.");
-        return false;
-    }
-
     // Check for common true values (case-insensitive)
-    // *Note: The '1' check is also fixed to ensure no trailing characters.
-    if (my_strcasecmp(s, "true") == 0 || my_strcasecmp(s, "yes") == 0 ||
-        my_strcasecmp(s, "on") == 0 || (*s == '1' && *(s + 1) == '\0'))
+    if (my_strcasecmp(s, ".true.") == 0 || my_strcasecmp(s, "true") == 0 ||
+        my_strcasecmp(s, "yes") == 0 || my_strcasecmp(s, "on") == 0 ||
+        (*s == '1' && *(s + 1) == '\0'))
     {
         return true;
     }
 
     // Check for common false values (case-insensitive)
-    // *Note: The '0' check is also fixed to ensure no trailing characters.
-    else if (my_strcasecmp(s, "false") == 0 || my_strcasecmp(s, "no") == 0 ||
+    else if (my_strcasecmp(s, ".false.") == 0 ||
+             my_strcasecmp(s, "false") == 0 || my_strcasecmp(s, "no") == 0 ||
              my_strcasecmp(s, "off") == 0 || (*s == '0' && *(s + 1) == '\0'))
     {
         return false;
