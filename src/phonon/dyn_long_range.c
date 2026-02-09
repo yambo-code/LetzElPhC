@@ -44,28 +44,27 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
     {
         factor = -factor;
     }
-    // remove mass normalization to apply asr . If atomic_masses == NULL,
-    // it is no-op
-    mass_normalize_force_constants(atomic_masses, 1, lattice->natom, 0.5,
-                                   dyn_mat);
 
     ND_int nmodes = lattice->natom * 3;
     //
     for (ND_int ia = 0; ia < lattice->natom; ++ia)
     {
         ELPH_cmplx* tmp_buf_ia = dyn_mat_asr + ia * 9;
+        ELPH_float ia_mass = 1.0;
+        if (atomic_masses)
+        {
+            ia_mass = 1.0 / atomic_masses[ia];
+        }
+        //
         for (ND_int i = 0; i < 3; ++i)
         {
             for (ND_int j = 0; j < 3; ++j)
             {
                 dyn_mat[(ia * 3 + i) * nmodes + ia * 3 + j] +=
-                    factor * tmp_buf_ia[3 * i + j];
+                    (factor * tmp_buf_ia[3 * i + j] * ia_mass);
             }
         }
     }
-    // put back the mass normalization
-    mass_normalize_force_constants(atomic_masses, 1, lattice->natom, -0.5,
-                                   dyn_mat);
 }
 
 void compute_dyn_lr_asr_correction(struct Lattice* lattice,
