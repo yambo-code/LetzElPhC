@@ -30,6 +30,10 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
                            ELPH_cmplx* dyn_mat_asr, const ELPH_float eta,
                            ELPH_cmplx* dyn_mat)
 {
+    // If atomic_masses as not NULL, this implies, we are passing mass
+    // normalized dynamical matrices, else we are passing dynamical matrices
+    // without 1/sqrt(Ma Mb) factor
+
     // compute the long range part
     add_ph_dyn_long_range_internal(qpt, lattice, phonon, Ggrid, sign,
                                    atomic_masses, eta, dyn_mat);
@@ -40,7 +44,8 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
     {
         factor = -factor;
     }
-    // remove mass normalization to apply asr
+    // remove mass normalization to apply asr . If atomic_masses == NULL,
+    // it is no-op
     mass_normalize_force_constants(atomic_masses, 1, lattice->natom, 0.5,
                                    dyn_mat);
 

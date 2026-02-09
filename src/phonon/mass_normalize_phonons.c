@@ -15,6 +15,10 @@ void mass_normalize_pol_vecs(const ELPH_float* atomic_masses,
     // atomic_masses (natom)
     // does  e^v_ix = Mi^power * e^v_ix
     //
+    if (NULL == atomic_masses)
+    {
+        return;
+    }
     for (ND_int imode = 0; imode < nsets; ++imode)
     {
         for (ND_int ia = 0; ia < natoms; ++ia)
@@ -35,6 +39,12 @@ void mass_normalize_force_constants(const ELPH_float* atomic_masses,
     // Force constants (nsets, natom, 3, natom,3);
     // atomic_masses (natom)
     // FC(iset, ia, i, jb, j) *= Ma^power * Mb^power
+
+    if (NULL == atomic_masses)
+    {
+        return;
+    }
+
     ND_int nmodes = 3 * natoms;
     //
     for (ND_int ia = 0; ia < natoms; ++ia)

@@ -374,6 +374,7 @@ void interpolation_driver(const char* ELPH_input_file,
 
         pol_vecs_to_dyn(omega_ph_co + iq * lattice->nmodes, lattice->natom,
                         atomic_masses, pol_vecs_iq);
+        // Here dynamical matrices have 1/sqrt(Ma*Mb) factor
         if (fc_lr)
         {
             fc_lr_iq = fc_lr + iq * lattice->nmodes * lattice->nmodes;
@@ -382,6 +383,7 @@ void interpolation_driver(const char* ELPH_input_file,
         }
         const ELPH_float* qpt_iq_tmp = phonon->qpts_BZ + 3 * i;
         // remove long range part
+        // Note the long-range part also contains 1/sqrt(Ma*Mb)
         add_ph_dyn_long_range(qpt_iq_tmp, lattice, phonon, Ggrid_phonon, -1,
                               atomic_masses, dyn_mat_asr_lr, input_data->eta_ph,
                               pol_vecs_iq);
@@ -412,7 +414,9 @@ void interpolation_driver(const char* ELPH_input_file,
         }
     }
 
-    // Here the force constant are mass normalized. remove normalization
+    // Here the force constant are mass normalized.
+    // i.e \tilde{C}(R)_{ab} = 1/sqrt(Ma*Mb) * C(R)_{ab}, so we remove
+    // normalization
     mass_normalize_force_constants(atomic_masses, phonon->nq_BZ, lattice->natom,
                                    0.5, dyns_co);
 
