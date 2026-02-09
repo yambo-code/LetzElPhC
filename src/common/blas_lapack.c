@@ -26,6 +26,9 @@ This file contails blas wrappers
 #define LAPACK_cmplx(FUN_NAME) LAPACK_cmplx_hidden(FUN_NAME)
 #define LAPACK_cmplx_hidden(FUN_NAME) z##FUN_NAME##_
 
+#define LAPACK_float(FUN_NAME) LAPACK_float_hidden(FUN_NAME)
+#define LAPACK_float_hidden(FUN_NAME) d##FUN_NAME##_
+
 #else
 #define CBLAS_cmplx(FUN_NAME) CBLAS_cmplx_hidden(FUN_NAME)
 #define CBLAS_cmplx_hidden(FUN_NAME) cblas_c##FUN_NAME
@@ -35,6 +38,9 @@ This file contails blas wrappers
 
 #define LAPACK_cmplx(FUN_NAME) LAPACK_cmplx_hidden(FUN_NAME)
 #define LAPACK_cmplx_hidden(FUN_NAME) c##FUN_NAME##_
+
+#define LAPACK_float(FUN_NAME) LAPACK_float_hidden(FUN_NAME)
+#define LAPACK_float_hidden(FUN_NAME) s##FUN_NAME##_
 #endif
 
 static enum CBLAS_TRANSPOSE get_gemmn_T(char Trans);
@@ -149,6 +155,142 @@ int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
     free(work);
     free(rwork);
     return info;
+}
+
+ND_int orthogonal_projection(const ND_int M, const ND_int N, const ND_int LDA,
+                             ELPH_float* A, ELPH_float* x0,
+                             const ELPH_float tol)
+{
+    /*
+     * Projects vector x0 onto the null space of A (Ax = 0).
+     * Minimizes |x - x0| subject to Ax = 0.
+     * A is M x N matrix in Row-Major order.
+     * x0 is length N.
+     * result is stored in-place in x0.
+     * A is destroyed on output
+     */
+    if (M == 0 || N == 0)
+    {
+        return 0;
+    }
+
+    CHECK_OVERFLOW_ERROR(M, BLAS_INT_MAX);
+    CHECK_OVERFLOW_ERROR(N, BLAS_INT_MAX);
+    CHECK_OVERFLOW_ERROR(LDA, BLAS_INT_MAX);
+
+    // 1. Prepare LAPACK dimensions
+    // We treat the input Row-Major A (MxN) as Col-Major A^T (NxM).
+    // This allows us to compute QR of A^T without physical transpose.
+    CBLAS_INT m_lapack = (CBLAS_INT)N;  // Rows of AT
+    CBLAS_INT n_lapack = (CBLAS_INT)M;  // Cols of AT
+    CBLAS_INT lda = (CBLAS_INT)LDA;
+    CBLAS_INT info = 0;
+
+    // Pivot array (must be zero-initialized for free pivoting)
+    CBLAS_INT* jpvt = calloc(n_lapack, sizeof(*jpvt));
+    if (!jpvt)
+    {
+        return -1;
+    }
+
+    // Tau array (scalar factors of reflectors)
+    CBLAS_INT min_dim = (m_lapack < n_lapack) ? m_lapack : n_lapack;
+    ELPH_float* tau = malloc(min_dim * sizeof(*tau));
+    if (!tau)
+    {
+        free(jpvt);
+        return -1;
+    }
+
+    // 3. Workspace Query
+    ELPH_float work_query;
+    CBLAS_INT lwork = -1;
+
+    // Query for geqp3
+    LAPACK_float(geqp3)(&m_lapack, &n_lapack, A, &lda, jpvt, tau, &work_query,
+                        &lwork, &info);
+    work_query *= 1.005;
+    CBLAS_INT lwork_qp3 = (CBLAS_INT)work_query;
+
+    // Query for ormqr
+    char side = 'L';
+    //
+    char trans = 'T';  // First pass we use Transpose
+    CBLAS_INT one = 1;
+    LAPACK_float(ormqr)(&side, &trans, &m_lapack, &one, &min_dim, A, &lda, tau,
+                        x0, &m_lapack, &work_query, &lwork, &info);
+    work_query *= 1.005;
+    CBLAS_INT lwork_orm = (CBLAS_INT)work_query;
+
+    trans = 'N';  // second pass we use normal
+    LAPACK_float(ormqr)(&side, &trans, &m_lapack, &one, &min_dim, A, &lda, tau,
+                        x0, &m_lapack, &work_query, &lwork, &info);
+    work_query *= 1.005;
+    CBLAS_INT lwork_orm2 = (CBLAS_INT)work_query;
+
+    // Allocate max required workspace
+    lwork = (lwork_qp3 > lwork_orm) ? lwork_qp3 : lwork_orm;
+    if (lwork_orm2 > lwork)
+    {
+        lwork = lwork_orm2;
+    }
+
+    ELPH_float* work = malloc(lwork * sizeof(ELPH_float));
+    if (!work)
+    {
+        free(jpvt);
+        free(tau);
+        return -1;
+    }
+
+    // Perform QR with Pivoting on A^T
+    // AT becomes [ Q reflectors \ R ]
+    LAPACK_float(geqp3)(&m_lapack, &n_lapack, A, &lda, jpvt, tau, work, &lwork,
+                        &info);
+    if (info != 0)
+    {
+        free(jpvt);
+        free(tau);
+        free(work);
+        return info;
+    }
+
+    // Determine Rank of A
+    // Rank is number of non-zero diagonal elements in R
+    CBLAS_INT rank = 0;
+    for (CBLAS_INT i = 0; i < min_dim; ++i)
+    {
+        // Diagonal of R is at AT[i + i*lda]
+        if (fabs(A[i + i * lda]) > tol)
+        {
+            rank++;
+        }
+    }
+
+    // Rotate x0 into basis of Q: y = Q^T * x0
+    // x0 is overwritten by y
+    trans = 'T';
+    LAPACK_float(ormqr)(&side, &trans, &m_lapack, &one, &min_dim, A, &lda, tau,
+                        x0, &m_lapack, work, &lwork, &info);
+
+    // Filter: Project onto Null Space
+    // The top 'rank' elements correspond to the Row Space (constraints).
+    // Set them to zero to satisfy Ax=0.
+    for (CBLAS_INT i = 0; i < rank; ++i)
+    {
+        x0[i] = 0.0;
+    }
+
+    // Rotate back to standard basis: x = Q * y_filtered
+    trans = 'N';  // No transpose
+    LAPACK_float(ormqr)(&side, &trans, &m_lapack, &one, &min_dim, A, &lda, tau,
+                        x0, &m_lapack, work, &lwork, &info);
+
+    free(jpvt);
+    free(tau);
+    free(work);
+
+    return 0;
 }
 
 // =================================================================

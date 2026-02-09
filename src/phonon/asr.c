@@ -13,6 +13,12 @@
 #include "elphC.h"
 #include "phonon.h"
 
+// static functions
+static void get_huang_indices(const ND_int idx, ND_int* restrict a,
+                              ND_int* restrict b, ND_int* restrict c,
+                              ND_int* restrict d);
+
+// public functions
 enum asr_kind asr_kind_from_string(const char* str)
 {
     if (str == NULL)
@@ -246,7 +252,7 @@ void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
 }
 
 void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
-                                const ND_int nat, ELPH_cmplx* frc,
+                                const ND_int natom, ELPH_cmplx* frc,
                                 const ELPH_float* atomic_pos,
                                 const ELPH_float* lat_vecs,
                                 const ND_int* ws_vecs, const ND_int n_ws_vecs,
@@ -266,449 +272,297 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
         huang = true;
     }
 
-    const ND_int nr1 = qgrid[0];
-    const ND_int nr2 = qgrid[1];
-    const ND_int nr3 = qgrid[2];
-    ND_int n_grid = nr1 * nr2 * nr3;
-    ND_int dim_nb = nat * 3;
-    ND_int dim_i = 3 * dim_nb;
-    ND_int dim_na = nat * dim_i;
-    ND_int dim_total = n_grid * dim_na;
+    ND_int ngrid = qgrid[0] * qgrid[1] * qgrid[2];
+    ND_int nmodes = 3 * natom;
 
-    /*    CASE 1: Simple ASR */
-    /*    Sum_nb Phi(na, nb) = 0 */
-    if (mode == ASR_SIMPLE)
+    // Orthogonal projection method
+    const ND_int frc_size = ngrid * nmodes * nmodes;
+    ELPH_float* frc_real = malloc(frc_size * sizeof(*frc_real));
+    CHECK_ALLOC(frc_real);
+
+    // Make the force constant matrix real
+    for (ND_int i = 0; i < frc_size; ++i)
     {
-        for (ND_int na = 0; na < nat; na++)
-        {
-            for (ND_int i = 0; i < 3; i++)
-            {
-                for (ND_int j = 0; j < 3; j++)
-                {
-                    ELPH_cmplx sum = 0.0;
-                    ND_int base_na_i_j = na * dim_i + i * dim_nb + j;
-
-                    for (ND_int g = 0; g < n_grid; g++)
-                    {
-                        ND_int grid_off = g * dim_na;
-                        for (ND_int nb = 0; nb < nat; nb++)
-                        {
-                            ND_int idx = grid_off + base_na_i_j + nb * 3;
-                            sum += frc[idx];
-                        }
-                    }
-                    // remove self interaction
-                    ND_int self_idx = base_na_i_j + na * 3;
-                    frc[self_idx] -= sum;
-                }
-            }
-        }
-        return;
+        frc_real[i] = creal(frc[i]);
     }
 
-    /* CASE 2: Projection Methods, cyrstal and all */
-    ND_int n_trans = 9;
-    ND_int n_rot = 0;
-    ND_int n_huang = 0;
-
+    ND_int nconstraints = 9 * natom;  // translational
     if (mode == ASR_ALL)
     {
-        n_rot = 9;
+        nconstraints += 9 * natom;  // rotational
         if (huang)
         {
-            n_huang = 15;
+            nconstraints += 15;  // huang
         }
     }
 
-    ND_int total_vecs = (n_trans + n_rot) * nat + n_huang;
+    ELPH_float* Amat = calloc(nconstraints * frc_size, sizeof(*Amat));
+    CHECK_ALLOC(Amat);
 
-    ELPH_cmplx** u = malloc(total_vecs * sizeof(ELPH_cmplx*));
-    CHECK_ALLOC(u);
-
-    for (ND_int k = 0; k < total_vecs; k++)
+    // most compilers will remove this loop. But let's stick to standard.
+    for (ND_int i = 0; i < (nconstraints * frc_size); ++i)
     {
-        u[k] = malloc(dim_total * sizeof(ELPH_cmplx));
-        CHECK_ALLOC(u[k]);
-        for (ND_int z = 0; z < dim_total; z++)
-        {
-            u[k][z] = 0.0;
-        }
+        Amat[i] = 0.0;
     }
 
-    // Stream index for ws_vecs
-    ND_int ws_stream_idx = 0;
-
-    ND_int p_rot_start = 9 * nat;
-    ND_int p_huang_start = p_rot_start + 9 * nat;
-
-    ND_int grid_yz = nr2 * nr3;
-
-    // Loop order must match build_wigner_seitz_vectors to read stream correctly
-    for (ND_int g = 0; g < n_grid; g++)
+    // 1) translational
+    for (ND_int ic = 0; ic < 9 * natom; ++ic)
     {
-        ND_int rx_raw = g / grid_yz;
-        ND_int ry_raw = (g % grid_yz) / nr3;
-        ND_int rz_raw = (g % grid_yz) % nr3;
-
-        ND_int rx = get_miller_idx(rx_raw, nr1);
-        ND_int ry = get_miller_idx(ry_raw, nr2);
-        ND_int rz = get_miller_idx(rz_raw, nr3);
-
-        // Calculate Grid R vector in Cartesian using lat_vecs
-        ELPH_float r_vec_cart[3];
-        for (int d = 0; d < 3; d++)
+        //
+        const ND_int ia = ic / 9;
+        const ND_int alpha = (ic % 9) / 3;
+        const ND_int beta = (ic % 9) % 3;
+        // (ic, ngrid, na , 3, nb, 3)
+        ELPH_float* Amat_tmp = Amat + ic * ngrid * nmodes * nmodes +
+                               ia * 9 * natom + alpha * nmodes + beta;
+        // R,j'
+        for (ND_int ig = 0; ig < ngrid; ++ig)
         {
-            r_vec_cart[d] = lat_vecs[d * 3 + 0] * rx +
-                            lat_vecs[d * 3 + 1] * ry + lat_vecs[d * 3 + 2] * rz;
-        }
-
-        for (ND_int na = 0; na < nat; na++)
-        {
-            for (ND_int nb = 0; nb < nat; nb++)
+            for (ND_int ja = 0; ja < natom; ++ja)
             {
-                ND_int blk_offset = g * dim_na + na * dim_i + nb * 3;
+                Amat_tmp[ig * nmodes * nmodes + ja * 3] = 1.0;
+            }
+        }
+    }
 
-                // 1. Translations (Crystal ASR)
-                for (ND_int i = 0; i < 3; i++)
+    ND_int Gridyz = qgrid[1] * qgrid[2];
+    // 2) rotational sum rules in case requested
+    // 3) Huang invariances
+    if (mode == ASR_ALL)
+    {
+        ND_int iws_vec = 0;
+        for (ND_int ig = 0; ig < ngrid; ++ig)
+        {
+            ND_int Rx = ig / Gridyz;
+            ND_int Ry = (ig % Gridyz) / qgrid[2];
+            ND_int Rz = (ig % Gridyz) % qgrid[2];
+            //
+            Rx = get_miller_idx(Rx, qgrid[0]);
+            Ry = get_miller_idx(Ry, qgrid[1]);
+            Rz = get_miller_idx(Rz, qgrid[2]);
+
+            for (ND_int ia = 0; ia < natom; ++ia)
+            {
+                const ELPH_float* tau_i = atomic_pos + 3 * ia;
+                for (ND_int ja = 0; ja < natom; ++ja)
                 {
-                    for (ND_int j = 0; j < 3; j++)
+                    const ELPH_float* tau_j = atomic_pos + 3 * ja;
+                    const ND_int iws_vecs_degen =
+                        ws_degen[ig * natom * natom + ia * natom + ja];
+                    const ELPH_float idegen_fac =
+                        1.0 / ((ELPH_float)iws_vecs_degen);
+                    // (ic, ngrid, na , 3, nb, 3)
+                    ELPH_float* Amat_tmp =
+                        Amat + ig * nmodes * nmodes + ja * 3 + ia * 3 * nmodes;
+
+                    for (ND_int ii = 0; ii < iws_vecs_degen; ++ii)
                     {
-                        ND_int p_idx = (na * 3 + i) * 3 + j;
-                        u[p_idx][blk_offset + i * dim_nb + j] = 1.0;
-                    }
-                }
-
-                if (mode == ASR_ALL)
-                {
-                    // Degeneracy Index
-                    ND_int degen_idx = g * nat * nat + na * nat + nb;
-                    ND_int neq = ws_degen[degen_idx];
-
-                    ELPH_float sum_r[3] = {0.0, 0.0, 0.0};
-                    ELPH_float sum_rr[3][3] = {{0}};
-
-                    // Atom position difference
-                    ELPH_float tau_diff[3];
-                    for (int d = 0; d < 3; d++)
-                    {
-                        tau_diff[d] =
-                            atomic_pos[nb * 3 + d] - atomic_pos[na * 3 + d];
-                    }
-
-                    for (ND_int q = 0; q < neq; q++)
-                    {
-                        // Read Integer Wigner-Seitz Vector
-                        if (ws_stream_idx >= n_ws_vecs)
+                        if (iws_vec >= n_ws_vecs)
                         {
-                            error_msg("Wigner seitz vectors out of bound.");
+                            error_msg("Wigner seitz vectors Out of bound.");
                         }
-                        ND_int t_int[3];
-                        t_int[0] = ws_vecs[3 * ws_stream_idx];
-                        t_int[1] = ws_vecs[3 * ws_stream_idx + 1];
-                        t_int[2] = ws_vecs[3 * ws_stream_idx + 2];
-
-                        ws_stream_idx++;
-
-                        // Convert Integer WS Vector to Cartesian
-                        ELPH_float t_vec_cart[3];
-                        for (int d = 0; d < 3; d++)
+                        ELPH_float Rpt[3];
+                        Rpt[0] = Rx + ws_vecs[3 * iws_vec];
+                        Rpt[1] = Ry + ws_vecs[3 * iws_vec + 1];
+                        Rpt[2] = Rz + ws_vecs[3 * iws_vec + 2];
+                        // convert to cart and add atomic postion
+                        ELPH_float tau_Rj[3], tau_Rij[3];
+                        MatVec3f(lat_vecs, Rpt, false, tau_Rj);
+                        //
+                        tau_Rj[0] += tau_j[0];
+                        tau_Rj[1] += tau_j[1];
+                        tau_Rj[2] += tau_j[2];  //
+                        //
+                        tau_Rij[0] = tau_i[0] - tau_Rj[0];
+                        tau_Rij[1] = tau_i[1] - tau_Rj[1];
+                        tau_Rij[2] = tau_i[2] - tau_Rj[2];
+                        // (summ over ja, R)
+                        // 2) Rotational sum rule
+                        for (ND_int ic = 0; ic < 9; ++ic)
                         {
-                            t_vec_cart[d] = lat_vecs[d * 3 + 0] * t_int[0] +
-                                            lat_vecs[d * 3 + 1] * t_int[1] +
-                                            lat_vecs[d * 3 + 2] * t_int[2];
+                            const ND_int alpha = ic / 3;
+                            const ND_int beta_gamma = ic % 3;
+                            // Due to anti-symmetric property of rotational
+                            // invariance, we only have 3 combinations of
+                            // (beta,gamma) constraints. beta_gamma ->
+                            // (beta,gamma): 0 -> (1,0); 1 -> (2,0); 2-> (2,1)
+                            const ND_int beta = MIN((beta_gamma + 1), 2);
+                            const ND_int gamma = beta_gamma / 2;
+                            //
+                            // +9natom is to append the rotation after 9*natom
+                            // translational rules
+                            ELPH_float* Amat_tmp_ic =
+                                Amat_tmp + alpha * nmodes +
+                                (ic + ia * 9 + 9 * natom) * frc_size;
+
+                            // (j, beta, gamma)
+                            Amat_tmp_ic[beta] += (idegen_fac * tau_Rj[gamma]);
+                            Amat_tmp_ic[gamma] -= (idegen_fac * tau_Rj[beta]);
                         }
-
-                        // r_eff = R_grid + T_ws + (tau_nb - tau_na)
-                        ELPH_float r_eff[3];
-                        for (int d = 0; d < 3; d++)
-                        {
-                            r_eff[d] =
-                                r_vec_cart[d] + t_vec_cart[d] + tau_diff[d];
-
-                            sum_r[d] += r_eff[d];
-                        }
-
+                        //
+                        // 3) Huang invariances
                         if (huang)
                         {
-                            for (int a = 0; a < 3; a++)
+                            for (ND_int ic = 0; ic < 15; ++ic)
                             {
-                                for (int b = 0; b < 3; b++)
-                                {
-                                    sum_rr[a][b] += r_eff[a] * r_eff[b];
-                                }
+                                ELPH_float* Amat_tmp_ic =
+                                    Amat_tmp + (ic + 18 * natom) * frc_size;
+                                // Due to anti-symmtric properties
+                                // (alpha ,beta) <-> (gamma, delta),
+                                // we reduce contraints from 81 -> 36
+                                // Further more, due to symmetry properties
+                                // due to alpha <-> beta and gamma <-> delta,
+                                // we further reduce from 36 -> 15 independent
+                                // contraints
+                                ND_int alpha, beta, gamma, delta;
+                                get_huang_indices(ic, &alpha, &beta, &gamma,
+                                                  &delta);
+                                //
+                                Amat_tmp_ic[alpha * nmodes + beta] +=
+                                    (idegen_fac * tau_Rij[gamma] *
+                                     tau_Rij[delta]);
+                                Amat_tmp_ic[gamma * nmodes + delta] -=
+                                    (idegen_fac * tau_Rij[alpha] *
+                                     tau_Rij[beta]);
                             }
                         }
-                    }
-
-                    if (neq > 0)
-                    {
-                        ELPH_float inv_neq = 1.0 / (ELPH_float)neq;
-                        for (int d = 0; d < 3; d++)
-                        {
-                            sum_r[d] *= inv_neq;
-                        }
-                        if (huang)
-                        {
-                            for (int a = 0; a < 3; a++)
-                            {
-                                for (int b = 0; b < 3; b++)
-                                {
-                                    sum_rr[a][b] *= inv_neq;
-                                }
-                            }
-                        }
-                    }
-
-                    // 2. Rotational Constraints
-                    for (ND_int ax = 0; ax < 3; ax++)
-                    {
-                        ND_int ax1 = (ax + 1) % 3;
-                        ND_int ax2 = (ax + 2) % 3;
-
-                        for (ND_int i = 0; i < 3; i++)
-                        {
-                            ND_int p_rot =
-                                p_rot_start + (ax * 3 + i) * nat + na;
-                            u[p_rot][blk_offset + i * dim_nb + ax1] -=
-                                (sum_r[ax2]);
-                            u[p_rot][blk_offset + i * dim_nb + ax2] +=
-                                (sum_r[ax1]);
-                        }
-                    }
-
-                    // 3. Huang Constraints (Explicit expansion, no macros)
-                    if (huang)
-                    {
-                        // 1. yx
-                        u[p_huang_start + 0][blk_offset + 0 * dim_nb + 0] -=
-                            (sum_rr[0][1]);
-
-                        u[p_huang_start + 0][blk_offset + 0 * dim_nb + 1] +=
-                            (sum_rr[0][0]);
-
-                        // 2. zx
-                        u[p_huang_start + 1][blk_offset + 0 * dim_nb + 0] -=
-                            (sum_rr[0][2]);
-                        u[p_huang_start + 1][blk_offset + 0 * dim_nb + 2] +=
-                            (sum_rr[0][0]);
-
-                        // 3. xx-yy
-                        u[p_huang_start + 2][blk_offset + 0 * dim_nb + 0] -=
-                            (sum_rr[1][1]);
-                        u[p_huang_start + 2][blk_offset + 1 * dim_nb + 1] +=
-                            (sum_rr[0][0]);
-
-                        // 4. yz (pair 1)
-                        u[p_huang_start + 3][blk_offset + 0 * dim_nb + 0] -=
-                            (sum_rr[1][2]);
-                        u[p_huang_start + 3][blk_offset + 1 * dim_nb + 2] +=
-                            (sum_rr[0][0]);
-
-                        // 5. xx-zz
-                        u[p_huang_start + 4][blk_offset + 0 * dim_nb + 0] -=
-                            (sum_rr[2][2]);
-                        u[p_huang_start + 4][blk_offset + 2 * dim_nb + 2] +=
-                            (sum_rr[0][0]);
-
-                        // 6. xy
-                        u[p_huang_start + 5][blk_offset + 0 * dim_nb + 1] -=
-                            (sum_rr[0][2]);
-                        u[p_huang_start + 5][blk_offset + 0 * dim_nb + 2] +=
-                            (sum_rr[0][1]);
-
-                        // 7. xy (pair 2)
-                        u[p_huang_start + 6][blk_offset + 0 * dim_nb + 1] -=
-                            (sum_rr[1][1]);
-                        u[p_huang_start + 6][blk_offset + 1 * dim_nb + 1] +=
-                            (sum_rr[0][1]);
-
-                        // 8. yz (pair 2)
-                        u[p_huang_start + 7][blk_offset + 0 * dim_nb + 1] -=
-                            (sum_rr[1][2]);
-                        u[p_huang_start + 7][blk_offset + 1 * dim_nb + 2] +=
-                            (sum_rr[0][1]);
-
-                        // 9. zz
-                        u[p_huang_start + 8][blk_offset + 0 * dim_nb + 1] -=
-                            (sum_rr[2][2]);
-                        u[p_huang_start + 8][blk_offset + 2 * dim_nb + 2] +=
-                            (sum_rr[0][1]);
-
-                        // 10. yy
-                        u[p_huang_start + 9][blk_offset + 0 * dim_nb + 2] -=
-                            (sum_rr[1][1]);
-                        u[p_huang_start + 9][blk_offset + 1 * dim_nb + 1] +=
-                            (sum_rr[0][2]);
-
-                        // 11. yz (pair 3)
-                        u[p_huang_start + 10][blk_offset + 0 * dim_nb + 2] -=
-                            (sum_rr[1][2]);
-                        u[p_huang_start + 10][blk_offset + 1 * dim_nb + 2] +=
-                            (sum_rr[0][2]);
-
-                        // 12. zz (pair 2)
-                        u[p_huang_start + 11][blk_offset + 0 * dim_nb + 2] -=
-                            (sum_rr[2][2]);
-                        u[p_huang_start + 11][blk_offset + 2 * dim_nb + 2] +=
-                            (sum_rr[0][2]);
-
-                        // 13. zy
-                        u[p_huang_start + 12][blk_offset + 1 * dim_nb + 1] -=
-                            (sum_rr[1][2]);
-                        u[p_huang_start + 12][blk_offset + 1 * dim_nb + 2] +=
-                            (sum_rr[1][1]);
-
-                        // 14. yy-zz (pair 2)
-                        u[p_huang_start + 13][blk_offset + 1 * dim_nb + 1] -=
-                            (sum_rr[2][2]);
-                        u[p_huang_start + 13][blk_offset + 2 * dim_nb + 2] +=
-                            (sum_rr[1][1]);
-
-                        // 15. yz (final)
-                        u[p_huang_start + 14][blk_offset + 1 * dim_nb + 2] -=
-                            (sum_rr[2][2]);
-                        u[p_huang_start + 14][blk_offset + 2 * dim_nb + 2] +=
-                            (sum_rr[1][2]);
+                        ++iws_vec;
                     }
                 }
             }
         }
     }
 
-    /* --------------------------------------------------------------------- */
-    /* 4. Symmetrization */
-    /* --------------------------------------------------------------------- */
-
-    for (ND_int n1 = 0; n1 < nr1; n1++)
+    // Now we need to find |\Phi_input-\Phi_ideal|_min in such a way
+    // that A\Phi_input = 0
+    ND_int err_info = orthogonal_projection(nconstraints, frc_size, frc_size,
+                                            Amat, frc_real, 1e-5);
+    if (err_info)
     {
-        ND_int m1 = (nr1 - n1) % nr1;
-        for (ND_int n2 = 0; n2 < nr2; n2++)
-        {
-            ND_int m2 = (nr2 - n2) % nr2;
-            for (ND_int n3 = 0; n3 < nr3; n3++)
-            {
-                ND_int m3 = (nr3 - n3) % nr3;
-
-                ND_int g_A = n1 * nr2 * nr3 + n2 * nr3 + n3;
-                ND_int g_B = m1 * nr2 * nr3 + m2 * nr3 + m3;
-
-                for (ND_int na = 0; na < nat; na++)
-                {
-                    for (ND_int nb = 0; nb < nat; nb++)
-                    {
-                        for (ND_int i = 0; i < 3; i++)
-                        {
-                            for (ND_int j = 0; j < 3; j++)
-                            {
-                                ND_int idx_A = g_A * dim_na + na * dim_i +
-                                               i * dim_nb + nb * 3 + j;
-                                ND_int idx_B = g_B * dim_na + nb * dim_i +
-                                               j * dim_nb + na * 3 + i;
-
-                                if (idx_A <= idx_B)
-                                {
-                                    ELPH_cmplx avg_f =
-                                        0.5 * (frc[idx_A] + frc[idx_B]);
-                                    frc[idx_A] = avg_f;
-                                    frc[idx_B] = avg_f;
-
-                                    for (ND_int k = 0; k < total_vecs; k++)
-
-                                    {
-                                        ELPH_cmplx avg_u =
-                                            0.5 * (u[k][idx_A] + u[k][idx_B]);
-                                        u[k][idx_A] = avg_u;
-                                        u[k][idx_B] = avg_u;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        error_msg(
+            "Orthogonal projection of force constant Constraint matrix "
+            "failed.");
     }
 
-    /*  --------------------------------------------------------------------- */
-    /*    5. Gram-Schmidt Orthogonalization */
-    /*  --------------------------------------------------------------------- */
+    free(Amat);
+    free(frc_real);
+}
 
-    ELPH_cmplx* w = malloc(dim_total * sizeof(ELPH_cmplx));
-    CHECK_ALLOC(w);
-
-    ND_int active_count = (n_trans + n_rot) * nat + n_huang;
-
-    ND_int* keep_mask = calloc(active_count, sizeof(ND_int));
-    CHECK_ALLOC(keep_mask);
-
-    for (ND_int k = 0; k < active_count; k++)
+// static helpers
+static void get_huang_indices(const ND_int idx, ND_int* restrict a,
+                              ND_int* restrict b, ND_int* restrict c,
+                              ND_int* restrict d)
+{
+    // maps [0,14] indices to 15 independent coordinates rank-4 tensor
+    // with has properties of huang invariance matrix
+    switch (idx)
     {
-        keep_mask[k] = 1;
+        /* Pair (0,0) combined with others */
+        case 0:
+            *a = 0;
+            *b = 0;
+            *c = 0;
+            *d = 1;
+            break;
+        case 1:
+            *a = 0;
+            *b = 0;
+            *c = 0;
+            *d = 2;
+            break;
+        case 2:
+            *a = 0;
+            *b = 0;
+            *c = 1;
+            *d = 1;
+            break;
+        case 3:
+            *a = 0;
+            *b = 0;
+            *c = 1;
+            *d = 2;
+            break;
+        case 4:
+            *a = 0;
+            *b = 0;
+            *c = 2;
+            *d = 2;
+            break;
 
-        for (ND_int z = 0; z < dim_total; z++)
-        {
-            w[z] = u[k][z];
-        }
+        /* Pair (0,1) combined with others */
+        case 5:
+            *a = 0;
+            *b = 1;
+            *c = 0;
+            *d = 2;
+            break;
+        case 6:
+            *a = 0;
+            *b = 1;
+            *c = 1;
+            *d = 1;
+            break;
+        case 7:
+            *a = 0;
+            *b = 1;
+            *c = 1;
+            *d = 2;
+            break;
+        case 8:
+            *a = 0;
+            *b = 1;
+            *c = 2;
+            *d = 2;
+            break;
 
-        for (ND_int q = 0; q < k; q++)
-        {
-            if (keep_mask[q])
-            {
-                ELPH_cmplx dot = Cmplxdot(u[q], w, dim_total);
-                for (ND_int z = 0; z < dim_total; z++)
-                {
-                    w[z] -= dot * u[q][z];
-                }
-            }
-        }
+        /* Pair (0,2) combined with others */
+        case 9:
+            *a = 0;
+            *b = 2;
+            *c = 1;
+            *d = 1;
+            break;
+        case 10:
+            *a = 0;
+            *b = 2;
+            *c = 1;
+            *d = 2;
+            break;
+        case 11:
+            *a = 0;
+            *b = 2;
+            *c = 2;
+            *d = 2;
+            break;
 
-        ELPH_float norm = sqrt(creal(Cmplxdot(w, w, dim_total)));
+        /* Pair (1,1) combined with others */
+        case 12:
+            *a = 1;
+            *b = 1;
+            *c = 1;
+            *d = 2;
+            break;
+        case 13:
+            *a = 1;
+            *b = 1;
+            *c = 2;
+            *d = 2;
+            break;
 
-        if (norm > ELPH_EPS)
-        {
-            ELPH_float inv_norm = 1.0 / norm;
-            for (ND_int z = 0; z < dim_total; z++)
-            {
-                u[k][z] = w[z] * inv_norm;
-            }
-        }
-        else
-        {
-            keep_mask[k] = 0;
-        }
+        /* Pair (1,2) combined with (2,2) */
+        case 14:
+            *a = 1;
+            *b = 2;
+            *c = 2;
+            *d = 2;
+            break;
+
+        // you should never reach this
+        default:
+            *a = 0;
+            *b = 0;
+            *c = 0;
+            *d = 0;
+            break;
     }
-
-    /* ---------------------------------------------------------------------*/
-    /*     6. Projection and Subtraction */
-    /*  ---------------------------------------------------------------------*/
-
-    for (ND_int z = 0; z < dim_total; z++)
-    {
-        w[z] = 0.0;
-    }
-
-    for (ND_int k = 0; k < active_count; k++)
-    {
-        if (keep_mask[k])
-        {
-            ELPH_cmplx dot = Cmplxdot(u[k], frc, dim_total);
-            for (ND_int z = 0; z < dim_total; z++)
-            {
-                w[z] += dot * u[k][z];
-            }
-        }
-    }
-
-    for (ND_int z = 0; z < dim_total; z++)
-    {
-        frc[z] -= w[z];
-    }
-
-    free(w);
-    free(keep_mask);
-    for (ND_int k = 0; k < total_vecs; k++)
-    {
-        free(u[k]);
-    }
-    free(u);
 }
