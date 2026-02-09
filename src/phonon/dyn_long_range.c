@@ -40,6 +40,9 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
     {
         factor = -factor;
     }
+    // remove mass normalization to apply asr
+    mass_normalize_force_constants(atomic_masses, 1, lattice->natom, 0.5,
+                                   dyn_mat);
 
     ND_int nmodes = lattice->natom * 3;
     //
@@ -55,11 +58,13 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
             }
         }
     }
+    // put back the mass normalization
+    mass_normalize_force_constants(atomic_masses, 1, lattice->natom, -0.5,
+                                   dyn_mat);
 }
 
 void compute_dyn_lr_asr_correction(struct Lattice* lattice,
                                    struct Phonon* phonon, const ND_int* Ggrid,
-                                   const ELPH_float* atomic_masses,
                                    const ELPH_float eta,
                                    ELPH_cmplx* dyn_mat_asr)
 {
@@ -86,8 +91,9 @@ void compute_dyn_lr_asr_correction(struct Lattice* lattice,
     }
 
     ELPH_float qpt_zero[3] = {0.0, 0.0, 0.0};
-    add_ph_dyn_long_range_internal(qpt_zero, lattice, phonon, Ggrid, 1,
-                                   atomic_masses, eta, tmp_dyn_mat);
+    // We donot want mass normalized.
+    add_ph_dyn_long_range_internal(qpt_zero, lattice, phonon, Ggrid, 1, NULL,
+                                   eta, tmp_dyn_mat);
 
     //
     for (ND_int ia = 0; ia < lattice->natom; ++ia)
@@ -120,6 +126,9 @@ static void add_ph_dyn_long_range_internal(
     // (3D) X. Gonze et al  Phys. Rev. B 50, 13035(R)
     // (2D ) T. Sohier et al Nano Lett. 2017, 17, 6, 3758–3763
     // (2D) S. Ponce et al PHYSICAL REVIEW B 107, 155424 (2023)
+    //
+    // if atomic_masses is NULL, then the dynamical matrices are not mass
+    // normalized.
     //
     if (!phonon->epsilon || (!phonon->Zborn && !phonon->Qpole))
     {
@@ -265,7 +274,10 @@ static void add_ph_dyn_long_range_internal(
             ELPH_cmplx qdot_tau = cexp(-I * (dot3_macro(qplusG, tau_k)));
             qdot_tau /= q_eps_q;
             qdot_tau *= decay_fac;
-            qdot_tau /= sqrt(atomic_masses[ia]);
+            if (atomic_masses)
+            {
+                qdot_tau /= sqrt(atomic_masses[ia]);
+            }
             //
             for (ND_int i = 0; i < 3; ++i)
             {

@@ -347,7 +347,7 @@ void interpolation_driver(const char* ELPH_input_file,
         calloc(lattice->natom * 9, sizeof(*dyn_mat_asr_lr));
     CHECK_ALLOC(dyn_mat_asr_lr);
 
-    compute_dyn_lr_asr_correction(lattice, phonon, Ggrid_phonon, atomic_masses,
+    compute_dyn_lr_asr_correction(lattice, phonon, Ggrid_phonon,
                                   input_data->eta_ph, dyn_mat_asr_lr);
 
     ELPH_cmplx* fc_lr = NULL;
@@ -411,6 +411,11 @@ void interpolation_driver(const char* ELPH_input_file,
             dyns_co[ii] += fc_lr[ii];
         }
     }
+
+    // Here the force constant are mass normalized. remove normalization
+    mass_normalize_force_constants(atomic_masses, phonon->nq_BZ, lattice->natom,
+                                   0.5, dyns_co);
+
     // Apply Acoustic sum rule for force constants
     apply_acoustic_sum_rule_fc(asr_fc, q_grid_co, lattice->natom, dyns_co,
                                lattice->atomic_pos, lattice->alat_vec,
@@ -428,6 +433,11 @@ void interpolation_driver(const char* ELPH_input_file,
     // free fc_lr, no longer needed.
     free(fc_lr);
     fc_lr = NULL;
+    //
+    // Normalize the force constants, so that we donot need to normalize it
+    // for every dynamical matrix
+    mass_normalize_force_constants(atomic_masses, phonon->nq_BZ, lattice->natom,
+                                   -0.5, dyns_co);
     //
     ND_int nqpts_to_interpolate = qgrid_new[0] * qgrid_new[1] * qgrid_new[2];
     // this will be over written lattern with number of qpts in iBZ
