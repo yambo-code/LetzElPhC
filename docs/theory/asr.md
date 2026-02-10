@@ -1,5 +1,9 @@
 # **Acoustic Sum Rules and Invariance Conditions**
 
+$$
+\Phi_{i \alpha j \beta}(\mathbf{R}) = \Phi_{j \beta i \alpha }(-\mathbf{R}) 
+$$
+
 ## 1. **Acoustic Sum Rules**
 Below are Acoustic Sum Rules (ASR) obeyed by the force constant matrix.
 

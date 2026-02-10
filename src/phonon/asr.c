@@ -323,6 +323,8 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                 Amat_tmp[ig * nmodes * nmodes + ja * 3] = 1.0;
             }
         }
+        // Symmetrize ia <-> ib, R <-> -R, alpha <-> beta
+        //
     }
 
     ND_int Gridyz = qgrid[1] * qgrid[2];
@@ -455,114 +457,36 @@ static void get_huang_indices(const ND_int idx, ND_int* restrict a,
 {
     // maps [0,14] indices to 15 independent coordinates rank-4 tensor
     // with has properties of huang invariance matrix
+    // clang-format off
     switch (idx)
     {
         /* Pair (0,0) combined with others */
-        case 0:
-            *a = 0;
-            *b = 0;
-            *c = 0;
-            *d = 1;
-            break;
-        case 1:
-            *a = 0;
-            *b = 0;
-            *c = 0;
-            *d = 2;
-            break;
-        case 2:
-            *a = 0;
-            *b = 0;
-            *c = 1;
-            *d = 1;
-            break;
-        case 3:
-            *a = 0;
-            *b = 0;
-            *c = 1;
-            *d = 2;
-            break;
-        case 4:
-            *a = 0;
-            *b = 0;
-            *c = 2;
-            *d = 2;
-            break;
+        case 0:  *a=0; *b=0; *c=0; *d=1; break;
+        case 1:  *a=0; *b=0; *c=0; *d=2; break;
+        case 2:  *a=0; *b=0; *c=1; *d=1; break;
+        case 3:  *a=0; *b=0; *c=1; *d=2; break;
+        case 4:  *a=0; *b=0; *c=2; *d=2; break;
 
         /* Pair (0,1) combined with others */
-        case 5:
-            *a = 0;
-            *b = 1;
-            *c = 0;
-            *d = 2;
-            break;
-        case 6:
-            *a = 0;
-            *b = 1;
-            *c = 1;
-            *d = 1;
-            break;
-        case 7:
-            *a = 0;
-            *b = 1;
-            *c = 1;
-            *d = 2;
-            break;
-        case 8:
-            *a = 0;
-            *b = 1;
-            *c = 2;
-            *d = 2;
-            break;
+        case 5:  *a=0; *b=1; *c=0; *d=2; break;
+        case 6:  *a=0; *b=1; *c=1; *d=1; break;
+        case 7:  *a=0; *b=1; *c=1; *d=2; break;
+        case 8:  *a=0; *b=1; *c=2; *d=2; break;
 
         /* Pair (0,2) combined with others */
-        case 9:
-            *a = 0;
-            *b = 2;
-            *c = 1;
-            *d = 1;
-            break;
-        case 10:
-            *a = 0;
-            *b = 2;
-            *c = 1;
-            *d = 2;
-            break;
-        case 11:
-            *a = 0;
-            *b = 2;
-            *c = 2;
-            *d = 2;
-            break;
+        case 9:  *a=0; *b=2; *c=1; *d=1; break;
+        case 10: *a=0; *b=2; *c=1; *d=2; break;
+        case 11: *a=0; *b=2; *c=2; *d=2; break;
 
         /* Pair (1,1) combined with others */
-        case 12:
-            *a = 1;
-            *b = 1;
-            *c = 1;
-            *d = 2;
-            break;
-        case 13:
-            *a = 1;
-            *b = 1;
-            *c = 2;
-            *d = 2;
-            break;
+        case 12: *a=1; *b=1; *c=1; *d=2; break;
+        case 13: *a=1; *b=1; *c=2; *d=2; break;
 
         /* Pair (1,2) combined with (2,2) */
-        case 14:
-            *a = 1;
-            *b = 2;
-            *c = 2;
-            *d = 2;
-            break;
+        case 14: *a=1; *b=2; *c=2; *d=2; break;
 
         // you should never reach this
-        default:
-            *a = 0;
-            *b = 0;
-            *c = 0;
-            *d = 0;
-            break;
+        default: *a=0; *b=0; *c=0; *d=0; break;
     }
+    // clang-format on
 }
