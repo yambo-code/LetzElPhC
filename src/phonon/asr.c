@@ -323,8 +323,6 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                 Amat_tmp[ig * nmodes * nmodes + ja * 3] = 1.0;
             }
         }
-        // Symmetrize ia <-> ib, R <-> -R, alpha <-> beta
-        //
     }
 
     ND_int Gridyz = qgrid[1] * qgrid[2];
