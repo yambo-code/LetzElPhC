@@ -444,6 +444,12 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
             "failed.");
     }
 
+    // copy back the force constants
+    for (ND_int i = 0; i < frc_size; ++i)
+    {
+        frc[i] = frc_real[i];
+    }
+
     free(Amat);
     free(frc_real);
 }
