@@ -272,18 +272,81 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
         huang = true;
     }
 
-    ND_int ngrid = qgrid[0] * qgrid[1] * qgrid[2];
-    ND_int nmodes = 3 * natom;
+    const ND_int ngrid = qgrid[0] * qgrid[1] * qgrid[2];
+    const ND_int nmodes = 3 * natom;
+    const ND_int Gridyz = qgrid[1] * qgrid[2];
 
     // Orthogonal projection method
-    const ND_int frc_size = ngrid * nmodes * nmodes;
+    //
+    // Phi_{ai, bj}(R)= Phi_{bj,ai}(-R)
+    // if R = -R, so we skip all -R,
+    // for R = 0, the force constant matrix is symmetric
+    //
+    // In should be noted that R = -R => R =0, but in practice,
+    // for boundary FFT points, R \eqvil to -R mod grid_size,
+    // but this is an artifact and at this R point, we should not
+    // symmtrize the force constant matrix.
+    //
+    // First find number of grid points
+    //
+    ND_int* grid_map = calloc(ngrid, sizeof(*grid_map));
+    CHECK_ALLOC(grid_map);
+
+    bool* do_grid = malloc(ngrid * sizeof(*do_grid));
+    CHECK_ALLOC(do_grid);
+    // if do_grid[ig] = false, then ig is -R and is mapped
+    // to some other R
+
+    for (ND_int ig = 0; ig < ngrid; ++ig)
+    {
+        do_grid[ig] = true;
+    }
+    //
+    ND_int ngrid_independent = 0;
+    for (ND_int ig = 0; ig < ngrid; ++ig)
+    {
+        if (!do_grid[ig])
+        {
+            continue;
+        }
+
+        ND_int Rx = ig / Gridyz;
+        ND_int Ry = (ig % Gridyz) / qgrid[2];
+        ND_int Rz = (ig % Gridyz) % qgrid[2];
+
+        // Calculate -R index (mig)
+        ND_int mRx = (qgrid[0] - Rx) % qgrid[0];
+        ND_int mRy = (qgrid[1] - Ry) % qgrid[1];
+        ND_int mRz = (qgrid[2] - Rz) % qgrid[2];
+        ND_int mig = mRz + mRy * qgrid[2] + mRx * Gridyz;
+        //
+        grid_map[ig] = ngrid_independent;
+        if (ig != mig)
+        {
+            do_grid[mig] = false;
+            grid_map[mig] = ngrid_independent;
+        }
+        ++ngrid_independent;
+    }
+    //
+    const ND_int frc_size = ngrid_independent * nmodes * nmodes;
     ELPH_float* frc_real = malloc(frc_size * sizeof(*frc_real));
     CHECK_ALLOC(frc_real);
 
     // Make the force constant matrix real
-    for (ND_int i = 0; i < frc_size; ++i)
+    ND_int iig_tmp = 0;
+    for (ND_int ig = 0; ig < ngrid; ++ig)
     {
-        frc_real[i] = creal(frc[i]);
+        if (!do_grid[ig])
+        {
+            continue;
+        }
+        for (ND_int i = 0; i < nmodes * nmodes; ++i)
+        {
+            frc_real[i + iig_tmp * nmodes * nmodes] =
+                creal(frc[i + ig * nmodes * nmodes]);
+        }
+        ++iig_tmp;
     }
 
     ND_int nconstraints = 9 * natom;  // translational
@@ -306,26 +369,33 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
     }
 
     // 1) translational
-    for (ND_int ic = 0; ic < 9 * natom; ++ic)
+    for (ND_int ig = 0; ig < ngrid; ++ig)
     {
-        //
-        const ND_int ia = ic / 9;
-        const ND_int alpha = (ic % 9) / 3;
-        const ND_int beta = (ic % 9) % 3;
-        // (ic, ngrid, na , 3, nb, 3)
-        ELPH_float* Amat_tmp = Amat + ic * ngrid * nmodes * nmodes +
-                               ia * 9 * natom + alpha * nmodes + beta;
-        // R,j'
-        for (ND_int ig = 0; ig < ngrid; ++ig)
+        ND_int iig = grid_map[ig];
+        for (ND_int ic = 0; ic < 9 * natom; ++ic)
         {
+            //
+            const ND_int ia = ic / 9;
+            const ND_int alpha = (ic % 9) / 3;
+            const ND_int beta = (ic % 9) % 3;
+            // (ic, ngrid, na , 3, nb, 3)
             for (ND_int ja = 0; ja < natom; ++ja)
             {
-                Amat_tmp[ig * nmodes * nmodes + ja * 3] = 1.0;
+                ELPH_float* Amat_tmp = Amat + ic * frc_size + ia * 9 * natom +
+                                       alpha * nmodes + beta +
+                                       iig * nmodes * nmodes + 3 * ja;
+                if (!do_grid[ig])
+                {
+                    // this is -R, so we need to wrap
+                    Amat_tmp = Amat + ic * frc_size + ja * 9 * natom +
+                               beta * nmodes + alpha + iig * nmodes * nmodes +
+                               3 * ia;
+                }
+                *Amat_tmp += 1.0;
             }
         }
     }
 
-    ND_int Gridyz = qgrid[1] * qgrid[2];
     // 2) rotational sum rules in case requested
     // 3) Huang invariances
     if (mode == ASR_ALL)
@@ -333,6 +403,8 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
         ND_int iws_vec = 0;
         for (ND_int ig = 0; ig < ngrid; ++ig)
         {
+            ND_int iig = grid_map[ig];
+
             ND_int Rx = ig / Gridyz;
             ND_int Ry = (ig % Gridyz) / qgrid[2];
             ND_int Rz = (ig % Gridyz) % qgrid[2];
@@ -353,7 +425,13 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                         1.0 / ((ELPH_float)iws_vecs_degen);
                     // (ic, ngrid, na , 3, nb, 3)
                     ELPH_float* Amat_tmp =
-                        Amat + ig * nmodes * nmodes + ja * 3 + ia * 3 * nmodes;
+                        Amat + iig * nmodes * nmodes + ja * 3 + ia * 3 * nmodes;
+                    if (!do_grid[ig])
+                    {
+                        // this is -R, so we need to wrap
+                        Amat_tmp = Amat + iig * nmodes * nmodes + ia * 3 +
+                                   ja * 3 * nmodes;
+                    }
 
                     for (ND_int ii = 0; ii < iws_vecs_degen; ++ii)
                     {
@@ -392,12 +470,23 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                             // +9natom is to append the rotation after 9*natom
                             // translational rules
                             ELPH_float* Amat_tmp_ic =
-                                Amat_tmp + alpha * nmodes +
-                                (ic + ia * 9 + 9 * natom) * frc_size;
+                                Amat_tmp + (ic + ia * 9 + 9 * natom) * frc_size;
 
                             // (j, beta, gamma)
-                            Amat_tmp_ic[beta] += (idegen_fac * tau_Rj[gamma]);
-                            Amat_tmp_ic[gamma] -= (idegen_fac * tau_Rj[beta]);
+                            if (!do_grid[ig])
+                            {
+                                Amat_tmp_ic[alpha + beta * nmodes] +=
+                                    (idegen_fac * tau_Rj[gamma]);
+                                Amat_tmp_ic[alpha + gamma * nmodes] -=
+                                    (idegen_fac * tau_Rj[beta]);
+                            }
+                            else
+                            {
+                                Amat_tmp_ic[alpha * nmodes + beta] +=
+                                    (idegen_fac * tau_Rj[gamma]);
+                                Amat_tmp_ic[alpha * nmodes + gamma] -=
+                                    (idegen_fac * tau_Rj[beta]);
+                            }
                         }
                         //
                         // 3) Huang invariances
@@ -418,18 +507,55 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                                 get_huang_indices(ic, &alpha, &beta, &gamma,
                                                   &delta);
                                 //
-                                Amat_tmp_ic[alpha * nmodes + beta] +=
-                                    (idegen_fac * tau_Rij[gamma] *
-                                     tau_Rij[delta]);
-                                Amat_tmp_ic[gamma * nmodes + delta] -=
-                                    (idegen_fac * tau_Rij[alpha] *
-                                     tau_Rij[beta]);
+                                //
+                                if (!do_grid[ig])
+                                {
+                                    Amat_tmp_ic[alpha + beta * nmodes] +=
+                                        (idegen_fac * tau_Rij[gamma] *
+                                         tau_Rij[delta]);
+                                    Amat_tmp_ic[gamma + delta * nmodes] -=
+                                        (idegen_fac * tau_Rij[alpha] *
+                                         tau_Rij[beta]);
+                                }
+                                else
+                                {
+                                    Amat_tmp_ic[alpha * nmodes + beta] +=
+                                        (idegen_fac * tau_Rij[gamma] *
+                                         tau_Rij[delta]);
+                                    Amat_tmp_ic[gamma * nmodes + delta] -=
+                                        (idegen_fac * tau_Rij[alpha] *
+                                         tau_Rij[beta]);
+                                }
                             }
                         }
                         ++iws_vec;
                     }
                 }
             }
+        }
+    }
+
+    // To, Symmetrize R = 0 point. we remove upper triangular part
+    // in A and frc_real
+    // 1st A mat
+    for (ND_int ic = 0; ic < nconstraints; ++ic)
+    {
+        ELPH_float* Amat_tmp = Amat + ic * frc_size;
+        for (ND_int i = 0; i < nmodes; ++i)
+        {
+            for (ND_int j = 0; j < i; ++j)
+            {
+                Amat_tmp[i * nmodes + j] += Amat_tmp[j * nmodes + i];
+                Amat_tmp[j * nmodes + i] = 0.0;
+            }
+        }
+    }
+    // now frc
+    for (ND_int i = 0; i < nmodes; ++i)
+    {
+        for (ND_int j = 0; j < i; ++j)
+        {
+            frc_real[j * nmodes + i] = 0.0;
         }
     }
 
@@ -444,12 +570,51 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
             "failed.");
     }
 
-    // copy back the force constants
-    for (ND_int i = 0; i < frc_size; ++i)
+    // Now recontruct the full force constant matrix
+    for (ND_int ig = 0; ig < ngrid; ++ig)
     {
-        frc[i] = frc_real[i];
+        if (!do_grid[ig])
+        {
+            continue;
+        }
+        ND_int iig = grid_map[ig];
+
+        ND_int Rx = ig / Gridyz;
+        ND_int Ry = (ig % Gridyz) / qgrid[2];
+        ND_int Rz = (ig % Gridyz) % qgrid[2];
+
+        // Calculate -R index (mig)
+        ND_int mRx = (qgrid[0] - Rx) % qgrid[0];
+        ND_int mRy = (qgrid[1] - Ry) % qgrid[1];
+        ND_int mRz = (qgrid[2] - Rz) % qgrid[2];
+        ND_int mig = mRz + mRy * qgrid[2] + mRx * Gridyz;
+        //
+        for (ND_int i = 0; i < nmodes; ++i)
+        {
+            for (ND_int j = 0; j < nmodes; ++j)
+            {
+                frc[ig * nmodes * nmodes + i * nmodes + j] =
+                    frc_real[iig * nmodes * nmodes + i * nmodes + j];
+                if (ig != mig)
+                {
+                    frc[mig * nmodes * nmodes + j * nmodes + i] =
+                        frc_real[iig * nmodes * nmodes + i * nmodes + j];
+                }
+            }
+        }
     }
 
+    // Symmetrization at Gamma point
+    for (ND_int i = 0; i < nmodes; ++i)
+    {
+        for (ND_int j = 0; j < i; ++j)
+        {
+            frc[j * nmodes + i] = frc[i * nmodes + j];
+        }
+    }
+
+    free(do_grid);
+    free(grid_map);
     free(Amat);
     free(frc_real);
 }
