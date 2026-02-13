@@ -49,6 +49,9 @@ void init_interpolation_usr_input(struct interpolation_usr_input** input)
     memset(inp->asr, 0, sizeof(inp->asr));
     strlcpy_custom(inp->asr, "no", sizeof(inp->asr));
     //
+    memset(inp->zasr, 0, sizeof(inp->zasr));
+    strlcpy_custom(inp->zasr, "no", sizeof(inp->zasr));
+    //
     inp->loto = false;
     inp->loto_dir[0] = 0.0;
     inp->loto_dir[1] = 0.0;
@@ -88,6 +91,10 @@ static void Bcast_interpolation_input_data(
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(input->asr, sizeof(input->asr), MPI_CHAR, root, comm);
+    MPI_error_msg(mpi_error);
+
+    mpi_error =
+        MPI_Bcast(input->zasr, sizeof(input->zasr), MPI_CHAR, root, comm);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&input->loto, 1, MPI_C_BOOL, root, comm);
@@ -146,6 +153,12 @@ static int interpolation_input_handler(void* user, const char* section,
         strlcpy_custom(inp->asr, value, sizeof(inp->asr));
         strip_quotes_in_string(inp->asr);
         lowercase_str(inp->asr);
+    }
+    else if (strcmp(name, "zasr") == 0)
+    {
+        strlcpy_custom(inp->zasr, value, sizeof(inp->zasr));
+        strip_quotes_in_string(inp->zasr);
+        lowercase_str(inp->zasr);
     }
     else if (strcmp(name, "interpolate_dvscf") == 0)
     {

@@ -68,7 +68,7 @@ void interpolation_driver(const char* ELPH_input_file,
     const bool write_dVbare = input_data->write_dVbare;
 
     const enum asr_kind asr_fc = asr_kind_from_string(input_data->asr);
-    const enum asr_kind asr_born = asr_kind_from_string(input_data->asr);
+    const enum asr_kind asr_born = asr_kind_from_string(input_data->zasr);
     //
     // this the ewald summation parameter and is always set to 1
     const ELPH_float eta_bare = 1.0;

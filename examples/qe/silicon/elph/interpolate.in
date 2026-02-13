@@ -8,6 +8,8 @@ nosym = false
 
 asr = "simple"
 
+zasr = "simple"
+
 interpolate_dvscf = true
 
 loto = false

@@ -28,6 +28,8 @@ struct interpolation_usr_input
     bool nosym;                       // Donot use symmetries,
                  // produce output for all qpoints in full BZ
     char asr[32];            // type of acoustic sum rule to be applied.
+                             // for force constant matrix
+    char zasr[32];           // ASR for born charges.
     bool loto;               // if true apply LO-TO splitting
     ELPH_float loto_dir[3];  // LO-TO splitting direction
     ND_int qgrid_fine[3];    // fine grid interpolation.
