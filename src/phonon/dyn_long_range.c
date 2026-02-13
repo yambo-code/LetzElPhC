@@ -37,6 +37,11 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
     // compute the long range part
     add_ph_dyn_long_range_internal(qpt, lattice, phonon, Ggrid, sign,
                                    atomic_masses, eta, dyn_mat);
+    //
+    if (!dyn_mat_asr)
+    {
+        return;
+    }
     // now subtract the asr correction
     //
     ELPH_float factor = -1;
