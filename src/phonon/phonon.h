@@ -24,7 +24,8 @@ void compute_dyn_lr_asr_correction(struct Lattice* lattice,
                                    const ELPH_float eta,
                                    ELPH_cmplx* dyn_mat_asr);
 
-enum asr_kind asr_kind_from_string(const char* str);
+enum asr_kind asr_kind_from_string(const char* str, bool print_warning);
+void asr_kind_to_string(enum asr_kind kind, char* buf);
 
 void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                                 const ND_int natom, ELPH_cmplx* frc,

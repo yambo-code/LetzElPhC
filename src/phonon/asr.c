@@ -19,7 +19,7 @@ static void get_huang_indices(const ND_int idx, ND_int* restrict a,
                               ND_int* restrict d);
 
 // public functions
-enum asr_kind asr_kind_from_string(const char* str)
+enum asr_kind asr_kind_from_string(const char* str, bool print_warning)
 {
     if (str == NULL)
     {
@@ -53,7 +53,52 @@ enum asr_kind asr_kind_from_string(const char* str)
         return ASR_ALL_HUANG;
     }
 
+    if (print_warning)
+    {
+        fprintf(stdout,
+                "Warning : Invalid asr/zasr string : %s. Switching off "
+                "Acoustic sum rule.\n",
+                str);
+    }
+
     return ASR_NONE;
+}
+
+void asr_kind_to_string(enum asr_kind kind, char* buf)
+{
+    // buf must be alteast of size 32
+    if (buf == NULL)
+    {
+        return;
+    }
+
+    if (kind == ASR_NONE)
+    {
+        strlcpy_custom(buf, "no", 32);
+        return;
+    }
+    if (kind == ASR_SIMPLE)
+    {
+        strlcpy_custom(buf, "simple", 32);
+        return;
+    }
+    if (kind == ASR_CRYSTAL)
+    {
+        strlcpy_custom(buf, "crystal", 32);
+        return;
+    }
+    if (kind == ASR_ALL)
+    {
+        strlcpy_custom(buf, "all", 32);
+        return;
+    }
+    if (kind == ASR_ALL_HUANG)
+    {
+        strlcpy_custom(buf, "all_huang", 32);
+        return;
+    }
+
+    strlcpy_custom(buf, "no", 32);
 }
 
 void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
