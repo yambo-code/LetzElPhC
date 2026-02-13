@@ -359,6 +359,8 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
         }
     }
 
+    // Allocate the contraint matrix
+    // A(ngrid_independent, ngrid, na , 3, nb, 3)
     ELPH_float* Amat = calloc(nconstraints * frc_size, sizeof(*Amat));
     CHECK_ALLOC(Amat);
 
@@ -381,12 +383,14 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
             // (ic, ngrid, na , 3, nb, 3)
             for (ND_int ja = 0; ja < natom; ++ja)
             {
+                // For R, set A[ic,igg,ia,alpha,ja,beta] += 1
                 ELPH_float* Amat_tmp = Amat + ic * frc_size + ia * 9 * natom +
                                        alpha * nmodes + beta +
                                        iig * nmodes * nmodes + 3 * ja;
                 if (!do_grid[ig])
                 {
                     // this is -R, so we need to wrap
+                    // For -R, set A[ic,igg,ja,beta,ia,alpha] += 1
                     Amat_tmp = Amat + ic * frc_size + ja * 9 * natom +
                                beta * nmodes + alpha + iig * nmodes * nmodes +
                                3 * ia;
@@ -475,15 +479,19 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                             // (j, beta, gamma)
                             if (!do_grid[ig])
                             {
+                                // A[ic,igg,ja, beta ia, alpha]
                                 Amat_tmp_ic[alpha + beta * nmodes] +=
                                     (idegen_fac * tau_Rj[gamma]);
+                                // A[ic,igg,ja, gamma ia, alpha]
                                 Amat_tmp_ic[alpha + gamma * nmodes] -=
                                     (idegen_fac * tau_Rj[beta]);
                             }
                             else
                             {
+                                // A[ic,igg,ia, alpha ja, beta ]
                                 Amat_tmp_ic[alpha * nmodes + beta] +=
                                     (idegen_fac * tau_Rj[gamma]);
+                                // A[ic,igg,ia, alpha ja, gamma]
                                 Amat_tmp_ic[alpha * nmodes + gamma] -=
                                     (idegen_fac * tau_Rj[beta]);
                             }
@@ -510,18 +518,24 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
                                 //
                                 if (!do_grid[ig])
                                 {
+                                    // for -R
+                                    //  A[ic,igg,ja, beta ia, alpha]
                                     Amat_tmp_ic[alpha + beta * nmodes] +=
                                         (idegen_fac * tau_Rij[gamma] *
                                          tau_Rij[delta]);
+                                    // A[ic,igg,ja, delta ia, gamma]
                                     Amat_tmp_ic[gamma + delta * nmodes] -=
                                         (idegen_fac * tau_Rij[alpha] *
                                          tau_Rij[beta]);
                                 }
                                 else
                                 {
+                                    // for R
+                                    // A[ic,igg,ia, alpha ja, beta]
                                     Amat_tmp_ic[alpha * nmodes + beta] +=
                                         (idegen_fac * tau_Rij[gamma] *
                                          tau_Rij[delta]);
+                                    // A[ic,igg,ia, gamma ja, delta]
                                     Amat_tmp_ic[gamma * nmodes + delta] -=
                                         (idegen_fac * tau_Rij[alpha] *
                                          tau_Rij[beta]);
@@ -545,6 +559,7 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
         {
             for (ND_int j = 0; j < i; ++j)
             {
+                // A[ic,0,ia,alpha,ja,beta] += A[ic,0,ja,beta,ia,alpha]
                 Amat_tmp[i * nmodes + j] += Amat_tmp[j * nmodes + i];
                 Amat_tmp[j * nmodes + i] = 0.0;
             }
