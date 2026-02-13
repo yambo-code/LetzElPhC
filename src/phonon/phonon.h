@@ -27,11 +27,11 @@ void compute_dyn_lr_asr_correction(struct Lattice* lattice,
 enum asr_kind asr_kind_from_string(const char* str);
 
 void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
-                                const ND_int nat, ELPH_cmplx* frc,
+                                const ND_int natom, ELPH_cmplx* frc,
                                 const ELPH_float* atomic_pos,
                                 const ELPH_float* lat_vecs,
                                 const ND_int* ws_vecs, const ND_int n_ws_vecs,
                                 const ND_int* ws_degen);
 
 void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
-                                          const ND_int nat);
+                                          const ND_int natom);

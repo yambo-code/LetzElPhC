@@ -57,14 +57,12 @@ enum asr_kind asr_kind_from_string(const char* str)
 }
 
 void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
-                                          const ND_int nat)
+                                          const ND_int natom)
 {
-    if (mode == ASR_NONE || !Zborn || !nat)
+    if (mode == ASR_NONE || !Zborn || !natom)
     {
         return;
     }
-
-    ND_int total_elements = 3 * 3 * nat;
 
     if (mode == ASR_SIMPLE)
     {
@@ -78,16 +76,16 @@ void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
             {
                 ELPH_float sum = 0.0;
 
-                for (ND_int na = 0; na < nat; na++)
+                for (ND_int ia = 0; ia < natom; ia++)
                 {
-                    sum += Zborn[na * 9 + i * 3 + j];
+                    sum += Zborn[ia * 9 + i * 3 + j];
                 }
 
-                ELPH_float avg = sum / nat;
+                ELPH_float avg = sum / ((ELPH_float)natom);
 
-                for (ND_int na = 0; na < nat; na++)
+                for (ND_int ia = 0; ia < natom; ia++)
                 {
-                    Zborn[na * 9 + i * 3 + j] -= avg;
+                    Zborn[ia * 9 + i * 3 + j] -= avg;
                 }
             }
         }
@@ -98,156 +96,36 @@ void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
          * CRYSTAL RULE
          * ==============================
          */
-        ND_int zeu_dim = total_elements;
-        ND_int zeu_u_dim = 18 * zeu_dim;
+        // allocate constraint matrix
+        ELPH_float* Amat = calloc(81 * natom, sizeof(*Amat));
+        CHECK_ALLOC(Amat);
 
-        ELPH_float* zeu_u = calloc(zeu_u_dim, sizeof(ELPH_float));
-        CHECK_ALLOC(zeu_u);
-
-        ELPH_float* zeu_new = malloc(zeu_dim * sizeof(ELPH_float));
-        CHECK_ALLOC(zeu_new);
-
-        memcpy(zeu_new, Zborn, zeu_dim * sizeof(ELPH_float));
-
-        ND_int p = 0;
-        /* Initialize translational sum rules in zeu_u */
-        for (ND_int i = 0; i < 3; i++)
+        // let the compilers remove this.
+        for (ND_int i = 0; i < (81 * natom); ++i)
         {
-            for (ND_int j = 0; j < 3; j++)
+            Amat[i] = 0.0;
+        }
+
+        for (ND_int ic = 0; ic < 9; ++ic)
+        {
+            ND_int alpha = ic / 3;
+            ND_int beta = ic % 3;
+            for (ND_int ia = 0; ia < natom; ++ia)
             {
-                for (ND_int iat = 0; iat < nat; iat++)
-                {
-                    ND_int idx = p * zeu_dim + (iat * 9 + i * 3 + j);
-                    zeu_u[idx] = 1.0;
-                }
-                p++;
+                Amat[ic * 9 * natom + ia * 9 + 3 * alpha + beta] = 1.0;
             }
         }
 
-        /* Gram-Schmidt Orthonormalization */
-        ELPH_float* zeu_w = calloc(zeu_dim, sizeof(ELPH_float));
-        CHECK_ALLOC(zeu_w);
-        //
-        ELPH_float* zeu_x = calloc(zeu_dim, sizeof(ELPH_float));
-        CHECK_ALLOC(zeu_x);
-        //
-        ELPH_float* tempZeu = calloc(zeu_dim, sizeof(ELPH_float));
-        CHECK_ALLOC(tempZeu);
-
-        /* zeu_less stores indices, so it must be ND_int */
-        ND_int* zeu_less = calloc(18, sizeof(ND_int));
-        CHECK_ALLOC(zeu_less);
-
-        ELPH_float scalar;
-        ND_int nzeu_less = 0;
-        ND_int r;
-
-        for (ND_int k = 0; k < p; k++)
+        // Now we need to find |Z_input-Z_ideal|_min in such a way
+        // that A*Z_input = 0
+        ND_int err_info =
+            orthogonal_projection(9, 9 * natom, 9 * natom, Amat, Zborn, 1e-5);
+        if (err_info)
         {
-            memcpy(zeu_w, zeu_u + k * zeu_dim,
-                   total_elements * sizeof(ELPH_float));
-            memcpy(zeu_x, zeu_u + k * zeu_dim,
-                   total_elements * sizeof(ELPH_float));
-
-            for (ND_int q = 0; q < k; q++)
-            {
-                r = 1;
-                for (ND_int iZeu_less = 0; iZeu_less < nzeu_less; iZeu_less++)
-                {
-                    if (zeu_less[iZeu_less] == q)
-                    {
-                        r = 0;
-                    }
-                }
-
-                if (r != 0)
-                {
-                    memcpy(tempZeu, zeu_u + q * zeu_dim,
-                           total_elements * sizeof(ELPH_float));
-
-                    /* Dot product (zeu_x . tempZeu) */
-                    scalar = 0.0;
-                    for (ND_int z = 0; z < total_elements; z++)
-                    {
-                        scalar += zeu_x[z] * tempZeu[z];
-                    }
-
-                    for (ND_int x = 0; x < total_elements; x++)
-                    {
-                        zeu_w[x] -= scalar * tempZeu[x];
-                    }
-                }
-            }
-
-            /* Dot product (zeu_w . zeu_w) */
-            ELPH_float norm2 = 0.0;
-            for (ND_int z = 0; z < total_elements; z++)
-            {
-                norm2 += zeu_w[z] * zeu_w[z];
-            }
-
-            if (sqrt(norm2) > ELPH_EPS)
-            {
-                ELPH_float inv_sqrt_norm = 1.0 / sqrt(norm2);
-                for (ND_int x = 0; x < total_elements; x++)
-                {
-                    zeu_u[k * zeu_dim + x] = zeu_w[x] * inv_sqrt_norm;
-                }
-            }
-            else
-            {
-                zeu_less[nzeu_less] = k;
-                nzeu_less++;
-            }
+            error_msg("Orthogonal projection of born charges failed.");
         }
 
-        /* Projection */
-        for (ND_int ii = 0; ii < zeu_dim; ++ii)
-        {
-            zeu_w[ii] = 0.0;
-        }
-
-        for (ND_int k = 0; k < p; k++)
-        {
-            r = 1;
-            for (ND_int izeu_less = 0; izeu_less < nzeu_less; izeu_less++)
-            {
-                if (zeu_less[izeu_less] == k)
-                {
-                    r = 0;
-                }
-            }
-
-            if (r != 0)
-            {
-                memcpy(zeu_x, zeu_u + k * zeu_dim,
-                       total_elements * sizeof(ELPH_float));
-
-                /* Dot product (zeu_x . zeu_new) */
-                scalar = 0.0;
-                for (ND_int z = 0; z < total_elements; z++)
-                {
-                    scalar += zeu_x[z] * zeu_new[z];
-                }
-
-                for (ND_int x = 0; x < total_elements; x++)
-                {
-                    zeu_w[x] += scalar * zeu_u[k * zeu_dim + x];
-                }
-            }
-        }
-
-        for (ND_int x = 0; x < total_elements; x++)
-        {
-            Zborn[x] = zeu_new[x] - zeu_w[x];
-        }
-
-        free(zeu_u);
-        free(zeu_new);
-        free(zeu_w);
-        free(zeu_x);
-        free(tempZeu);
-        free(zeu_less);
+        free(Amat);
     }
 }
 
@@ -276,6 +154,38 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
     const ND_int nmodes = 3 * natom;
     const ND_int Gridyz = qgrid[1] * qgrid[2];
 
+    // Simple ASR
+    if (mode == ASR_SIMPLE)
+    {
+        // (ig, na, alpha, nb, beta)
+        for (ND_int ia = 0; ia < natom; ++ia)
+        {
+            for (ND_int alpha = 0; alpha < 3; ++alpha)
+            {
+                for (ND_int beta = 0; beta < 3; ++beta)
+                {
+                    ELPH_cmplx sum = 0.0;
+                    ND_int base_na_i_j = ia * 9 * natom + alpha * nmodes + beta;
+
+                    for (ND_int ig = 0; ig < ngrid; ++ig)
+                    {
+                        ND_int grid_off = ig * nmodes * nmodes;
+                        for (ND_int ib = 0; ib < natom; ++ib)
+                        {
+                            ND_int idx = grid_off + base_na_i_j + ib * 3;
+                            sum += frc[idx];
+                        }
+                    }
+                    // remove self interaction
+                    ND_int self_idx = base_na_i_j + ia * 3;
+                    frc[self_idx] -= sum;
+                }
+            }
+        }
+        return;
+    }
+
+    // Crystal or all or all_huang
     // Orthogonal projection method
     //
     // Phi_{ai, bj}(R)= Phi_{bj,ai}(-R)
