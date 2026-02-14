@@ -41,13 +41,25 @@ These variables control the interpolation calculations.
     * **Description:**
         If `True`, applies non-analytic (LO-TO) splitting corrections to the dynamical matrices and potentials.
 
+        If `qlist_file` is provided instead of `nq1`, `nq2`, and `nq3`, then `loto` and `loto_dir` variables are ignored.
+        See `qlist_file` for details.
+
+
+
 === "loto_dir"
     * **Type:** `REAL (Array of 3)`
     * **Default:** `0.0 0.0 0.0`
     * **Description:**
-        A vector specifying the direction approaching the $\Gamma$ point ($q \to 0$) for LO-TO splitting.
+        A vector (in cartesian units) specifying the direction approaching the $\Gamma$ point ($q \to 0$) for LO-TO splitting.
+        Internally, the code normalizes the vector, so the user does not need to provide a normalized vector.
+
+        If the magnitude of the vector is smaller than $10^{-5}$, it is ignored and treated as `loto = false`.
+
         * **Format:** Three space-separated floats.
         * **Example:** `loto_dir = 1.0 0.0 0.0` (along x-axis)
+
+        If `qlist_file` is provided instead of `nq1`, `nq2`, and `nq3`, then `loto` and `loto_dir` variables are ignored.
+        See `qlist_file` for details.
 
 === "nq1"
     * **Type:** `INTEGER`
@@ -104,3 +116,6 @@ These variables control the interpolation calculations.
             Q2x Q2y Q2z
             # Use # to comment. It will be skiped when reading
             ```
+
+        !!! warning "Note on LO-TO splitting"
+            When `qlist_file` is provided, the `loto` and `loto_dir` variables are ignored. To obtain LO–TO splitting, include a small direction vector at the $\Gamma$ point. Instead of sampling exactly at $\Gamma$, use a displaced point $\vec{q} = \Gamma + \vec{\epsilon}$, where $\lvert \vec{\epsilon} \rvert$ is small and defines the direction of approach. When $\vec{\epsilon}$ vector is converted to caresian units, its magnitude should be small; a recommended value is $|\vec{\epsilon}_{cart}| = 10^{-4}$.
