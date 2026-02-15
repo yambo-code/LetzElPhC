@@ -117,10 +117,10 @@ These variables control the interpolation calculations.
 
 === "qlist_file"
     * **Type:** `STRING`
-    * **Default:** `(Empty)`
+    * **Default:** `""`
     * **Description:**
         Filename containing a specific list of q-points provided in reduced units to interpolate.
-        * If provided, the code interpolates over this list instead of the grid defined by `nq1`, `nq2`, `nq3`.
+        * If a non-zero length string is provided, the code interpolates over this list instead of the grid defined by `nq1`, `nq2`, `nq3`.
         * **Format:**
             ```
             Number of qpoints given in the list
