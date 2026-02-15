@@ -30,10 +30,22 @@ These variables control the interpolation calculations.
     * **Type:** `STRING`
     * **Default:** `no`
     * **Description:**
-        Specifies the type of Acoustic Sum Rule to apply.
-        * `no`: No acoustic sum rule applied  
-        * `simple`: Simple acoustic sum rule (corrects only the diagonal matrix elements)  
-        * `crystal`: Acoustic sum rule imposed via optimized correction of the force constants
+        Specifies the type of Acoustic Sum Rule to apply for force constant matrix.
+        * `no`: No acoustic sum rule applied.
+        * `simple`: Simple acoustic sum rule (corrects only the diagonal matrix elements).
+        * `crystal`: Translational acoustic sum rule imposed via orthogonal projection.
+        * `all`: Translational and rotational acoustic sum rules imposed via orthogonal projection.
+        * `all_huang`: (recommended) Translational and rotational sum rules, plus Huang invariances, imposed via orthogonal projection.
+
+=== "zasr"
+    * **Type:** `STRING`
+    * **Default:** `no`
+    * **Description:**
+        Specifies the type of Acoustic Sum Rule to apply for Born charges.
+        * `no`: No acoustic sum rule applied.
+        * `simple`: Simple acoustic sum rule (corrects only the diagonal matrix elements).
+        * `crystal`: Acoustic sum rule imposed via orthogonal projection.
+
 
 === "loto"
     * **Type:** `LOGICAL`
