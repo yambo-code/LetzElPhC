@@ -238,7 +238,7 @@ void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
 
         int status =
             lsmr_solver(dim_Z, nconstraints, born_matvec, &ctx, Z_real, 0.0,
-                        1e-10, 1e-10, 1e12, nconstraints * 2, lambda, &itn);
+                        1e-12, 1e-12, 1e14, nconstraints * 5, lambda, &itn);
 
         if (status != 0 && status != 1 && status != 2)
         {
@@ -434,7 +434,7 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
     ND_int itn = 0;
     int status =
         lsmr_solver(frc_size, nconstraints, asr_matvec, &ctx, frc_real, 0.0,
-                    1e-10, 1e-10, 1e12, nconstraints * 2, lambda, &itn);
+                    1e-12, 1e-12, 1e14, nconstraints * 5, lambda, &itn);
 
     if (status != 0 && status != 1 && status != 2)
     {

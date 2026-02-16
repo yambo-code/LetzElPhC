@@ -86,7 +86,7 @@ where $\nu$ is the phonon mode index, $\mathbf{k}$ is the crystal momentum of th
 | `Quadrupole_tensor` | float | `[natoms, pol, pol, pol]` | Quadrupole tensor `(atom, efield, qgrad, atom_direction)`. |
 
 !!! info "Additional info on tensors"
-    If the LetzElPhC code detects the files `tensors.xml` and `quadrupole.fmt` in the `ph_save` directory, their contents are read and stored in the corresponding variables. If these files are not present, the associated variables are automatically initialized to zero.
+    If the LetzElPhC code detects the files `tensors.xml` and `quadrupole.fmt` in the `ph_save` directory, their contents are read and stored in the corresponding variables. If these files are not present, the associated variables are set to zero.
 
 !!! tip "Reading `ndb.elph` with `YamboPy`"
     The electron-phonon matrix elements, phonon polarization vectors and frequencies stored in the `ndb.elph` database can be accessed with `YamboPy` using the `LetzElphElectronPhononDB` class:
@@ -108,7 +108,7 @@ $$
 $$
 
 where $\hat{U}(g)$ is the unitary operator associated with the symmetry operation
-$g:\,\mathbf{x} \rightarrow R\mathbf{x} + \boldsymbol{\tau}$. It should be noted that the above expression is fully general and applies to all systems, including non-collinear (fully spinorial) cases. For `nspin = 2`, however, it can be simplified and written explicitly as
+$g:\,\mathbf{x} \rightarrow R\mathbf{x} + \boldsymbol{\tau}$. It should be noted that the above expression is fully general and applies to all systems, including non-collinear (fully spinorial) cases. For `nspin = 2`, the spin-up and spin-down channels are decoupled in the Kohn–Sham equations; in this case, the spin index is added.
 
 $$
 \mathcal{D}_{\mathbf{k}, s, mn}(g)
@@ -134,4 +134,4 @@ where $s$ denotes the spin index (spin up or spin down).
 
 | Variable Name | Type | Dimensions | Description |
 | :--- | :--- | :--- | :--- |
-| `Dmats` | float | `[nsym_ph, nkpts, nspin, Rk_band, k_band, re_im]` | Electronic representation matrices $\mathcal{D}_{\mathbf{k}, mn}(g)$ for each phonon symmetry operation $g$, where $m$ corresponds to the `Rk_band` dimension and $n$ corresponds to the `k_band` dimension.|
+| `Dmats` | float | `[nsym_ph, nkpts, nspin, Rk_band, k_band, re_im]` | Electronic representation matrices $\mathcal{D}_{\mathbf{k},s, mn}(g)$ for each phonon symmetry operation $g$, where $m$ corresponds to the `Rk_band` dimension and $n$ corresponds to the `k_band` dimension.|
