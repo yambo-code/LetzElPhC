@@ -489,9 +489,13 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
             error_msg("Error reading in phonon symmetries");
         }
         //
-        // rotation matrix (stored in transposed order) and frac .translation
-        // are store in crystals coordinates parse rotation (in crystal units)
-        // S_cart = (alat@S_crys^T@blat^T)
+        // NOTE: We use the convention x' = Sx + v.
+        //
+        // In Q.E., a symmetry operation is written as:
+        //     x' = Sx - v. THis implies we have to negate
+        // Conversion to Cartesian coordinates is:
+        //     S_cart = alat · S_crys · blat^T
+
         xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", (int)isym, "rotation", -1);
         if (!xml_tmp)
         {
@@ -506,8 +510,6 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         }
 
         // parse translation (in crystal units) tau_cart = alat@tau_crys
-        // It should be noted that we use Sx + v convention, but qe uses S(x+v)
-        // so our v = S*tau_qe
         xml_tmp = ezxml_get(sym_xml_tmp, "symmetry", (int)isym,
                             "fractional_translation", -1);
         if (!xml_tmp)
