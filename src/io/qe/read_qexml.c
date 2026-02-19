@@ -493,6 +493,7 @@ void parse_qexml(const char* xml_file, ND_int* natoms, ELPH_float* lat_vec,
         //
         // In Q.E., a symmetry operation is written as:
         //     x' = Sx - v. THis implies we have to negate
+        //     fractional_translation
         // Conversion to Cartesian coordinates is:
         //     S_cart = alat · S_crys · blat^T
 
