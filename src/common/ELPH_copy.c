@@ -1,33 +1,8 @@
-// This file contains functions related to coping files and directories.
-// Contains os dependent functions.
-
 #include "ELPH_copy.h"
 
 #include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "common/error.h"
-// above two headers are found in both windows and posix systems.
-
-int check_dir_exists(const char* dir_path)
-{
-    // returns 0 if directory exists.
-    struct stat dir_info;
-
-    if (stat(dir_path, &dir_info))
-    {
-        return ERR_DIR_DOES_NOT_EXIST;
-    }
-    else if (dir_info.st_mode & S_IFDIR)
-    {
-        return 0;  // dir exists
-    }
-    else
-    {
-        return ERR_NOT_A_DIRECTORY;
-    }
-}
 
 int copy_files(const char* file_read, const char* file_write)
 {

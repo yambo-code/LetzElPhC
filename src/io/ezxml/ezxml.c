@@ -1007,6 +1007,11 @@ char* ezxml_ampencode(const char* s, size_t len, char** dst, size_t* dlen,
 {
     const char* e;
 
+    if (len == (size_t)-1)
+    {
+        len = strlen(s);
+    }
+
     for (e = s + len; s != e; s++)
     {
         while (*dlen + 10 > *max)

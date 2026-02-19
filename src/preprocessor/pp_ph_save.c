@@ -8,7 +8,8 @@ This file contains functions which are os dependent.
 #include <stdlib.h>
 #include <string.h>
 
-#include "ELPH_copy.h"
+#include "common/ELPH_POSIX_func.h"
+#include "common/ELPH_copy.h"
 #include "common/cwalk/cwalk.h"
 #include "common/dtypes.h"
 #include "common/error.h"
@@ -16,14 +17,6 @@ This file contains functions which are os dependent.
 #include "elphC.h"
 #include "io/ezxml/ezxml.h"
 #include "preprocessor.h"
-
-#if defined(_WIN32)
-#include <direct.h>
-#define mkdir(path, mode) _mkdir(path)
-#else
-#include <sys/stat.h>
-#include <sys/types.h>
-#endif
 
 static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
                            ND_int buffer_size);
@@ -288,7 +281,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     // from now we use read buffer as file_name_buf
 
     // now create the ph_save directory
-    if (mkdir(PH_SAVE_DIR_NAME, 0777))
+    if (ELPH_mkdir(PH_SAVE_DIR_NAME))
     {
         if (errno != EEXIST)
         {

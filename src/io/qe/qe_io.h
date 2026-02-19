@@ -59,3 +59,5 @@ void write_dyn_qe(const char* file_name, ND_int natom, const ELPH_float* qpts,
 
 void write_qpts_qe(const char* dyn_file, ND_int nqpt_iBZ,
                    const ELPH_float* qpts, const ND_int* qgrid);
+
+void write_identity_patterns_xml(const char* file_name);

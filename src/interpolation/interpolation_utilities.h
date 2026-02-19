@@ -21,3 +21,6 @@ void fft_R2q_dvscf(const ELPH_cmplx* dataR, const ELPH_float* qpt_crys,
 void fft_R2q_dyn(const ELPH_cmplx* dataR, const ELPH_float* qpt_crys,
                  const ND_int* qgrid, const ND_int natom, const ND_int* ws_vecs,
                  const ND_int nws, const ND_int* nws_vecs, ELPH_cmplx* dataq);
+
+void copy_ph_save_to_ph_interpolation_qe(const char* ph_save_dir,
+                                         const char* ph_interp_dir);

@@ -50,7 +50,8 @@ void dV_add_longrange(const ELPH_float* qpt, struct Lattice* lattice,
      * 3D/2D/1D).
      * species).
      * @param[in] eigVec      Phonon eigenvectors (shape: [nmodes, 3*natom]),
-     *                        used to project onto modes.
+     *                        used to project onto modes. if NULL, will compute
+     *                        the long range part in cart basis and add it them
      * @param[out] Vlocr      Output array (shape: [nmodes, nffts_loc]) storing
      * the real-space dVloc/dtau for each mode.
      * @param[in] commK       MPI communicator for parallel FFT grid
@@ -172,8 +173,26 @@ void dV_add_longrange(const ELPH_float* qpt, struct Lattice* lattice,
                             EcutRy, eta_bare, eta_induced, VlocGz_cart);
         // VlocG -> (nffs,atom,3),
         //  get it in mode basis @ (nu,atom,3) @(nffs,atom,3)^T
-        matmul_cmplx('N', 'T', eigVec, VlocGz_cart, VlocG + Gbox[2] * ig, 1.0,
-                     0.0, nmodes, nmodes, size_G_vecs, nmodes, Gbox[2], nmodes);
+        if (eigVec)
+        {
+            // in case eigVec is provided, we rotate them in those basis
+            matmul_cmplx('N', 'T', eigVec, VlocGz_cart, VlocG + Gbox[2] * ig,
+                         1.0, 0.0, nmodes, nmodes, size_G_vecs, nmodes, Gbox[2],
+                         nmodes);
+        }
+        else
+        {
+            // simple transpose
+            ELPH_cmplx* VlocG_ptr = VlocG + Gbox[2] * ig;
+            for (ND_int kz = 0; kz < Gbox[2]; ++kz)
+            {
+                for (ND_int imode = 0; imode < nmodes; ++imode)
+                {
+                    VlocG_ptr[imode * size_G_vecs + kz] =
+                        VlocGz_cart[kz * nmodes + imode];
+                }
+            }
+        }
     }
 
     free(Gvecs_z);
