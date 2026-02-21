@@ -8,7 +8,6 @@ fcoeff.py
 git.sh
 version*
 **un~
-clang_format.sh
 site
 docs/tex_doc/*
 !docs/tex_doc/main.tex
