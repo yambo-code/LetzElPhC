@@ -1,0 +1,128 @@
+/* Force tabs to wrap and handle overflow */
+.md-typeset .tabbed-labels {
+  flex-wrap: wrap;
+  white-space: normal;
+  overflow: visible;
+  box-shadow: none !important; /* This removes the global underline */
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Hide the global sliding indicator which breaks on wrap */
+.md-typeset .tabbed-labels__indicator {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* Ensure no pseudo-elements create a line */
+.md-typeset .tabbed-labels::before,
+.md-typeset .tabbed-labels::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Base style for labels */
+.md-typeset .tabbed-labels > label {
+  border-bottom: 2px solid transparent; /* Placeholder for alignment */
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+  display: inline-block;
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 1.00em; /* Larger text */
+  font-weight: 700;  /* Bolder text */
+  line-height: 1.3;
+}
+
+/* Active tab styling . Currently 50 are coded. if more need add more*/
+.md-typeset .tabbed-set > input:nth-child(1):checked ~ .tabbed-labels > :nth-child(1),
+.md-typeset .tabbed-set > input:nth-child(2):checked ~ .tabbed-labels > :nth-child(2),
+.md-typeset .tabbed-set > input:nth-child(3):checked ~ .tabbed-labels > :nth-child(3),
+.md-typeset .tabbed-set > input:nth-child(4):checked ~ .tabbed-labels > :nth-child(4),
+.md-typeset .tabbed-set > input:nth-child(5):checked ~ .tabbed-labels > :nth-child(5),
+.md-typeset .tabbed-set > input:nth-child(6):checked ~ .tabbed-labels > :nth-child(6),
+.md-typeset .tabbed-set > input:nth-child(7):checked ~ .tabbed-labels > :nth-child(7),
+.md-typeset .tabbed-set > input:nth-child(8):checked ~ .tabbed-labels > :nth-child(8),
+.md-typeset .tabbed-set > input:nth-child(9):checked ~ .tabbed-labels > :nth-child(9),
+.md-typeset .tabbed-set > input:nth-child(10):checked ~ .tabbed-labels > :nth-child(10),
+.md-typeset .tabbed-set > input:nth-child(11):checked ~ .tabbed-labels > :nth-child(11),
+.md-typeset .tabbed-set > input:nth-child(12):checked ~ .tabbed-labels > :nth-child(12),
+.md-typeset .tabbed-set > input:nth-child(13):checked ~ .tabbed-labels > :nth-child(13),
+.md-typeset .tabbed-set > input:nth-child(14):checked ~ .tabbed-labels > :nth-child(14),
+.md-typeset .tabbed-set > input:nth-child(15):checked ~ .tabbed-labels > :nth-child(15),
+.md-typeset .tabbed-set > input:nth-child(16):checked ~ .tabbed-labels > :nth-child(16),
+.md-typeset .tabbed-set > input:nth-child(17):checked ~ .tabbed-labels > :nth-child(17),
+.md-typeset .tabbed-set > input:nth-child(18):checked ~ .tabbed-labels > :nth-child(18),
+.md-typeset .tabbed-set > input:nth-child(19):checked ~ .tabbed-labels > :nth-child(19),
+.md-typeset .tabbed-set > input:nth-child(20):checked ~ .tabbed-labels > :nth-child(20),
+.md-typeset .tabbed-set > input:nth-child(21):checked ~ .tabbed-labels > :nth-child(21),
+.md-typeset .tabbed-set > input:nth-child(22):checked ~ .tabbed-labels > :nth-child(22),
+.md-typeset .tabbed-set > input:nth-child(23):checked ~ .tabbed-labels > :nth-child(23),
+.md-typeset .tabbed-set > input:nth-child(24):checked ~ .tabbed-labels > :nth-child(24),
+.md-typeset .tabbed-set > input:nth-child(25):checked ~ .tabbed-labels > :nth-child(25),
+.md-typeset .tabbed-set > input:nth-child(26):checked ~ .tabbed-labels > :nth-child(26),
+.md-typeset .tabbed-set > input:nth-child(27):checked ~ .tabbed-labels > :nth-child(27),
+.md-typeset .tabbed-set > input:nth-child(28):checked ~ .tabbed-labels > :nth-child(28),
+.md-typeset .tabbed-set > input:nth-child(29):checked ~ .tabbed-labels > :nth-child(29),
+.md-typeset .tabbed-set > input:nth-child(30):checked ~ .tabbed-labels > :nth-child(30),
+.md-typeset .tabbed-set > input:nth-child(31):checked ~ .tabbed-labels > :nth-child(31),
+.md-typeset .tabbed-set > input:nth-child(32):checked ~ .tabbed-labels > :nth-child(32),
+.md-typeset .tabbed-set > input:nth-child(33):checked ~ .tabbed-labels > :nth-child(33),
+.md-typeset .tabbed-set > input:nth-child(34):checked ~ .tabbed-labels > :nth-child(34),
+.md-typeset .tabbed-set > input:nth-child(35):checked ~ .tabbed-labels > :nth-child(35),
+.md-typeset .tabbed-set > input:nth-child(36):checked ~ .tabbed-labels > :nth-child(36),
+.md-typeset .tabbed-set > input:nth-child(37):checked ~ .tabbed-labels > :nth-child(37),
+.md-typeset .tabbed-set > input:nth-child(38):checked ~ .tabbed-labels > :nth-child(38),
+.md-typeset .tabbed-set > input:nth-child(39):checked ~ .tabbed-labels > :nth-child(39),
+.md-typeset .tabbed-set > input:nth-child(40):checked ~ .tabbed-labels > :nth-child(40),
+.md-typeset .tabbed-set > input:nth-child(41):checked ~ .tabbed-labels > :nth-child(41),
+.md-typeset .tabbed-set > input:nth-child(42):checked ~ .tabbed-labels > :nth-child(42),
+.md-typeset .tabbed-set > input:nth-child(43):checked ~ .tabbed-labels > :nth-child(43),
+.md-typeset .tabbed-set > input:nth-child(44):checked ~ .tabbed-labels > :nth-child(44),
+.md-typeset .tabbed-set > input:nth-child(45):checked ~ .tabbed-labels > :nth-child(45),
+.md-typeset .tabbed-set > input:nth-child(46):checked ~ .tabbed-labels > :nth-child(46),
+.md-typeset .tabbed-set > input:nth-child(47):checked ~ .tabbed-labels > :nth-child(47),
+.md-typeset .tabbed-set > input:nth-child(48):checked ~ .tabbed-labels > :nth-child(48),
+.md-typeset .tabbed-set > input:nth-child(49):checked ~ .tabbed-labels > :nth-child(49),
+.md-typeset .tabbed-set > input:nth-child(50):checked ~ .tabbed-labels > :nth-child(50)
+{
+  border-bottom: 4px solid var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+  font-weight: 700;
+  padding-bottom: 0.45em;
+}
+
+
+
+
+/* Mermaid Diagram Customization */
+:root {
+  --mermaid-node-fill: var(--md-primary-fg-color--light);
+  --mermaid-node-stroke: var(--md-default-fg-color);
+  --mermaid-node-color: var(--md-default-bg-color);
+  --mermaid-edge-color: var(--md-default-fg-color);
+}
+
+.mermaid .node rect, 
+.mermaid .node circle, 
+.mermaid .node ellipse, 
+.mermaid .node polygon, 
+.mermaid .node path {
+  fill: var(--mermaid-node-fill) !important;
+  stroke: var(--mermaid-node-stroke) !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid .node .label {
+  color: var(--mermaid-node-color) !important;
+}
+
+.mermaid .edgePath .path {
+  stroke: var(--mermaid-edge-color) !important;
+}
+
+.mermaid .marker {
+  fill: var(--mermaid-edge-color) !important;
+  stroke: var(--mermaid-edge-color) !important;
+}

@@ -4,6 +4,7 @@
 
 #include "elphC.h"
 #include "preprocessor/preprocessor.h"
+#include "interpolation/interpolation.h"
 #include "elph/elph.h"
 #include <mpi.h>
 #include <stdbool.h>
@@ -26,6 +27,7 @@ int main(int argc, char* argv[])
     ND_int dft_code_tmp;
     // this is used to broad cast the enum
     bool run_elph_calc = false;
+    bool run_interpolation = false;
     if (my_rank == 0)
     {
         ELPH_cli_parser(argc, argv, calc_info);
@@ -36,10 +38,15 @@ int main(int argc, char* argv[])
         {
             run_elph_calc = true;
         }
+        else if (calc_info->calc == CALC_INTERPOLATION)
+        {
+            run_interpolation = true;
+        }
     }
 
     MPI_Bcast(&dft_code_tmp, 1, ELPH_MPI_ND_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&run_elph_calc, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&run_interpolation, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(calc_info->input_file, sizeof(calc_info->input_file), MPI_CHAR, 0, MPI_COMM_WORLD);
 
     calc_info->code = dft_code_tmp;
@@ -47,6 +54,10 @@ int main(int argc, char* argv[])
     if (run_elph_calc)
     {
         elph_driver(calc_info->input_file, calc_info->code, MPI_COMM_WORLD);
+    }
+    else if (run_interpolation)
+    {
+        interpolation_driver(calc_info->input_file, calc_info->code, MPI_COMM_WORLD);
     }
     else
     {

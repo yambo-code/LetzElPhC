@@ -1,0 +1,32 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-branch-clone,
+  -bugprone-narrowing-conversions,
+  -bugprone-unsafe-functions,
+  cert-*,
+  -cert-err33-c,
+  -cert-msc24-c,
+  -cert-msc33-c,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  misc-*,
+  -misc-unused-parameters,
+  -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner,
+  performance-*,
+  readability-*,
+  -readability-identifier-naming,
+  -readability-magic-numbers,
+  -readability-isolate-declaration,
+  -readability-function-cognitive-complexity,
+  -readability-else-after-return,
+  -readability-non-const-parameter,
+  -readability-braces-around-statements,
+  -readability-use-concise-preprocessor-directives
+
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/.*'
+FormatStyle: file

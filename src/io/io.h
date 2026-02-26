@@ -18,17 +18,10 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               struct Phonon* phonon,
                               enum ELPH_dft_code dft_code);
 
+void free_phonon_data(struct Phonon* phonon);
+
 void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
                     struct Pseudo* pseudo, struct Phonon* phonon);
-
-// parse_upf.c // get pseudo data from upfs
-void parse_upf(const char* filename, struct local_pseudo* loc_pseudo);
-void get_upf_element(const char* filename, char* atomic_sym);
-
-void init_usr_input(struct usr_input** input);
-void free_usr_input(struct usr_input* input);
-void read_input_file(const char* input_file, struct usr_input** input_data,
-                     MPI_Comm MPI_world_comm);
 
 //======= nc4 function
 void def_ncVar(const int ncid, int* varid, ND_int rank, nc_type xtype,

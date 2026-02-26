@@ -1,0 +1,86 @@
+repo_name: LetzElPhC
+repo_url: https://github.com/yambo-code/LetzElPhC
+site_name: LetzElPhC Documentation
+copyright: "Copyright &copy; 2026 Muralidhar Nalabothula"
+  #toc_depth: 1
+theme:
+  name: material
+  custom_dir: docs/theme_overrides
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  features:
+    - navigation.tabs
+      #- toc.integrate
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black 
+      accent: black
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - footnotes
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+extra_javascript:
+  - https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js
+  - javascripts/mermaid-init.js
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+extra_css:
+  - assets/stylesheets/custom.css
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - About:
+      - About the Code: about/about_the_code.md
+      - Acknowledgments: about/acknowledgments.md
+      - License: about/license.md
+  - Installation and Usage:
+      - Installation: install_usage/install.md
+      - Usage: install_usage/usage.md
+  - Input Variables and Output Format:
+      - Input Variables:
+          - ELPH Calculation: inputs_outputs/elph_inputs.md
+          - Interpolation Calculation: inputs_outputs/interpolation_inputs.md
+      - Output Format:
+          - ELPH Output Format: inputs_outputs/output_elph.md
+          - Interpolation Output Format: inputs_outputs/output_interpolation.md
+  - Theory:
+      - Acoustic Sum Rules: theory/asr.md
+  - Tutorials:
+      - Silicon Walkthrough: tutorials/silicon_walkthrough.md
+  - Testing: tests.md
+  

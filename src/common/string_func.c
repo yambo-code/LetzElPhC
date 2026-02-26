@@ -1,6 +1,7 @@
 #include "string_func.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,18 +11,28 @@
 This file contains some useful string functions
 */
 
-char* strncpy_custom(char* dest, const char* src, size_t count)
+char* strlcpy_custom(char* restrict dest, const char* restrict src,
+                     size_t count)
 {
-    // this does strncpy(dest,src,n-1) and sets nth element as \0
-    if (1 == count)
+    // copies MIN(count-1,strlen(src)) characters into dest pointer
+    if (count == 0)
     {
-        dest[0] = '\0';
+        return dest;
     }
-    else if (count > 1)
+
+    char* d = dest;
+    const char* s = src;
+    size_t n = count;
+
+    while (--n > 0 && *s)
     {
-        strncpy(dest, src, count - 1);
-        dest[count - 1] = '\0';
+        *d++ = *s++;
+        // Copy until count runs out or src ends
     }
+
+    *d = '\0';
+    // Always ensure null termination
+
     return dest;
 }
 
@@ -30,46 +41,47 @@ void lowercase_str(char* str)
     // lower case all the chars in a string
     for (char* p = str; *p; ++p)
     {
-        *p = tolower(*p);
+        *p = tolower((unsigned char)(*p));
     }
 }
 
-ND_int parser_doubles_from_string(const char* str, ELPH_float* out)
+ND_int parse_floats_from_string(const char* str, ELPH_float* out,
+                                ND_int out_size)
 {
     /*
-    Extract all float values from given string
+    Extract atmost out_size float values from given string
 
-    if out == NULL, it return number of float it parsed
+    out_size is size of the out buffer. In case more floats
+    found than the buffer size, only the first out_size floats
+    are written.
+
+    Returns: Total number of floats found in the string (may exceed out_size).
+    Compare return value with out_size to detect truncation.
+    if out == NULL, it returns number of floats found in the string.
     */
     const char* p = str;
-    char* q;
-    double temp_val;
+    char* end;
     ND_int count = 0;
 
     while (*p)
     {
-        if (isdigit(*p) || ((*p == '-' || *p == '+') && isdigit(*(p + 1))))
+        double val = strtod(p, &end);
+        // Attempt to parse a double
+
+        if (p == end)
         {
-            temp_val = strtod(p, &q);
-
-            if (p == q)
-            {
-                break;
-            }
-            else
-            {
-                p = q;
-            }
-
-            if (out != NULL)
-            {
-                out[count] = temp_val;
-            }
-            ++count;
+            p++;
+            // No conversion occurred, advance manually to skip non-numeric char
         }
         else
         {
-            ++p;
+            if (out != NULL && count < out_size)
+            {
+                out[count] = val;
+            }
+            count++;
+            p = end;
+            // Advance p to where strtod stopped parsing
         }
     }
     return count;
@@ -77,29 +89,45 @@ ND_int parser_doubles_from_string(const char* str, ELPH_float* out)
 
 bool string_start_with(char* str, char* compare_str, bool trim)
 {
-    /*
-    Check if given string starts with a substring
-    */
-    char* a;
-    char* b;
-    a = str;
-    b = compare_str;
+    if (str == NULL || compare_str == NULL)
+    {
+        return false;
+    }
+
+    char* a = str;
+    char* b = compare_str;
+
     if (trim)
     {
-        while (isspace(*a))
+        // Trim leading whitespace
+        while (isspace((unsigned char)*a))
         {
             ++a;
         }
-        while (isspace(*b))
+        while (isspace((unsigned char)*b))
         {
             ++b;
         }
     }
-    if (b[0] != a[0])
+
+    // Determine length of compare_str without trailing whitespace
+    size_t blen = strlen(b);
+    if (trim)
+    {
+        while (blen > 0 && isspace((unsigned char)b[blen - 1]))
+        {
+            --blen;
+        }
+    }
+
+    // If compare string is empty after trimming
+    if (blen == 0)
     {
         return false;
     }
-    return !strncmp(a, b, strlen(b));
+
+    // Compare only up to trimmed length
+    return strncmp(a, b, blen) == 0;
 }
 
 bool string_end_with(char* str, char* compare_str, bool trim)
@@ -107,37 +135,62 @@ bool string_end_with(char* str, char* compare_str, bool trim)
     /*
     Check if given string ends with a substring
     */
-    char* temp_str =
-        malloc(sizeof(char) * (strlen(str) + strlen(compare_str) + 2));
-    CHECK_ALLOC(temp_str);
+    if (str == NULL || compare_str == NULL)
+    {
+        return false;
+    }
 
-    char* a = temp_str;
-    char* b = temp_str + strlen(str) + 1;
+    size_t s_len = strlen(str);
+    size_t c_len = strlen(compare_str);
 
-    strcpy(a, str);
-    strcpy(b, compare_str);
+    if (c_len == 0)
+    {
+        return true;
+    }
+    if (s_len == 0)
+    {
+        return false;
+    }
 
-    str_reverse_in_place(a);
-    str_reverse_in_place(b);
+    const char* s_end = str + s_len - 1;
+    // Point to the last character of str
+
+    const char* c_start = compare_str;
+
+    const char* c_end = compare_str + c_len - 1;
+    // Point to the last character of compare_str
+
     if (trim)
     {
-        while (isspace(*a))
+        while (s_end >= str && isspace((unsigned char)*s_end))
         {
-            ++a;
+            s_end--;
+            // Backtrack past trailing whitespace in str
         }
-        while (isspace(*b))
+        while (c_end >= compare_str && isspace((unsigned char)*c_end))
         {
-            ++b;
+            c_end--;
+            // Backtrack past trailing whitespace in compare_str
+        }
+        while (c_start <= c_end && isspace((unsigned char)*c_start))
+        {
+            c_start++;
+            // trim leading whitespace in compare_str
         }
     }
 
-    bool ret_value = !strncmp(a, b, strlen(b));
-    if (b[0] != a[0])
+    while (c_end >= c_start)
     {
-        ret_value = false;
+        if (s_end < str || *s_end != *c_end)
+        {
+            return false;
+        }
+
+        s_end--;
+        c_end--;
     }
-    free(temp_str);
-    return ret_value;
+
+    return true;
 }
 
 char* str_reverse_in_place(char* str)
@@ -145,6 +198,11 @@ char* str_reverse_in_place(char* str)
     /*
     Do a inplace reversing of string
     */
+    if (str == NULL)
+    {
+        return NULL;
+    }
+    //
     ND_int len = strlen(str);
 
     if (len == 0)
@@ -168,20 +226,197 @@ char* str_reverse_in_place(char* str)
 void str_replace_chars(char* str_in, const char* delimters,
                        const char* replace_chars)
 {
-    ND_int ndelimters = strlen(delimters);
-    // if  ndelimters != strlen(replace_chars) buffer overflow
-
-    ND_int str_in_len = strlen(str_in);
-
-    for (ND_int i = 0; i < str_in_len; ++i)
+    // It is responsiblity of the user to give same number of
+    // delimters and replace_chars. Note that '\0' is not allowed
+    // in delimters but is allowed in replace_chars.
+    if (!str_in || !delimters || !replace_chars)
     {
-        for (ND_int j = 0; j < ndelimters; ++j)
+        return;
+    }
+
+    unsigned char map[256];
+    // Create a generic map where each char maps to itself initially
+
+    for (int i = 0; i < 256; ++i)
+    {
+        map[i] = (unsigned char)i;
+    }
+
+    const char* d = delimters;
+    const char* r = replace_chars;
+
+    while (*d)
+    {
+        map[(unsigned char)*d] = (unsigned char)*r;
+        // Update the map: delimiter character points to replacement character
+        d++;
+        r++;
+    }
+
+    char* p = str_in;
+    while (*p)
+    {
+        *p = (char)map[(unsigned char)*p];
+        // Replace in O(1) using the lookup table
+        p++;
+    }
+}
+
+int my_strcasecmp(const char* a, const char* b)
+{
+    if (!a || !b)
+    {
+        return (a == b) ? 0 : -1;
+    }
+
+    while (*a && *b)
+    {
+        int diff = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        if (diff != 0)
         {
-            if (str_in[i] == delimters[j])
+            return diff;
+        }
+        a++;
+        b++;
+    }
+    return tolower((unsigned char)*a) - tolower((unsigned char)*b);
+}
+
+bool parse_bool_input(const char* str)
+{
+    if (!str)
+    {
+        return false;
+    }
+
+    const char* s = str;
+
+    // Skip leading whitespace
+    while (*s && isspace((unsigned char)*s))
+    {
+        s++;
+    }
+
+    // Empty string after trimming
+    if (*s == '\0')
+    {
+        return false;
+    }
+
+    // Check for common true values (case-insensitive)
+    if (my_strcasecmp(s, ".true.") == 0 || my_strcasecmp(s, "true") == 0 ||
+        my_strcasecmp(s, "yes") == 0 || my_strcasecmp(s, "on") == 0 ||
+        (*s == '1' && *(s + 1) == '\0'))
+    {
+        return true;
+    }
+
+    // Check for common false values (case-insensitive)
+    else if (my_strcasecmp(s, ".false.") == 0 ||
+             my_strcasecmp(s, "false") == 0 || my_strcasecmp(s, "no") == 0 ||
+             my_strcasecmp(s, "off") == 0 || (*s == '0' && *(s + 1) == '\0'))
+    {
+        return false;
+    }
+
+    error_msg(
+        ".true./true/yes/on/1 or .false./false/no/off/0 (case insensitive) are "
+        "only accepted.");
+    // Default to false for unrecognized input
+    return false;
+}
+
+void strip_quotes_in_string(char* s)
+{
+    char* start = s;
+    char* end;
+    char quote;
+
+    if (!s || !*s)
+    {
+        return;
+    }
+
+    size_t s_len = strlen(s);
+    // return incase of single quotes
+    if (s_len == 1)
+    {
+        return;
+    }
+    /* Must start and end with same quote */
+    quote = s[0];
+    end = s + s_len - 1;
+
+    if ((quote == '"' || quote == '\'') && *end == quote)
+    {
+        /* Move inside the quotes */
+        start++;
+        end--;
+
+        /* Trim leading whitespace inside quotes */
+        while (start <= end && isspace((unsigned char)*start))
+        {
+            start++;
+        }
+
+        /* Trim trailing whitespace inside quotes */
+        while (end >= start && isspace((unsigned char)*end))
+        {
+            end--;
+        }
+
+        /* Copy cleaned string back */
+        memmove(s, start, (size_t)(end - start + 1));
+        s[end - start + 1] = '\0';
+    }
+}
+
+void strip_comment_in_string(char* buf, const char comment_char,
+                             const bool ignore_in_quotes)
+{
+    if (!buf)
+    {
+        return;
+    }
+
+    if (!ignore_in_quotes)
+    {
+        char* p = strchr(buf, comment_char);
+        if (p)
+        {
+            *p = '\0';
+        }
+        return;
+    }
+
+    char* p = buf;
+    char quote = 0;
+
+    while (*p)
+    {
+        if (quote)
+        {
+            if (*p == '\\' && p[1])
             {
-                str_in[i] = replace_chars[j];
+                p++;  // skip escaped char
+            }
+            else if (*p == quote)
+            {
+                quote = 0;
+            }
+        }
+        else
+        {
+            if (*p == '"' || *p == '\'')
+            {
+                quote = *p;
+            }
+            else if (*p == comment_char)
+            {
+                *p = '\0';
                 break;
             }
         }
+        p++;
     }
 }

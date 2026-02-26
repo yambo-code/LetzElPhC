@@ -20,6 +20,10 @@ void get_KplusQ_idxs(const ND_int Nbz, const ELPH_float* kpoints,
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+#if !defined(ARRAY_LEN)
+#define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
+
 /* numerical_func.c */
 ELPH_float legendre(int l_val, int m_val, ELPH_float x_in);
 ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec);
@@ -81,3 +85,17 @@ void matmul_float(const char TransA, const char TransB, const ELPH_float* arr_A,
                   const ELPH_float alpha, const ELPH_float beta,
                   const ND_int ldA, const ND_int ldB, const ND_int ldC,
                   const ND_int m, const ND_int n, const ND_int k);
+
+int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
+                          const ND_int LDA, ELPH_cmplx* A, ELPH_float* w);
+
+ND_int orthogonal_projection(const ND_int M, const ND_int N, const ND_int LDA,
+                             ELPH_float* A, ELPH_float* x0,
+                             const ELPH_float tol);
+
+int lsmr_solver(ND_int m, ND_int n,
+                void (*matvec)(const int, const double* restrict,
+                               double* restrict, void*),
+                void* userdata, const double* restrict b, double damp,
+                double atol, double btol, double conlim, ND_int maxiter,
+                double* restrict x, ND_int* itn_out);

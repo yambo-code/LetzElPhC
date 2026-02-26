@@ -21,6 +21,10 @@ void apply_trans_wfc(const ELPH_float* trans_vec, const ELPH_float* kvec,
                      const ELPH_float* gvecs, ELPH_cmplx* wfc_G,
                      const bool conjugate);
 
+// gen_fftbox.c
+void get_fft_box(const ELPH_float EcutRy, const ELPH_float* blat,
+                 ND_int* fft_box, MPI_Comm commK);
+
 /* su2mat.c */
 void SU2mat(const ELPH_float* sym_in, const ND_int nspinor,
             const bool invert_sym, const bool time_rev, ELPH_cmplx* su2mat);

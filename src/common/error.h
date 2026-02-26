@@ -9,6 +9,9 @@
 #define ERR_FILE_OPEN_WRITE 2  // cannot open file to write
 #define ERR_FILE_COPY_FAIL 3   // copying files failed
 
+// supress unused warning.
+#define UNUSED_VAR(x) (void)(x);
+
 // check overflow
 #define CHECK_OVERFLOW_ERROR(var, max_var_limit)                        \
     {                                                                   \

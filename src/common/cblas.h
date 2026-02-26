@@ -105,6 +105,29 @@ extern "C"
                 CBLAS_INT* lda, double* w, double _Complex* work,
                 CBLAS_INT* lwork, double* rwork, CBLAS_INT* info);
 
+    void cheev_(char* jobz, char* uplo, CBLAS_INT* n, float _Complex* a,
+                CBLAS_INT* lda, float* w, float _Complex* work,
+                CBLAS_INT* lwork, float* rwork, CBLAS_INT* info);
+
+    void dgeqp3_(const CBLAS_INT* m, const CBLAS_INT* n, double* a,
+                 const CBLAS_INT* lda, CBLAS_INT* jpvt, double* tau,
+                 double* work, const CBLAS_INT* lwork, CBLAS_INT* info);
+
+    void sgeqp3_(const CBLAS_INT* m, const CBLAS_INT* n, float* a,
+                 const CBLAS_INT* lda, CBLAS_INT* jpvt, float* tau, float* work,
+                 const CBLAS_INT* lwork, CBLAS_INT* info);
+
+    void sormqr_(const char* side, const char* trans, const CBLAS_INT* m,
+                 const CBLAS_INT* n, const CBLAS_INT* k, const float* a,
+                 const CBLAS_INT* lda, const float* tau, float* c,
+                 const CBLAS_INT* ldc, float* work, const CBLAS_INT* lwork,
+                 CBLAS_INT* info);
+
+    void dormqr_(const char* side, const char* trans, const CBLAS_INT* m,
+                 const CBLAS_INT* n, const CBLAS_INT* k, const double* a,
+                 const CBLAS_INT* lda, const double* tau, double* c,
+                 const CBLAS_INT* ldc, double* work, const CBLAS_INT* lwork,
+                 CBLAS_INT* info);
     /*
      * ===========================================================================
      * Prototypes for level 1 BLAS functions (complex are recast as routines)

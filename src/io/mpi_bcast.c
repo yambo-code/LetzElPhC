@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common/dtypes.h"
 #include "common/error.h"
@@ -74,6 +75,7 @@ void Bcast_symmetries(ND_int nsyms, struct symmetry* symms, int root,
 
     int mpi_error;
     struct symmetry dummy;
+    memset(&dummy, 0, sizeof(dummy));
 
     int lengths[3] = {9, 3, 1};
     MPI_Aint displacements[3], base_address;

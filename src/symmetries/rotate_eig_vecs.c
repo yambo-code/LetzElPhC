@@ -17,6 +17,7 @@ void rotate_eig_vecs(struct symmetry* sym, const struct Lattice* lattice,
                      const ELPH_float* qpt, const ELPH_cmplx* eig_q,
                      ELPH_cmplx* eig_Sq)
 {
+    // rotate phonon eigenvectors/displacement vectors.
     // qpt is in crsytal coordinates (un rotated q point)
     ELPH_start_clock("Phonon eig rotation");
 

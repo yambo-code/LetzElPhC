@@ -1,27 +1,22 @@
 /*
 This file contains functions which are os dependent.
 */
+#include <ctype.h>
 #include <errno.h>
 #include <mpi.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "ELPH_copy.h"
+#include "common/ELPH_POSIX_func.h"
+#include "common/ELPH_copy.h"
 #include "common/cwalk/cwalk.h"
+#include "common/dtypes.h"
 #include "common/error.h"
 #include "common/string_func.h"
 #include "elphC.h"
 #include "io/ezxml/ezxml.h"
 #include "preprocessor.h"
-
-#if defined(_WIN32)
-#include <direct.h>
-#define mkdir(path, mode) _mkdir(path)
-#else
-#include <sys/stat.h>
-#include <sys/types.h>
-#endif
 
 static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
                            ND_int buffer_size);
@@ -48,7 +43,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
     else
     {
-        strncpy_custom(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
+        strlcpy_custom(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
                        ELPH_MAX_ENV_SIZE);
     }
     //
@@ -60,12 +55,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    char* read_buf = malloc(4 * PH_X_INP_READ_BUF_SIZE);
+    char* read_buf = malloc(3 * PH_X_INP_READ_BUF_SIZE);
     CHECK_ALLOC(read_buf);
 
     char* key_str = read_buf + PH_X_INP_READ_BUF_SIZE;
     char* val_str = read_buf + 2 * PH_X_INP_READ_BUF_SIZE;
-    char* tmp_buf = read_buf + 3 * PH_X_INP_READ_BUF_SIZE;
 
     char* inputs_vals = malloc(5 * PH_X_INP_READ_BUF_SIZE);
     CHECK_ALLOC(inputs_vals);
@@ -85,7 +79,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     env_var_tmp = getenv("ESPRESSO_TMPDIR");
     if (env_var_tmp)
     {
-        strncpy_custom(out_dir, env_var_tmp, PH_X_INP_READ_BUF_SIZE);
+        strlcpy_custom(out_dir, env_var_tmp, PH_X_INP_READ_BUF_SIZE);
     }
     else
     {
@@ -101,82 +95,148 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     while (fgets(read_buf, PH_X_INP_READ_BUF_SIZE, fp))
     {
         // remove comments
-        str_replace_chars(read_buf, ",'\"!", "   \0");
+        strip_comment_in_string(read_buf, '!', true);
 
         if (strlen(read_buf) == 0)
         {
             continue;
         }
-        // now read key
-        char* token = strtok(read_buf, "=");
-        strncpy_custom(key_str, token, PH_X_INP_READ_BUF_SIZE);
-        // lower case the key
-        lowercase_str(key_str);
-        //  read value
-        token = strtok(NULL, "=");
-        if (token)
+        // read keys and values
+        const char* p = read_buf;
+        while (*p)
         {
-            strncpy_custom(val_str, token, PH_X_INP_READ_BUF_SIZE);
-        }
-        else
-        {
-            // line does not contain key value
-            continue;
-        }
-
-        // remove spaces
-        sscanf(key_str, "%s", tmp_buf);
-        strncpy_custom(key_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
-
-        sscanf(val_str, "%s", tmp_buf);
-        strncpy_custom(val_str, tmp_buf, PH_X_INP_READ_BUF_SIZE);
-
-        if (!strcmp(key_str, "ldisp"))
-        {
-            // lowercase val_str
-            lowercase_str(val_str);
-
-            if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") ||
-                !strcmp(val_str, "t"))
+            // Skip leading delimiters (spaces, commas)
+            while (*p && (isspace((unsigned char)*p) || *p == ','))
             {
-                ldisp = true;
+                p++;
             }
-        }
-        //
-        else if (!strcmp(key_str, "outdir"))
-        {
-            strncpy_custom(out_dir, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "fildyn"))
-        {
-            strncpy_custom(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "fildvscf"))
-        {
-            strncpy_custom(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "fildrho"))
-        {
-            strncpy_custom(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "prefix"))
-        {
-            strncpy_custom(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
-        }
-        //
-        else if (!strcmp(key_str, "electron_phonon"))
-        {
-            // lowercase val_str
-            lowercase_str(val_str);
-
-            if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") ||
-                !strcmp(val_str, "wannier"))
+            if (*p == '\0')
             {
-                elph_yambo = true;
+                break;
+            }
+
+            ND_int k_idx = 0;
+            // Read Key
+            while (*p && *p != '=' && !isspace((unsigned char)*p))
+            {
+                // Gfortran ignores , in key, very weird, this is not supported
+                // here
+                if (k_idx < PH_X_INP_READ_BUF_SIZE - 1)
+                {
+                    key_str[k_idx++] = *p;
+                }
+                p++;  // Always advance p even if buffer is full to avoid stuck
+                      // loop
+            }
+            key_str[k_idx] = '\0';  // Safe because we checked < SIZE - 1
+
+            // Find Assignment Operator '='
+            while (*p && *p != '=')
+            {
+                p++;
+            }
+            if (*p == '=')
+            {
+                p++;
+            }
+
+            // Skip whitespace after '='
+            while (*p && isspace((unsigned char)*p))
+            {
+                p++;
+            }
+
+            // Read Value
+            ND_int v_idx = 0;
+            if (*p == '\'' || *p == '"')
+            {
+                // we want to remove quotes
+                // Quoted Value
+                char quote_type = *p++;
+
+                while (*p && *p != quote_type)
+                {
+                    if (v_idx < PH_X_INP_READ_BUF_SIZE - 1)
+                    {
+                        val_str[v_idx++] = *p;
+                    }
+                    p++;
+                }
+                if (*p == quote_type)
+                {
+                    p++;
+                }
+            }
+            else
+            {
+                // Unquoted Value (stop at comma or space)
+                while (*p && *p != ',' && !isspace((unsigned char)*p))
+                {
+                    if (v_idx < PH_X_INP_READ_BUF_SIZE - 1)
+                    {
+                        val_str[v_idx++] = *p;
+                    }
+                    p++;
+                }
+            }
+            val_str[v_idx] = '\0';  // Safe null termination
+
+            // No value return
+            if (0 == v_idx)
+            {
+                continue;
+            }
+
+            // lowercase key
+            lowercase_str(key_str);
+
+            if (!strcmp(key_str, "ldisp"))
+            {
+                // lowercase val_str
+                lowercase_str(val_str);
+
+                if (!strcmp(val_str, ".true.") || !strcmp(val_str, "1") ||
+                    !strcmp(val_str, "t") || !strcmp(val_str, "true"))
+                {
+                    ldisp = true;
+                }
+            }
+            //
+            else if (!strcmp(key_str, "outdir"))
+            {
+                strlcpy_custom(out_dir, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "fildyn"))
+            {
+                strlcpy_custom(dyn_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "fildvscf"))
+            {
+                strlcpy_custom(dvscf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "fildrho"))
+            {
+                strlcpy_custom(drho_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "prefix"))
+            {
+                strlcpy_custom(scf_prefix, val_str, PH_X_INP_READ_BUF_SIZE);
+            }
+            //
+            else if (!strcmp(key_str, "electron_phonon"))
+            {
+                // lowercase val_str
+                lowercase_str(val_str);
+
+                if (!strcmp(val_str, "yambo") || !strcmp(val_str, "dvscf") ||
+                    !strcmp(val_str, "wannier"))
+                {
+                    elph_yambo = true;
+                }
             }
         }
     }
@@ -221,7 +281,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     // from now we use read buffer as file_name_buf
 
     // now create the ph_save directory
-    if (mkdir(PH_SAVE_DIR_NAME, 0777))
+    if (ELPH_mkdir(PH_SAVE_DIR_NAME))
     {
         if (errno != EEXIST)
         {
@@ -271,8 +331,13 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     for (ND_int itype = 0; itype < ntype; ++itype)
     {
-        char* tmp_str =
-            ezxml_get(atom_specs, "species", itype, "pseudo_file", -1)->txt;
+        ezxml_t pseudo_file_xml =
+            ezxml_get(atom_specs, "species", (int)itype, "pseudo_file", -1);
+        if (NULL == pseudo_file_xml)
+        {
+            error_msg("Error reading pseudo pot file");
+        }
+        char* tmp_str = pseudo_file_xml->txt;
 
         cwk_path_join_multiple(
             (const char*[]){out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,

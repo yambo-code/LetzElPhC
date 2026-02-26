@@ -15,21 +15,21 @@ typedef struct map_node_t map_node_t;
 
 typedef struct
 {
-    map_node_t **buckets;
+    map_node_t** buckets;
     unsigned nbuckets, nnodes;
 } map_base_t;
 
 typedef struct
 {
     unsigned bucketidx;
-    map_node_t *node;
+    map_node_t* node;
 } map_iter_t;
 
 #define map_t(T)         \
     struct               \
     {                    \
         map_base_t base; \
-        T *ref;          \
+        T* ref;          \
         T tmp;           \
     }
 
@@ -48,15 +48,15 @@ typedef struct
 
 #define map_next(m, iter) map_next_(&(m)->base, iter)
 
-void map_deinit_(map_base_t *m);
-void *map_get_(map_base_t *m, const char *key);
-int map_set_(map_base_t *m, const char *key, void *value, int vsize);
-void map_remove_(map_base_t *m, const char *key);
+void map_deinit_(map_base_t* m);
+void* map_get_(map_base_t* m, const char* key);
+int map_set_(map_base_t* m, const char* key, void* value, int vsize);
+void map_remove_(map_base_t* m, const char* key);
 map_iter_t map_iter_(void);
-const char *map_next_(map_base_t *m, map_iter_t *iter);
+const char* map_next_(map_base_t* m, map_iter_t* iter);
 
-typedef map_t(void *) map_void_t;
-typedef map_t(char *) map_str_t;
+typedef map_t(void*) map_void_t;
+typedef map_t(char*) map_str_t;
 typedef map_t(int) map_int_t;
 typedef map_t(char) map_char_t;
 typedef map_t(float) map_float_t;
