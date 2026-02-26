@@ -17,21 +17,14 @@ Before using LetzElPhC, you must generate the necessary electronic and phononic 
 ### 1.1 SCF Calculation
 Perform a self-consistent field (SCF) calculation with `pw.x` to find the ground state of your system.
 
-**Important:** Ensure you use symmorphic symmetries if required by your Yambo version or setup.
-
-```fortran
-&system
-  ...
-  force_symmorphic=.true.
-  ...
-/
-```
 
 ### 1.2 DFPT Calculation (Phonons)
-Run `ph.x` to obtain dynamical matrices and potential changes ($\delta V_{SCF}$) on a uniform q-point grid.
+Run `ph.x` to obtain dynamical matrices and deformation potential due to phonons ($\delta V_{SCF}$) on a uniform q-point grid.
 
-*   **Crucial**: You must set `dvscf = .true.` (or ensure `fildvscf` is set) to save the potential changes required by LetzElPhC.
-*   The phonon q-grid must be commensurate with the k-grid used in the next step.
+!!! warning "Warning"
+    Ensure `fildvscf` is set to save the potential changes required by LetzElPhC.
+
+    The phonon q-grid must be commensurate with the k-grid used in the next step.
 
 ```fortran
 prefix_dvscf
@@ -56,6 +49,9 @@ K_POINTS automatic
 Nx Ny Nz 0 0 0
 ```
 
+!!! Warning "Shifted grids"
+    Always avoid shifted grids
+
 ### 1.4 Yambo Initialization
 Initialize the Yambo database from the NSCF results.
 
@@ -77,6 +73,9 @@ First, prepare the phonon data for LetzElPhC using the built-in preprocessor.
     ```bash
     lelphc -pp --code=qe -F PH.X_input_file
     ```
+
+    The flag `-pp` tells the code to run the preprocessor instead of electron-phonon calculation.
+
     *   `PH.X_input_file`: The input file used for `ph.x` in step 1.2.
 3.  This creates a **`ph_save`** directory containing the necessary files.
     *   *Optional*: You can rename the output directory by setting the environment variable `ELPH_PH_SAVE_DIR`.
@@ -201,10 +200,21 @@ ls SAVE/ndb.elph*
 
 ## 3. Interpolation Calculation
 
-After computing the matrix elements on the coarse grid, you can interpolate them to a finer grid.
+Computing phonons (dynamical matrices and deformation potentials) is often computationally demanding; therefore, it is necessary to rely on interpolation methods. This is commonly done for dynamical matrices and has become the default approach for obtaining phonon dispersions.
+
+In this section, we discuss how to use the LetzElPhC code to generate dynamical matrices and deformation potentials by performing phonon calculations on a coarse grid and subsequently obtaining results on a much finer grid through Fourier interpolation.
+
+The procedure is as follows
 
 1.  Create an input file for interpolation (e.g., `interpolate.in`).
-2.  Run the interpolation executable (e.g., `lelphc_interp`).
+2.  Run the `lelphc` preprocessor:
+    ```bash
+    lelphc -i --code=qe -F interpolate.in
+    ```
+3. A new ph_save directory is created, which can be directly used as input for the electron–phonon code to compute phonons on fine q-points, as usual.
+
+    The flag `-i` tells the code to run the interpolation program.
+
 
 #### Input File Description (`interpolate.in`)
 
@@ -214,6 +224,8 @@ ph_save_dir = ph_save
 
 ph_save_interpolation_dir = ph_save_interpolation
 # Directory where interpolation results will be saved
+# After the interpolation run is done, you can give this 
+# directory to electron-phonon code to compute on fine grid.
 
 interpolate_dvscf = true
 # Whether to interpolate the deformation potential (dvscf)
@@ -225,7 +237,7 @@ asr = "simple"
 # Type of ASR to apply (e.g., "simple")
 
 loto = false
-# Apply LO-TO splitting corrections
+# If true, apply LO-TO splitting corrections at Gamma
 
 loto_dir = 0.1 0.1 0
 # Direction approaching Gamma point for LO-TO splitting
@@ -235,8 +247,8 @@ nq2 = 1
 nq3 = 1
 # Dimensions of the fine q-point grid for interpolation
 
-write_dVbare = true
-# Whether to write the bare potential changes
+write_dVbare = false 
+# Whether to write the local part of bare potential changes
 
 eta_induced = 1.0
 # Ewald parameter for screened interactions

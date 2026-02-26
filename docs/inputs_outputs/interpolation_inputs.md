@@ -51,7 +51,11 @@ These variables control the interpolation calculations.
     * **Type:** `LOGICAL`
     * **Default:** `False`
     * **Description:**
-        If `True`, applies non-analytic (LO-TO) splitting corrections to the dynamical matrices and potentials.
+        If `True`, applies non-analytic (LO-TO) splitting corrections to the dynamical matrices at $\Gamma$ point.
+
+        It should be noted that this flag does not completely switch off LO-TO treatment. 
+        It is only intended for switch on/off LO/TO treatment at the Gamma point.
+        If you wish to completely disable LO-TO splitting, please remove or rename the `tensors.xml` file in the `ph_save` directory.
 
         If `qlist_file` is provided instead of `nq1`, `nq2`, and `nq3`, then `loto` and `loto_dir` variables are ignored.
         See `qlist_file` for details.
@@ -64,6 +68,8 @@ These variables control the interpolation calculations.
     * **Description:**
         A vector (in cartesian units) specifying the direction approaching the $\Gamma$ point ($q \to 0$) for LO-TO splitting.
         Internally, the code normalizes the vector, so the user does not need to provide a normalized vector.
+        
+        If `loto = false`, this flag is ignored.
 
         If the magnitude of the vector is smaller than $10^{-5}$, it is ignored and treated as `loto = false`.
 
