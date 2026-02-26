@@ -68,6 +68,15 @@ struct symmetry
     // if this symmetry is time reversal
 };
 
+enum asr_kind
+{
+    ASR_NONE = 0,
+    ASR_SIMPLE,
+    ASR_CRYSTAL,
+    ASR_ALL,
+    ASR_ALL_HUANG
+};
+
 struct Lattice
 {
     // type which contains all information about the crystal structure

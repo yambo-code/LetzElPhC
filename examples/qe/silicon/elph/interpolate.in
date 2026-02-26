@@ -3,10 +3,12 @@ ph_save_dir = ph_save
 
 ph_save_interpolation_dir = ph_save_interpolation
 
-asr = true
+nosym = false 
 # you can use .true., .True. .TRUE., 1, or false, False, FALSE, .FALSE., 0
 
-asr_kind = "simple"
+asr = "simple"
+
+zasr = "simple"
 
 interpolate_dvscf = true
 

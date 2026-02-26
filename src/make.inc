@@ -27,6 +27,7 @@ HDF5_LIB            :=  -L${YAMBO_EXT_LIBS}/gfortran/mpifort/v4/parallel/lib -lh
 #NETCDF_LIB 	    :=  -L/Users/murali/softwares/core/lib -lnetcdf
 #HDF5_LIB            :=  -L/opt/homebrew/lib  -lhdf5
 
+
 INC_DIRS            := 
 LIBS                := 
 

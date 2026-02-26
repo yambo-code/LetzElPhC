@@ -11,6 +11,7 @@
 
 #include "common/error.h"
 #include "elphC.h"
+#include "io/ezxml/ezxml.h"
 #include "qe_io.h"
 
 void write_dyn_qe(const char* file_name, ND_int natom, const ELPH_float* qpts,
@@ -215,5 +216,27 @@ void write_qpts_qe(const char* dyn_file, ND_int nqpt_iBZ,
                 qpts[3 * i + 2]);
     }
 
+    fclose(fp);
+}
+
+void write_identity_patterns_xml(const char* file_name)
+{
+    // Writes a placeholder XML file indicating that the pattern basis
+    // is the identity matrix.
+    //
+    // This file explicitly signals to Letzelph that the dvscf data are
+    // expressed in the Cartesian basis, not in pattern_xml.
+    //
+    // In principle, writing this file could be skipped. However, if
+    // patterns.xml is accidentally omitted without this placeholder,
+    // the code may misinterpret the basis, which could lead to
+    // serious errors. This placeholder acts as a safety guard.
+
+    FILE* fp = fopen(file_name, "w");
+    if (!fp)
+    {
+        error_msg("Error creating letzelphc pattern file");
+    }
+    fprintf(fp, "<DVSCF_IS_IN_CARTESIAN_BASIS></DVSCF_IS_IN_CARTESIAN_BASIS>");
     fclose(fp);
 }

@@ -263,7 +263,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
             bool isym_trev = ph_trevs[isym];
 
             // It should be noted that we use Sx + v convention, but qe uses
-            // S(x+v) so our v = S*tau_qe
+            // Sx - v so our v = -tau_qe
             ELPH_float* vec_tmp = ph_sym_tau + isym * 3;
             ELPH_float* vec_tmp_trev =
                 ph_sym_tau + (isym + phonon->nph_sym) * 3;
@@ -290,17 +290,23 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
             }
             // first to cartisian units
             MatVec3f(lat_vec, vec_tmp, false, vec_tmp_trev);
-            // compute S*tau
-            MatVec3f(sym_tmp, vec_tmp_trev, false, vec_tmp);
-            // we also negate the frac .tras. vec (just a convention used in
-            // this code) for time reversal symmetry. THis is aleady done when
-            // we do S*tau if S is timerev. as S already contained -negation.
-            // The trev counterpart case must be reversed
+            //
+            // set v = -v_qe
             for (int ix = 0; ix < 3; ++ix)
             {
-                vec_tmp_trev[ix] = -vec_tmp[ix];
+                vec_tmp[ix] = -vec_tmp_trev[ix];
             }
-
+            if (isym_trev)
+            {
+                // we also negate the frac .tras. vec (just a convention used in
+                // this code) for time reversal symmetry.
+                for (int ix = 0; ix < 3; ++ix)
+                {
+                    vec_tmp[ix] = -vec_tmp[ix];
+                    vec_tmp_trev[ix] = -vec_tmp_trev[ix];
+                }
+            }
+            //
             memcpy(phonon->ph_syms[isym].Rmat, sym_tmp, sizeof(ELPH_float) * 9);
             memcpy(phonon->ph_syms[isym].tau, vec_tmp, sizeof(ELPH_float) * 3);
             phonon->ph_syms[isym].time_rev = isym_trev;

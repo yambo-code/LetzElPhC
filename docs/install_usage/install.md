@@ -3,7 +3,7 @@
 ## Mandatory Requirements
 
 *   **GNU Make**
-*   **C99 compiler** with complex number support (e.g., GCC, Clang, ICC, AMD C-Compiler, MinGW for Windows, PGI, or Arm C compilers).
+*   **C99 compiler** with complex number support (e.g., GCC, Clang, ICC, AMD C-Compiler, MinGW for Windows, PGI).
 *   **MPI implementation** supporting at least MPI-standard 2.1 (e.g., Open-MPI, MPICH, Intel MPI, Microsoft MPI).
 *   **FFTW-3** or **Intel-MKL**.
 *   **HDF5** and **NetCDF-C** libraries with **Parallel I/O support** (compiled with MPI).

@@ -36,8 +36,8 @@ void init_interpolation_usr_input(struct interpolation_usr_input** input)
     inp->ph_save_interpolation_dir = inp->ph_save_dir + READ_STR_LEN;
     inp->qlist_file = inp->ph_save_dir + 2 * READ_STR_LEN;
 
-    strncpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
-    strncpy_custom(inp->ph_save_interpolation_dir, "ph_save_interpolation",
+    strlcpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
+    strlcpy_custom(inp->ph_save_interpolation_dir, "ph_save_interpolation",
                    READ_STR_LEN);
     strcpy(inp->qlist_file, "");
     // qlist_file will be set to NULL later if no list is given.
@@ -45,8 +45,12 @@ void init_interpolation_usr_input(struct interpolation_usr_input** input)
     // defaults
     inp->interpolate_dvscf = true;
     //
-    inp->asr = true;
-    strncpy_custom(inp->asr_kind, "simple", sizeof(inp->asr_kind));
+    inp->nosym = false;
+    memset(inp->asr, 0, sizeof(inp->asr));
+    strlcpy_custom(inp->asr, "no", sizeof(inp->asr));
+    //
+    memset(inp->zasr, 0, sizeof(inp->zasr));
+    strlcpy_custom(inp->zasr, "no", sizeof(inp->zasr));
     //
     inp->loto = false;
     inp->loto_dir[0] = 0.0;
@@ -83,11 +87,14 @@ static void Bcast_interpolation_input_data(
     mpi_error = MPI_Bcast(&input->interpolate_dvscf, 1, MPI_C_BOOL, root, comm);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Bcast(&input->asr, 1, MPI_C_BOOL, root, comm);
+    mpi_error = MPI_Bcast(&input->nosym, 1, MPI_C_BOOL, root, comm);
     MPI_error_msg(mpi_error);
 
-    mpi_error = MPI_Bcast(input->asr_kind, sizeof(input->asr_kind), MPI_CHAR,
-                          root, comm);
+    mpi_error = MPI_Bcast(input->asr, sizeof(input->asr), MPI_CHAR, root, comm);
+    MPI_error_msg(mpi_error);
+
+    mpi_error =
+        MPI_Bcast(input->zasr, sizeof(input->zasr), MPI_CHAR, root, comm);
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Bcast(&input->loto, 1, MPI_C_BOOL, root, comm);
@@ -137,15 +144,21 @@ static int interpolation_input_handler(void* user, const char* section,
     }
 
     // add inputs from here. use else if
-    if (strcmp(name, "asr") == 0)
+    if (strcmp(name, "nosym") == 0)
     {
-        inp->asr = parse_bool_input(value);
+        inp->nosym = parse_bool_input(value);
     }
-    else if (strcmp(name, "asr_kind") == 0)
+    else if (strcmp(name, "asr") == 0)
     {
-        strncpy_custom(inp->asr_kind, value, sizeof(inp->asr_kind));
-        strip_quotes(inp->asr_kind);
-        lowercase_str(inp->asr_kind);
+        strlcpy_custom(inp->asr, value, sizeof(inp->asr));
+        strip_quotes_in_string(inp->asr);
+        lowercase_str(inp->asr);
+    }
+    else if (strcmp(name, "zasr") == 0)
+    {
+        strlcpy_custom(inp->zasr, value, sizeof(inp->zasr));
+        strip_quotes_in_string(inp->zasr);
+        lowercase_str(inp->zasr);
     }
     else if (strcmp(name, "interpolate_dvscf") == 0)
     {
@@ -167,13 +180,13 @@ static int interpolation_input_handler(void* user, const char* section,
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
-        strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
-        strip_quotes(inp->ph_save_dir);
+        strlcpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
+        strip_quotes_in_string(inp->ph_save_dir);
     }
     else if (strcmp(name, "ph_save_interpolation_dir") == 0)
     {
-        strncpy_custom(inp->ph_save_interpolation_dir, value, READ_STR_LEN);
-        strip_quotes(inp->ph_save_interpolation_dir);
+        strlcpy_custom(inp->ph_save_interpolation_dir, value, READ_STR_LEN);
+        strip_quotes_in_string(inp->ph_save_interpolation_dir);
     }
     else if (strcmp(name, "nq1") == 0)
     {
@@ -203,8 +216,8 @@ static int interpolation_input_handler(void* user, const char* section,
     //
     else if (strcmp(name, "qlist_file") == 0)
     {
-        strncpy_custom(inp->qlist_file, value, READ_STR_LEN);
-        strip_quotes(inp->qlist_file);
+        strlcpy_custom(inp->qlist_file, value, READ_STR_LEN);
+        strip_quotes_in_string(inp->qlist_file);
     }
     else
     {

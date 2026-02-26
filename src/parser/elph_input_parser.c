@@ -37,9 +37,9 @@ void init_elph_usr_input(struct elph_usr_input** input)
     inp->nqpool = 1;
     inp->start_bnd = 0;
     inp->end_bnd = 0;
-    strncpy_custom(inp->save_dir, "SAVE", READ_STR_LEN);
-    strncpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
-    strncpy_custom(inp->kernel_str, "dfpt", READ_STR_LEN);
+    strlcpy_custom(inp->save_dir, "SAVE", READ_STR_LEN);
+    strlcpy_custom(inp->ph_save_dir, "ph_save", READ_STR_LEN);
+    strlcpy_custom(inp->kernel_str, "dfpt", READ_STR_LEN);
     inp->kminusq = false;  // default is standard
 }
 
@@ -121,18 +121,18 @@ static int elph_input_handler(void* user, const char* section, const char* name,
     }
     else if (strcmp(name, "save_dir") == 0)
     {
-        strncpy_custom(inp->save_dir, value, READ_STR_LEN);
-        strip_quotes(inp->save_dir);
+        strlcpy_custom(inp->save_dir, value, READ_STR_LEN);
+        strip_quotes_in_string(inp->save_dir);
     }
     else if (strcmp(name, "ph_save_dir") == 0)
     {
-        strncpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
-        strip_quotes(inp->ph_save_dir);
+        strlcpy_custom(inp->ph_save_dir, value, READ_STR_LEN);
+        strip_quotes_in_string(inp->ph_save_dir);
     }
     else if (strcmp(name, "kernel") == 0)
     {
-        strncpy_custom(inp->kernel_str, value, READ_STR_LEN);
-        strip_quotes(inp->kernel_str);
+        strlcpy_custom(inp->kernel_str, value, READ_STR_LEN);
+        strip_quotes_in_string(inp->kernel_str);
         lowercase_str(inp->kernel_str);
     }
     else if (strcmp(name, "convention") == 0)

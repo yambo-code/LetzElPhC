@@ -88,3 +88,14 @@ void matmul_float(const char TransA, const char TransB, const ELPH_float* arr_A,
 
 int diagonalize_hermitian(const char jobz, const char uplo, const ND_int N,
                           const ND_int LDA, ELPH_cmplx* A, ELPH_float* w);
+
+ND_int orthogonal_projection(const ND_int M, const ND_int N, const ND_int LDA,
+                             ELPH_float* A, ELPH_float* x0,
+                             const ELPH_float tol);
+
+int lsmr_solver(ND_int m, ND_int n,
+                void (*matvec)(const int, const double* restrict,
+                               double* restrict, void*),
+                void* userdata, const double* restrict b, double damp,
+                double atol, double btol, double conlim, ND_int maxiter,
+                double* restrict x, ND_int* itn_out);

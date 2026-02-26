@@ -285,6 +285,7 @@ void find_qpt_grid(const ND_int nqpts, const ELPH_float* qpts, ND_int* q_grid)
     // given list of qpoints, it finds the phonon grid.
     // q_grid is 3 ints
 
+    bool is_gamma_centred = false;
     for (ND_int i = 0; i < 3; ++i)
     {
         q_grid[i] = 1;
@@ -292,12 +293,14 @@ void find_qpt_grid(const ND_int nqpts, const ELPH_float* qpts, ND_int* q_grid)
 
     for (ND_int i = 0; i < nqpts; ++i)
     {
+        bool is_gamma = true;
         for (ND_int ix = 0; ix < 3; ++ix)
         {
             ELPH_float qx = qpts[3 * i + ix] - floor(qpts[3 * i + ix]);
 
             if (fabs(qx) > ELPH_EPS && fabs(qx - 1) > ELPH_EPS)
             {
+                is_gamma = false;
                 qx = 1.0 / qx;
                 ND_int qx_int = rint(qx);
                 qx -= qx_int;
@@ -308,8 +311,16 @@ void find_qpt_grid(const ND_int nqpts, const ELPH_float* qpts, ND_int* q_grid)
                 }
             }
         }
+        if (is_gamma)
+        {
+            is_gamma_centred = true;
+        }
     }
 
+    if (!is_gamma_centred)
+    {
+        error_msg("Only Gamma centred grids supported.");
+    }
     // finally do a sanity check i.e the product of three dimensions are equal
     // to nqpts
     ND_int nqpt_prod = q_grid[0] * q_grid[1] * q_grid[2];

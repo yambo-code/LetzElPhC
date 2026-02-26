@@ -30,9 +30,18 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
                            ELPH_cmplx* dyn_mat_asr, const ELPH_float eta,
                            ELPH_cmplx* dyn_mat)
 {
+    // If atomic_masses as not NULL, this implies, we are passing mass
+    // normalized dynamical matrices, else we are passing dynamical matrices
+    // without 1/sqrt(Ma Mb) factor
+
     // compute the long range part
     add_ph_dyn_long_range_internal(qpt, lattice, phonon, Ggrid, sign,
                                    atomic_masses, eta, dyn_mat);
+    //
+    if (!dyn_mat_asr)
+    {
+        return;
+    }
     // now subtract the asr correction
     //
     ELPH_float factor = -1;
@@ -46,12 +55,18 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
     for (ND_int ia = 0; ia < lattice->natom; ++ia)
     {
         ELPH_cmplx* tmp_buf_ia = dyn_mat_asr + ia * 9;
+        ELPH_float ia_mass = 1.0;
+        if (atomic_masses)
+        {
+            ia_mass = 1.0 / atomic_masses[ia];
+        }
+        //
         for (ND_int i = 0; i < 3; ++i)
         {
             for (ND_int j = 0; j < 3; ++j)
             {
                 dyn_mat[(ia * 3 + i) * nmodes + ia * 3 + j] +=
-                    factor * tmp_buf_ia[3 * i + j];
+                    (factor * tmp_buf_ia[3 * i + j] * ia_mass);
             }
         }
     }
@@ -59,7 +74,6 @@ void add_ph_dyn_long_range(const ELPH_float* qpt, struct Lattice* lattice,
 
 void compute_dyn_lr_asr_correction(struct Lattice* lattice,
                                    struct Phonon* phonon, const ND_int* Ggrid,
-                                   const ELPH_float* atomic_masses,
                                    const ELPH_float eta,
                                    ELPH_cmplx* dyn_mat_asr)
 {
@@ -72,7 +86,7 @@ void compute_dyn_lr_asr_correction(struct Lattice* lattice,
         dyn_mat_asr[i] = 0.0;
     }
 
-    if (!phonon->epsilon || !phonon->Zborn)
+    if (!phonon->epsilon || (!phonon->Zborn && !phonon->Qpole))
     {
         return;
     }
@@ -86,8 +100,9 @@ void compute_dyn_lr_asr_correction(struct Lattice* lattice,
     }
 
     ELPH_float qpt_zero[3] = {0.0, 0.0, 0.0};
-    add_ph_dyn_long_range_internal(qpt_zero, lattice, phonon, Ggrid, 1,
-                                   atomic_masses, eta, tmp_dyn_mat);
+    // We donot want mass normalized.
+    add_ph_dyn_long_range_internal(qpt_zero, lattice, phonon, Ggrid, 1, NULL,
+                                   eta, tmp_dyn_mat);
 
     //
     for (ND_int ia = 0; ia < lattice->natom; ++ia)
@@ -120,6 +135,9 @@ static void add_ph_dyn_long_range_internal(
     // (3D) X. Gonze et al  Phys. Rev. B 50, 13035(R)
     // (2D ) T. Sohier et al Nano Lett. 2017, 17, 6, 3758–3763
     // (2D) S. Ponce et al PHYSICAL REVIEW B 107, 155424 (2023)
+    //
+    // if atomic_masses is NULL, then the dynamical matrices are not mass
+    // normalized.
     //
     if (!phonon->epsilon || (!phonon->Zborn && !phonon->Qpole))
     {
@@ -265,7 +283,10 @@ static void add_ph_dyn_long_range_internal(
             ELPH_cmplx qdot_tau = cexp(-I * (dot3_macro(qplusG, tau_k)));
             qdot_tau /= q_eps_q;
             qdot_tau *= decay_fac;
-            qdot_tau /= sqrt(atomic_masses[ia]);
+            if (atomic_masses)
+            {
+                qdot_tau /= sqrt(atomic_masses[ia]);
+            }
             //
             for (ND_int i = 0; i < 3; ++i)
             {

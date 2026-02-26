@@ -52,6 +52,19 @@ void interpolation_driver(const char* ELPH_input_file,
     print_info_msg(mpi_comms->commW_rank,
                    "********** Interpolation Program started **********");
 
+    // first create ph_interpolation directory and copy necessary file
+    if (0 == mpi_comms->commW_rank)
+    {
+        if (dft_code == DFT_CODE_QE)
+        {
+            copy_ph_save_to_ph_interpolation_qe(ph_save, ph_save_interpolated);
+        }
+    }
+    // Barrier is important to ensure we only move forward,
+    // once copying is done.
+    mpi_error = MPI_Barrier(mpi_comms->commW);
+    MPI_error_msg(mpi_error);
+
     struct Lattice* lattice = malloc(sizeof(struct Lattice));
     CHECK_ALLOC(lattice);
     init_lattice_type(lattice);
@@ -67,6 +80,11 @@ void interpolation_driver(const char* ELPH_input_file,
     const bool interpolate_dvscf = input_data->interpolate_dvscf;
     const bool write_dVbare = input_data->write_dVbare;
 
+    const enum asr_kind asr_fc =
+        asr_kind_from_string(input_data->asr, !mpi_comms->commW_rank);
+    const enum asr_kind asr_born =
+        asr_kind_from_string(input_data->zasr, !mpi_comms->commW_rank);
+    //
     // this the ewald summation parameter and is always set to 1
     const ELPH_float eta_bare = 1.0;
     //
@@ -82,6 +100,9 @@ void interpolation_driver(const char* ELPH_input_file,
         error_msg("Only qe is supported currently.");
     }
     //
+    // Apply acoustic sum rule for born charges
+    apply_acoustic_sum_rule_born_charges(asr_born, phonon->Zborn,
+                                         lattice->natom);
     //
     // We need atomic masses
     ELPH_float* atomic_masses = malloc(sizeof(*atomic_masses) * lattice->natom);
@@ -90,15 +111,14 @@ void interpolation_driver(const char* ELPH_input_file,
     ELPH_float* dummy1 = malloc(sizeof(*dummy1) * lattice->nmodes);
     CHECK_ALLOC(dummy1);
 
-    // These are reference patern basis.
-    ELPH_cmplx* ref_pat_basis =
-        malloc(sizeof(*ref_pat_basis) * lattice->nmodes * lattice->nmodes);
-    CHECK_ALLOC(ref_pat_basis);
-
     if (dft_code == DFT_CODE_QE)
     {
         if (0 == mpi_comms->commW_rank)
         {
+            ELPH_cmplx* ref_pat_basis = malloc(
+                sizeof(*ref_pat_basis) * lattice->nmodes * lattice->nmodes);
+            CHECK_ALLOC(ref_pat_basis);
+
             char read_buf[1024];
             cwk_path_join(ph_save, "dyn1", read_buf, sizeof(read_buf));
             ELPH_float qpt_tmp[3];
@@ -108,28 +128,18 @@ void interpolation_driver(const char* ELPH_input_file,
             {
                 error_msg("More than 1 dynmat read.");
             }
-
-            if (interpolate_dvscf)
-            {
-                // read the first pattern file
-                cwk_path_join(ph_save, "patterns.1.xml", read_buf,
-                              sizeof(read_buf));
-                read_pattern_qe(read_buf, lattice, ref_pat_basis);
-            }
+            free(ref_pat_basis);
         }
 
         //
         mpi_error = MPI_Bcast(atomic_masses, lattice->natom, ELPH_MPI_float, 0,
                               mpi_comms->commW);
         MPI_error_msg(mpi_error);
-
-        mpi_error = MPI_Bcast(ref_pat_basis, lattice->nmodes * lattice->nmodes,
-                              ELPH_MPI_cmplx, 0, mpi_comms->commW);
-        MPI_error_msg(mpi_error);
-
-        MPI_error_msg(mpi_error);
     }
 
+    // *******************************************************************
+    // ******************  setup wigner seitz ****************************
+    // *******************************************************************
     //
     // get the coarse q-grid
     ND_int q_grid_co[3];
@@ -217,6 +227,10 @@ void interpolation_driver(const char* ELPH_input_file,
         }
     }
 
+    // *******************************************************************
+    // dvscf and dyn IO and expand to ful BZ and remove long-range parts *
+    // *******************************************************************
+    //
     ND_int iqpt_tmp = 0;
     for (ND_int iqco = 0; iqco < phonon->nq_iBZ; ++iqco)
     {
@@ -287,6 +301,9 @@ void interpolation_driver(const char* ELPH_input_file,
     }
 
     //
+    // *******************************************************************
+    // ******************  q->R (dvscf) **********************************
+    // *******************************************************************
     if (dVscfs_co)
     {
         for (ND_int i = 0; i < phonon->nq_BZ; ++i)
@@ -341,9 +358,24 @@ void interpolation_driver(const char* ELPH_input_file,
         calloc(lattice->natom * 9, sizeof(*dyn_mat_asr_lr));
     CHECK_ALLOC(dyn_mat_asr_lr);
 
-    compute_dyn_lr_asr_correction(lattice, phonon, Ggrid_phonon, atomic_masses,
+    compute_dyn_lr_asr_correction(lattice, phonon, Ggrid_phonon,
                                   input_data->eta_ph, dyn_mat_asr_lr);
 
+    ELPH_cmplx* fc_lr = NULL;
+    if (asr_fc == ASR_ALL || asr_fc == ASR_ALL_HUANG)
+    {
+        // In case, we apply rotational sum rules, then we also need long range
+        // force constants.
+        // See C. Lin et al.: npj Comput. Mater. 8, 236 (2022)
+        fc_lr = malloc(phonon->nq_BZ * lattice->nmodes * lattice->nmodes *
+                       sizeof(*fc_lr));
+        CHECK_ALLOC(fc_lr);
+    }
+
+    // *******************************************************************
+    // ******************  Polarization vectors to dynmats ***************
+    // *******************************************************************
+    //
     // FIX ME need to parallize
     for (ND_int i = 0; i < phonon->nq_BZ; ++i)
     {
@@ -353,19 +385,87 @@ void interpolation_driver(const char* ELPH_input_file,
         ELPH_cmplx* pol_vecs_iq =
             dyns_co + iq * lattice->nmodes * lattice->nmodes;
 
+        ELPH_cmplx* fc_lr_iq = NULL;
+
         pol_vecs_to_dyn(omega_ph_co + iq * lattice->nmodes, lattice->natom,
                         atomic_masses, pol_vecs_iq);
-
+        // Here dynamical matrices have 1/sqrt(Ma*Mb) factor
+        if (fc_lr)
+        {
+            fc_lr_iq = fc_lr + iq * lattice->nmodes * lattice->nmodes;
+            memcpy(fc_lr_iq, pol_vecs_iq,
+                   lattice->nmodes * lattice->nmodes * sizeof(*fc_lr));
+        }
         const ELPH_float* qpt_iq_tmp = phonon->qpts_BZ + 3 * i;
         // remove long range part
+        // Note the long-range part also contains 1/sqrt(Ma*Mb)
         add_ph_dyn_long_range(qpt_iq_tmp, lattice, phonon, Ggrid_phonon, -1,
                               atomic_masses, dyn_mat_asr_lr, input_data->eta_ph,
                               pol_vecs_iq);
         //
+        // for long range force constants
+        if (fc_lr)
+        {
+            for (ND_int ii = 0; ii < (lattice->nmodes * lattice->nmodes); ++ii)
+            {
+                fc_lr_iq[ii] -= pol_vecs_iq[ii];
+            }
+        }
     }
 
+    // *******************************************************************
+    // ******************  q->R (dyn to fc) ******************************
+    // *******************************************************************
+    //
     // fourier transform phonons
     fft_q2R(dyns_co, q_grid_co, lattice->nmodes * lattice->nmodes);
+    //
+    // IN case of rotational sum rules, we also need to add long range force
+    // constants
+    if (fc_lr)
+    {
+        fft_q2R(fc_lr, q_grid_co, lattice->nmodes * lattice->nmodes);
+        //
+        for (ND_int ii = 0;
+             ii < (phonon->nq_BZ * lattice->nmodes * lattice->nmodes); ++ii)
+        {
+            dyns_co[ii] += fc_lr[ii];
+        }
+    }
+
+    // *******************************************************************
+    // ****************** Acoustic sum rule ******************************
+    // *******************************************************************
+    //
+    // Here the force constant are mass normalized.
+    // i.e \tilde{C}(R)_{ab} = 1/sqrt(Ma*Mb) * C(R)_{ab}, so we remove
+    // normalization
+    mass_normalize_force_constants(atomic_masses, phonon->nq_BZ, lattice->natom,
+                                   0.5, dyns_co);
+
+    // Apply Acoustic sum rule for force constants
+    apply_acoustic_sum_rule_fc(asr_fc, q_grid_co, lattice->natom, dyns_co,
+                               lattice->atomic_pos, lattice->alat_vec,
+                               ws_vecs_dyn, n_ws_vecs_dyn, ws_degen_dyn);
+
+    // Normalize the force constants, so that we donot need to normalize it
+    // for every dynamical matrix
+    mass_normalize_force_constants(atomic_masses, phonon->nq_BZ, lattice->natom,
+                                   -0.5, dyns_co);
+    //
+    // now remove the long range force constants incase they are added
+    if (fc_lr)
+    {
+        for (ND_int ii = 0;
+             ii < (phonon->nq_BZ * lattice->nmodes * lattice->nmodes); ++ii)
+        {
+            dyns_co[ii] -= fc_lr[ii];
+        }
+    }
+    // free fc_lr, no longer needed.
+    free(fc_lr);
+    fc_lr = NULL;
+    //
     //
     ND_int nqpts_to_interpolate = qgrid_new[0] * qgrid_new[1] * qgrid_new[2];
     // this will be over written lattern with number of qpts in iBZ
@@ -373,14 +473,51 @@ void interpolation_driver(const char* ELPH_input_file,
     ELPH_float* qpts_interpolation = NULL;
     // in crystal coordinates
 
-    qpts_interpolation =
-        malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
-    CHECK_ALLOC(qpts_interpolation);
-    // in crystal coordinates
-    nqpts_to_interpolate = generate_iBZ_kpts(
-        qgrid_new, phonon->nph_sym, phonon->ph_syms, lattice->alat_vec,
-        lattice->blat_vec, qpts_interpolation, true);
+    // *******************************************************************
+    // ****************** Generate/read q-points *************************
+    // *******************************************************************
+    //
+    bool qpts_usr_provide = false;
+    if (0 == strlen(input_data->qlist_file))
+    {
+        qpts_interpolation =
+            malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
+        CHECK_ALLOC(qpts_interpolation);
+        // in crystal coordinates
+        struct symmetry* symms_iBZexpand =
+            input_data->nosym ? NULL : phonon->ph_syms;
+        nqpts_to_interpolate = generate_iBZ_kpts(
+            qgrid_new, phonon->nph_sym, symms_iBZexpand, lattice->alat_vec,
+            lattice->blat_vec, qpts_interpolation, true);
+    }
+    else
+    {
+        qpts_usr_provide = true;
+        if (0 == mpi_comms->commW_rank)
+        {
+            qpts_interpolation = parse_qpt_entries(input_data->qlist_file,
+                                                   &nqpts_to_interpolate);
+            if (!qpts_interpolation)
+            {
+                error_msg("Reading qpoint file failed.");
+            }
+        }
 
+        mpi_error = MPI_Bcast(&nqpts_to_interpolate, 1, ELPH_MPI_ND_INT, 0,
+                              mpi_comms->commW);
+        MPI_error_msg(mpi_error);
+
+        if (0 != mpi_comms->commW_rank)
+        {
+            qpts_interpolation =
+                malloc(sizeof(*qpts_interpolation) * 3 * nqpts_to_interpolate);
+            CHECK_ALLOC(qpts_interpolation);
+        }
+
+        mpi_error = MPI_Bcast(qpts_interpolation, 3 * nqpts_to_interpolate,
+                              ELPH_MPI_float, 0, mpi_comms->commW);
+        MPI_error_msg(mpi_error);
+    }
     // local part
     ELPH_cmplx* Vlocr = NULL;
 
@@ -388,6 +525,10 @@ void interpolation_driver(const char* ELPH_input_file,
     // write)
     int ncid_dVbare = 0, nc_err = 0;
     int ncvar_dVbare = 0, ncvar_ph_freq = 0, ncvar_ph_eig = 0;
+    //
+    // *******************************************************************
+    // ******************** dVbare IO ************************************
+    // *******************************************************************
     //
     if (write_dVbare)
     {
@@ -472,6 +613,7 @@ void interpolation_driver(const char* ELPH_input_file,
         }
     }
 
+    // allocations
     ELPH_cmplx* dvscf_interpolated = NULL;
     if (dVscfs_co)
     {
@@ -492,6 +634,58 @@ void interpolation_driver(const char* ELPH_input_file,
             malloc(lattice->nmodes * sizeof(*ph_freq_iq_interp));
         CHECK_ALLOC(ph_freq_iq_interp);
     }
+
+    // *******************************************************************
+    // ************************** LO-TO setup ****************************
+    // *******************************************************************
+    const ELPH_float loto_mag = 1e-5;
+    // eps for q->0
+    //
+    if (input_data->loto)
+    {
+        ELPH_float loto_dir_norm =
+            sqrt(dot3_macro(input_data->loto_dir, input_data->loto_dir));
+        // No LO-TO splitting for user provided qpts. The user must instead
+        // provide add a small shift in the direction
+        if (qpts_usr_provide)
+        {
+            if (mpi_comms->commW_rank == 0)
+            {
+                fprintf(stdout,
+                        "Warning: When qlist_file is provided, the loto and "
+                        "loto_dir variables are ignored. "
+                        "Please refer to qlist_file variable documentation for "
+                        "more details.\n");
+            }
+            input_data->loto = false;
+        }
+        else if (loto_dir_norm < ELPH_EPS)
+        {
+            if (mpi_comms->commW_rank == 0)
+            {
+                fprintf(stdout,
+                        "Warning: Too small LO-TO direction vector, Turning "
+                        "off LO-TO splitting.\n");
+            }
+            input_data->loto = false;
+        }
+        else
+        {
+            ELPH_float tmp_loto_dir[3];
+            for (ND_int ix = 0; ix < 3; ++ix)
+            {
+                tmp_loto_dir[ix] =
+                    loto_mag * input_data->loto_dir[ix] / loto_dir_norm;
+            }
+            MatVec3f(lattice->alat_vec, tmp_loto_dir, true,
+                     input_data->loto_dir);
+        }
+    }
+
+    // *******************************************************************
+    // ************************** Interpolation loop  ********************
+    // *******************************************************************
+    //
     // now interpolate
     for (ND_int iq = 0; iq < nqpts_to_interpolate; ++iq)
     {
@@ -504,6 +698,9 @@ void interpolation_driver(const char* ELPH_input_file,
         MatVec3f(lattice->blat_vec, qpt_interpolate, false,
                  qpt_interpolate_cart);
         //
+        // *******************************************************************
+        // ******************** dVscf interpolation **************************
+        // *******************************************************************
         if (dVscfs_co)
         {
             snprintf(dvscf_dyn_name, sizeof(dvscf_dyn_name), "dvscf%lld",
@@ -515,26 +712,13 @@ void interpolation_driver(const char* ELPH_input_file,
                           dvscf_loc_len / lattice->nmodes, ws_vecs_dvscf,
                           n_ws_vecs_dvscf, ws_degen_dvscf, dvscf_interpolated);
             //
-            // change to pattern basis
-            // In principle, we should first construct pattern basis based on
-            // the litle group of q but since we only use dvscfs internally, we
-            // multiply with the dvscfs in cart basis to pattern basis with the
-            // first pattern basis as when computing electron-phonon we again
-            // unstrip the pattern basis, so it does not effect what we
-            // use. This allows to skip a function to write pattern.xml
-            // file as both are not needed for our purposes.
-            dVscf_change_basis(dvscf_interpolated, ref_pat_basis, 1,
-                               lattice->nmodes, lattice->nmag,
-                               lattice->fft_dims[0], lattice->fft_dims[1],
-                               lattice->nfftz_loc, 'N');
-            //
             // remove e^iqr phase to make it lattice periodic
             multiply_eikr(dvscf_interpolated, qpt_interpolate, lattice,
                           lattice->nmodes * lattice->nmag, -1);
             // add long range back
             //
-            dV_add_longrange(qpt_interpolate, lattice, phonon, Zvals,
-                             ref_pat_basis, dvscf_interpolated, 1,
+            dV_add_longrange(qpt_interpolate, lattice, phonon, Zvals, NULL,
+                             dvscf_interpolated, 1,
                              only_induced_part_long_range, EcutRy,
                              nmags_add_long_range, eta_bare,
                              input_data->eta_induced, mpi_comms->commK);
@@ -542,18 +726,64 @@ void interpolation_driver(const char* ELPH_input_file,
             // write to file
             if (dft_code == DFT_CODE_QE)
             {
+                // we have dvscf in cart basis and we want to store them
+                // in cart basis
                 write_dvscf_qe(read_buf, lattice, dvscf_interpolated,
                                mpi_comms->commK);
+                // write patterns
+                // Write placeholder pattern file indicating that it is an
+                // identity matrix.
+                if (0 == mpi_comms->commQ_rank)
+                {
+                    snprintf(dvscf_dyn_name, sizeof(dvscf_dyn_name),
+                             "patterns.%lld.xml", (long long)(iq + 1));
+                    cwk_path_join(ph_save_interpolated, dvscf_dyn_name,
+                                  read_buf, sizeof(read_buf));
+                    write_identity_patterns_xml(read_buf);
+                }
             }
         }
 
+        // *******************************************************************
+        // ******************** Phonon interpolation *************************
+        // *******************************************************************
+        //
         fft_R2q_dyn(dyns_co, qpt_interpolate, q_grid_co, lattice->natom,
                     ws_vecs_dyn, n_ws_vecs_dyn, ws_degen_dyn, dyn_interpolated);
 
+        // in case of LO-TO, add small vector to gamma
+        bool loto_eps_added = false;
+        if (input_data->loto)
+        {
+            ELPH_float sum = 0.0;
+            for (ND_int ix = 0; ix < 3; ++ix)
+            {
+                ELPH_float iq_diff_tmp =
+                    qpt_interpolate[ix] - rint(qpt_interpolate[ix]);
+                sum += iq_diff_tmp * iq_diff_tmp;
+            }
+            sum = sqrt(sum);
+            if (sum < ELPH_EPS)
+            {
+                loto_eps_added = true;
+                for (ND_int ix = 0; ix < 3; ++ix)
+                {
+                    qpt_interpolate[ix] += input_data->loto_dir[ix];
+                }
+            }
+        }
         // add back the long range part
         add_ph_dyn_long_range(qpt_interpolate, lattice, phonon, Ggrid_phonon, 1,
                               atomic_masses, dyn_mat_asr_lr, input_data->eta_ph,
                               dyn_interpolated);
+        //
+        if (loto_eps_added)
+        {
+            for (ND_int ix = 0; ix < 3; ++ix)
+            {
+                qpt_interpolate[ix] -= input_data->loto_dir[ix];
+            }
+        }
 
         if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank)
         {
@@ -575,6 +805,10 @@ void interpolation_driver(const char* ELPH_input_file,
                              dyn_interpolated, atomic_masses);
             }
         }
+        // *******************************************************************
+        // ******************** dVbare interpolation *************************
+        // *******************************************************************
+        //
         if (write_dVbare)
         {
             // Symmetrize the matrix
@@ -681,8 +915,9 @@ void interpolation_driver(const char* ELPH_input_file,
     }
     //
     //
-    //
-    if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank)
+    // Write dyn0 file in case required
+    if ((!write_dVbare || dVscfs_co) && 0 == mpi_comms->commW_rank &&
+        !qpts_usr_provide)
     {
         char read_buf[1024];
         cwk_path_join(ph_save_interpolated, "dyn0", read_buf, sizeof(read_buf));
@@ -699,6 +934,10 @@ void interpolation_driver(const char* ELPH_input_file,
             ERR(nc_err);
         }
     }
+
+    // *******************************************************************
+    // ************************** Cleanup ********************************
+    // *******************************************************************
 
     free(ph_freq_iq_interp);
 
@@ -717,7 +956,6 @@ void interpolation_driver(const char* ELPH_input_file,
 
     free(atomic_masses);
     free(dummy1);
-    free(ref_pat_basis);
     free(Vlocr);
 
     free(omega_ph_co);

@@ -34,17 +34,35 @@ void read_pattern_qe(const char* pat_file, struct Lattice* lattice,
         error_msg("parsing pattern file failed \n");
     }
 
-    // first get the number of irrep
+    ND_int natom = lattice->natom;
+    ND_int nmodes = natom * 3;
 
+    // Check if it is a placeholder xml file for identity matrix
+    if (strcmp(patxml->name, "DVSCF_IS_IN_CARTESIAN_BASIS") == 0)
+    {
+        for (ND_int i = 0; i < nmodes * nmodes; ++i)
+        {
+            pat_vecs[i] = 0.0;
+        }
+
+        for (ND_int i = 0; i < nmodes; ++i)
+        {
+            pat_vecs[i * (nmodes + 1)] = 1.0;
+        }
+
+        ezxml_free(patxml);
+        fclose(fp);
+        return;
+    }
+
+    // Now this is a read pattern.xml from q.e, so parse it
+    // first get the number of irrep
     ezxml_t xml_get = ezxml_get(patxml, "IRREPS_INFO", 0, "NUMBER_IRR_REP", -1);
     if (!xml_get)
     {
         error_msg("parsing irreps info in pattern file failed \n");
     }
     int nirrep = atoi(xml_get->txt);
-
-    ND_int natom = lattice->natom;
-    ND_int nmodes = natom * 3;
 
     ELPH_float* pat_tmp_read = malloc(sizeof(ELPH_float) * 2 * nmodes);
     CHECK_ALLOC(pat_tmp_read);

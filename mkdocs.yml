@@ -21,8 +21,8 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: black 
+      accent: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -30,14 +30,15 @@ theme:
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: black
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - footnotes
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -67,13 +68,19 @@ nav:
       - About the Code: about/about_the_code.md
       - Acknowledgments: about/acknowledgments.md
       - License: about/license.md
-  - Installation: install.md
-  - Usage: usage/usage.md
-  - Input Variables:
-      - ELPH Calculation: inputs/elph_inputs.md
-      - Interpolation Calculation: inputs/interpolation_inputs.md
+  - Installation and Usage:
+      - Installation: install_usage/install.md
+      - Usage: install_usage/usage.md
+  - Input Variables and Output Format:
+      - Input Variables:
+          - ELPH Calculation: inputs_outputs/elph_inputs.md
+          - Interpolation Calculation: inputs_outputs/interpolation_inputs.md
+      - Output Format:
+          - ELPH Output Format: inputs_outputs/output_elph.md
+          - Interpolation Output Format: inputs_outputs/output_interpolation.md
+  - Theory:
+      - Acoustic Sum Rules: theory/asr.md
   - Tutorials:
       - Silicon Walkthrough: tutorials/silicon_walkthrough.md
-      - Exciton-Phonon & Luminescence: tutorials/exciton_phonon.md
   - Testing: tests.md
   
