@@ -1,0 +1,457 @@
+\documentclass[12pt,twoside,openany]{book}
+% PACKAGE
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsfonts,textcomp,latexsym}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[font=footnotesize,labelfont=bf]{caption}
+\usepackage{siunitx}
+\usepackage{varioref}           
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=blue,citecolor=blue,bookmarksopen=true,bookmarksnumbered=true,pdfpagemode=FullScreen,pdfstartview=FitH}
+\usepackage{cleveref} 
+\usepackage{fancyhdr}
+\usepackage{theorem}
+\usepackage{booktabs}
+\usepackage[export]{adjustbox}
+\usepackage{lmodern}
+\usepackage{multicol}
+\usepackage{changepage}
+\usepackage{subfigure}
+\usepackage{listings}
+% GEOMETRY 
+\addtolength{\parskip}{\baselineskip}
+\pagestyle{myheadings}
+\oddsidemargin=1.24mm
+\evensidemargin=-5.4mm
+\topmargin=-23pt
+\headheight=13.59999pt
+\headsep=25pt
+\textheight=674pt
+\textwidth=426pt
+\marginparsep=10pt
+\marginparwidth=50pt
+\marginparpush=5pt
+\voffset=0pt
+\paperheight=845pt
+\footskip=30pt
+\hoffset=0pt
+\paperwidth=597pt
+\brokenpenalty=10000
+% FANCY STYLE
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\lhead[\fancyplain{}{\nouppercase{\thepage}}]{\fancyplain{}{\nouppercase{\rightmark}}}
+\rhead[\fancyplain{}{\nouppercase{\leftmark}}]{\fancyplain{}{\nouppercase{\thepage}}}
+\cfoot{}
+%%%%
+\newcommand{\SubItem}[1]{
+    {\setlength\itemindent{15pt} \item[-] #1}
+}
+
+\newcommand{\prefrontmatter}{\thispagestyle{empty}
+   \begin{center}
+        \huge\projecttitle\\
+        \vspace{10pt}
+        \large{Muralidhar Nalabothula}\\
+        \vspace{5pt}
+        \large{Fulvio Paleari}\\
+        \vspace{10pt}
+        \small{\projectmonth}\\
+   \end{center}
+    \clearpage
+   \thispagestyle{empty}
+}
+%% CHAPTER STYLE
+\def\@makechapterhead#1{
+  {\parindent \z@ \raggedright \normalfont
+   \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        %\Large\scshape\space\Large\upshape\bf\thechapter
+        \par\nobreak
+        \vskip 20\p@
+      \fi
+    \fi
+    \interlinepenalty\@M
+    \flushleft\parbox{\textwidth}{\raggedright\huge #1}
+     \par\nobreak
+     \vskip 15pt
+     \hrule height 0.4pt
+  }}
+\def\@makeschapterhead#1{
+  {\parindent \z@ \raggedright \normalfont
+    \interlinepenalty\@M
+      \huge  #1
+     \par\nobreak
+     \vskip 15pt
+     \hrule height 0.4pt
+  }}
+
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4
+}
+\lstset{style=mystyle}
+\addto\captionsenglish{\renewcommand{\figurename}{Fig.}}
+\renewcommand*{\lstlistlistingname}{List of Programs}
+\def\projecttitle{LetzElPhC Documentation}
+\def\projectmonth{\today}
+\def\projectdepartment{-}
+\usepackage[scaled]{helvet}
+\renewcommand\familydefault{\sfdefault} 
+\usepackage[T1]{fontenc}
+% SECTION STYLE
+\setcounter{tocdepth}{2}                            
+\setcounter{secnumdepth}{3}
+\begin{document}
+\prefrontmatter
+\pagenumbering{arabic}
+\pdfbookmark{\contentsname}{toc}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\addtolength{\parskip}{-\baselineskip}  
+\tableofcontents
+\addtolength{\parskip}{\baselineskip}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\clearpage
+%%%% MAIN BODY starts from here
+%
+%
+%
+%
+%
+%
+%
+%%
+%
+%
+%
+%
+% ABout the code
+\chapter{About the Code}
+LetzElPhC is a C code designed to compute electron-phonon coupling matrix elements from the outputs of standard Density Functional Theory (DFT) and Density Functional Perturbation Theory (DFPT) calculations. 
+Currently, it only supports the Quantum Espresso code, with long plans to support the Abinit code. 
+The main objective of this project is to facilitate electron-phonon related calculations 
+within the YAMBO code (version 5.2 and above), and it works only with norm-conserving pseudo-potentials. 
+The code is released under the MIT license and hosted on GitHub [\href{https://github.com/muralidhar-nalabothula/LetzElPhC}{link}].
+\section{Main Features}
+\begin{itemize}
+\item Utilizes full crystal symmetries, ensuring compatibility with the YAMBO code, without encountering phase issues.
+\item Implements multiple levels of parallelization, including OpenMP, plane-wave, k-point, and q-point parallelization.
+\item Utilizes fully parallel IO via parallel NetCDF-4/HDF5 libraries.
+\item Highly portable. The code can be compiled on various CPU architectures and operating systems with minimal to no changes in the source code.
+\end{itemize}
+\chapter{Installing the Code}
+\section{Mandatory Requirements}
+\begin{itemize}
+\item GNU Make
+\item C99 compiler with complex number support, such as GCC, Clang, ICC, AMD C-Compiler, MinGW (for Windows), PGI, or Arm C compilers.
+\item MPI implementation supporting at least MPI-standard 2.1 standard, such as Open-MPI, MPICH and its variants, Intel MPI compiler, or Microsoft MPI (for Windows).
+\item FFTW-3 or Intel-MKL.
+\item HDF5 and NETCDF-4 libraries with Parallel IO support (compiled with MPI).
+\item A BLAS library, such as OpenBLAS, BLIS, Intel-MKL, or Atlas.
+\end{itemize}
+\section{Installation Process}
+LetzElPhC employs a standard make build system. Sample make files are available in the \textcolor{blue}{\emph{sample\_config}} directory. 
+Copy one to the \textcolor{blue}{\emph{src}} directory and rename it as \textcolor{teal}{\emph{make.inc}}. 
+Navigate to the \textcolor{blue}{\emph{src}} directory and edit \textcolor{teal}{\emph{make.inc}} according to your requirements. 
+Then, in the same directory, execute the following commands:
+\begin{lstlisting}[language=bash]
+$ make
+#### To compile the code in parallel, use the -j option
+$ make -j n
+#### where n is the number of processes.
+\end{lstlisting}
+Upon successful compilation, you should find the \textbf{\textcolor{red}{\emph{lelphc}}} executable located in the \textcolor{blue}{\emph{src}} directory.
+If you encounter difficulties in locating the required libraries, go to the YAMBO code installation directory and 
+open the \textcolor{teal}{\emph{report}} file in the \textcolor{blue}{\emph{config}} directory, which lists all necessary libraries and include paths.
+
+Below are the list of variables in the {\textcolor{teal}{\emph{make.inc}}} file with 
+explanations.
+\begin{lstlisting}[language=make]
+CC                  :=  mpicc
+#### MPI C compiler mpicc/mpiicc (for intel), 
+CFLAGS              := -O3
+#### -O3 is to activate compiler optimizations
+LD_FLAGS            := 
+#### use this to pass any flags to linker
+
+#### **** OPENMP BUILD ***
+#### If you wish to build the code with openmp support
+#### uncomment the below line 
+# OPENMP_FLAGS   	:= -DELPH_OMP_PARALLEL_BUILD 
+#### Aditionally, you need to add openmp compiler flag to 
+#### CFLAGS and LD_FLAGS.
+#### Also uncomment the below two lines
+# CFLAGS            += -fopenmp ## use -qopenmp for intel
+# LD_FLAGS          += -fopenmp ## use -qopenmp for intel
+
+#### FFTW3 include and libs (see FFT flag in yambo config/report)
+FFTW_INC 	        :=  -I/opt/homebrew/include 
+FFTW3_LIB           :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
+#### Note if using FFTW
+#### Yambo uses double precision FFTW regardless of the precision with which Yambo is built. In contrast, you need to link single (double) precision FFTW for single (double) precision LetzElPhC. please refer to https://www.fftw.org/fftw3_doc/Precision.html . Also you refer to https://www.fftw.org/fftw3_doc/Multi_002dthreaded-FFTW.html  if compiling with openmp support.
+
+#### If you want to compile the code in double precession, uncomment the below
+#CFLAGS              += -DCOMPILE_ELPH_DOUBLE 
+
+#### Blas and lapack libs (see BLAS and LAPACK flag in yambo config/report)
+BLAS_LIB 	        :=  -L/opt/homebrew/opt/openblas/lib -lopenblas 
+#### you need to add both blas and lapack libs for ex : -lblas -llapack
+
+#### netcdf libs and include
+#### (see NETCDF flag in yambo config/report)
+NETCDF_INC          :=  -I/Users/murali/softwares/core/include 
+NETCDF_LIB 	        :=  -L/Users/murali/softwares/core/lib -lnetcdf
+
+#### hdf5 lib (see HDF5 flag in yambo config/report)
+HDF5_LIB            :=  -L/opt/homebrew/lib  -lhdf5
+
+#### incase if you want to add additional include dir and libs
+INC_DIRS            := 
+LIBS                := 
+
+
+#### Notes Extra CFLAGS
+### add -DCOMPILE_ELPH_DOUBLE if you want to compile the code in double precession
+### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
+### for openmp use -DELPH_OMP_PARALLEL_BUILD in CFLAGS and set -fopenmp in LD_FLAGS and CFLAGS
+\end{lstlisting}
+
+
+\chapter{Running the Code}
+\section{Running DFT and DFPT (Step 0)}
+Before using LetzElPhC, ensure you have obtained the following quantities: 
+\begin{itemize}
+\item Kohn-Sham wavefunctions (obtained from a non-self-consistent calculation after obtaining the ground state density of the system).
+\item Phonon eigenvectors and perturbed Hatree and Exchange potentials due to phonon modes (obtained from a DFPT run after finding the ground state).
+\end{itemize}
+With the Quantum Espresso code, follow these steps (an example is provided in \textcolor{blue}{\bf{examples/qe/silicon}}):
+\begin{itemize}
+\item Perform a self-consistent field (SCF) calculation to obtain the ground state.
+\item Perform a DFPT calculation using the \textbf{ph.x} executable to obtain dynamical matrices and changes in potentials on a uniform q-point grid.
+\item Perform a non-self-consistent field (NSCF) calculation to obtain the wavefunctions on a uniform k-point grid. The k-grid and q-grid of phonons 
+must be commensurate.
+\end{itemize}
+\textbf{Note}: Set the \textcolor{red}{\emph{dvscf}} flag in the \textbf{ph.x} input to save the change in potentials. If you forget to set this varaible,
+you have to rerun the entire calculation. 
+Additionally, make sure that the q-grid is commensurate with the k-grid used in the NSCF calculation (Although, the choice of kgrid to converge the SCF calculation is irrelevant).
+Once these steps are completed successfully, go to the NSCF folder and enter the \textcolor{red}{\emph{prefix.save}} directory, 
+where the wavefunctions are stored. Then, execute \textcolor{red}{\emph{p2y}} followed by \textcolor{red}{\emph{yambo}} to generate the \textcolor{blue}{\bf{SAVE}} folder:
+\begin{lstlisting}[language=bash]
+$ p2y
+#### Generates the YAMBO SAVE directory
+$ yambo
+#### Further processing creates additional files
+\end{lstlisting}
+Upon successful completion of these steps, we are ready to use LetzElPhC.
+\section{Running the Preprocessor (Step 1)}
+Once the \textcolor{blue}{\bf{SAVE}} directory is obtained, we need to create the \textcolor{blue}{\bf{ph\_save}} folder. Navigate to the phonon calculation directory and run the preprocessor with the \textcolor{blue}{\emph{-pp}} flag:
+\begin{lstlisting}[language=bash]
+$ cd /path/to/phonon calculation directory
+#### Run the preprocessor
+$ lelphc -pp --code=qe -F PH.X_input_file
+#### Where PH.X_input_file is the input file of ph.x code used for computing phonons
+\end{lstlisting}
+Upon successful execution, the \textcolor{blue}{\bf{ph\_save}} directory will be created, containing all necessary files.
+% If you wish to create soft symlinks instead of copying these files, set the following environment variable (works only on linux):
+% \begin{lstlisting}[language=bash]
+% $ export ELPH_COPY_CMD="ln -sr"
+% \end{lstlisting}
+% and then run the preprocessor.
+If you wish to change the name of the \textcolor{blue}{\bf{ph\_save}} directory, you can set the following environment variable:
+\begin{lstlisting}[language=bash]
+$ export ELPH_PH_SAVE_DIR=ph_save_name_you_want
+\end{lstlisting}
+% \textbf{Remarks}:
+% \begin{itemize}
+% \item The new format XML dynamical matrix files are currently not supported.
+% \end{itemize}
+
+\section{Performing the ELPH Calculation (Final Step)}
+Once both the \textcolor{blue}{\bf{SAVE}} and \textcolor{blue}{\bf{ph\_save}} folders are created, 
+the ELPH calculation can be executed. Run the following command with the LetzElPhC input file in any 
+directory where you wish to perform the calculation:
+\begin{lstlisting}[language=bash]
+$ mpirun -n 4 lelphc -F LetzElPhC_input_file
+## Here, we are using 4 MPI processes.
+\end{lstlisting}
+A detailed description of the input file is provided below:
+\begin{lstlisting}[language=make]
+    nkpool          = 1 
+    # k point parallelization (number of kpools)
+    
+    nqpool          = 1
+    # q point parallelization (number of qpools)
+
+    ## note (nkpool*nqpool) must divide total number of cpus.
+    
+    ## For example, if you run the code on 12 processess, 
+    ## and set nkpool = 3 and nqpool = 2
+    ## then, we have 2 sets of cpus working subset of qpoints (qpool 1 and qpool 2).
+    ## Each group has 3 sub groups working on 
+    ## subset of kpoints. So in total, we have 6 subgroups, each 
+    ## having 2 cpus that distribute plane waves 
+
+    ##  {1,2,3,4,5,6,7,8,9,10,11,12} (total cpus)
+    ##   ____________|________________
+    ##  |    divided in to 2 qpools   |
+    ## (qpool 1) {1,2,3,4,5,6}    (qpool 2) {7,8,9,10,11,12}
+    ## ________|________    ________|_________
+    ## |        |       |   |       |        |
+    ## kp1     kp2     kp3  kp1     kp2      kp3
+    ## where kp1 are kpools each containg 2 
+    ## cpus work on subset of plane waves
+
+    start_bnd       = 1
+    # starting band to consider in elph calculation
+    
+    end_bnd         = 40
+    # last band to consider in elph calculation
+    
+    save_dir        = SAVE
+    # SAVE dir you created with yambo
+    
+    ph_save_dir     = ph_save
+    # ph_save directory that was created with preprocessor
+    
+    kernel          = dfpt
+    
+    ## 1) dfpt (default):     Uses the total change in the Kohn-Sham potential (DFPT screening).
+    ## 2) dfpt_local    :     Excludes the contribution from the non-local part of the pseudopotentials (p.p.).
+    ## 3) bare          :     No screening; includes only contributions from the local and non-local parts of the pseudopotentials.
+    ## 4) bare_local    :     Includes only the contribution from the local part of the pseudopotential.
+
+    convention      = standard 
+    # standard/yambo, If standard (default) 
+    # <k+q|dV|k> is computed. if yambo, <k|dV|k-q> is outputed 
+    
+    ###  ##, !, ; are considered as comments
+\end{lstlisting}
+
+%
+%
+%
+%
+%%
+%
+%
+%
+%
+
+%% yambopy 
+\chapter{El-ph Calculation for Yambo via LetzElPhC}
+
+In this chapter, we demonstrate how Yambopy can be conveniently used to call \\
+LetzElPhC and generate NetCDF databases that can be directly fed into the Yambo code.
+\section{Requirements}
+\begin{itemize}
+    \item LetzElPhC installed
+    \item Yambopy installed
+    \item Having \texttt{pw.x}, \texttt{ph.x}, \texttt{p2y}, and \texttt{yambo} ready to run
+\end{itemize}
+
+\section{SCF Calculation}
+
+Run a standard SCF \texttt{pw.x} calculation. For now, stick to symmorphic symmetries with \texttt{force\_symmorphic=.true.} in the \texttt{system} card.
+
+\section{NSCF Calculation for Yambo}
+
+Copy the \texttt{save} directory from the SCF calculation and run the NSCF calculation for any number of empty states, with the correct \texttt{k}-grid we want to use in Yambo.
+
+\begin{lstlisting}[language=make]
+...
+K_POINTS automatic
+Nx Ny Nz 0 0 0
+\end{lstlisting}
+
+\subsection*{DVSCF Calculation}
+
+Copy the \texttt{save} directory from the SCF calculation and run \texttt{ph.x} for a DVSCF calculation with, for now, a standard \texttt{q}-grid matching the \texttt{k}-grid we want to use in Yambo.
+
+\begin{lstlisting}[language=make]
+prefix_dvscf
+&inputph
+  tr2_ph = 1.0d-14,
+  verbosity = `high'
+  prefix = `prefix',
+  fildvscf = `prefix-dvscf',
+  electron_phonon = `dvscf',
+  fildyn = `prefix.dyn',
+  epsil = .false.,
+  ldisp = .true.,
+  recover = .true.
+  nq1 = Nx,
+  nq2 = Ny,
+  nq3 = Nz
+/
+\end{lstlisting}
+
+For running \texttt{ph.x} in parallel, refer to the \href{https://www.quantum-espresso.org/Doc/ph_user_guide/node17.html}{ph.x user guide}. You can use what ever parallization that \texttt{ph.x} supports.
+
+\section{Create Yambo SAVE Directory}
+
+Run \texttt{p2y} and \texttt{yambo} on the NSCF save folder and then move the \texttt{SAVE} directory to a convenient place.
+
+\section{Obtain El-ph Databases}
+
+Run the following command in the same directory where the \texttt{SAVE} is located:
+
+\begin{lstlisting}[language=make]
+yambopy l2y
+\end{lstlisting}
+
+This command displays help for the calculation. For example, in order to run \texttt{LetzElPhC} serially for bands from \(n_i\) to \(n_f\), use:
+
+\begin{lstlisting}[]
+yambopy l2y -ph path/of/ph_input.in -b n_i n_f
+\end{lstlisting}
+
+where \(n_i\) and \(n_f\) are integers representing the initial and final band indices.
+
+For a parallel calculation with 4 \texttt{qpools} and 2 \texttt{kpools}, explicitly specifying the path to the \texttt{lelphc} executable, and avoiding automatic deletion of LetzElPhC logs and databases, use:
+
+\begin{lstlisting}[language=make]
+yambopy l2y -ph path/of/ph_input.in -b n_i n_f -par 4 2 -lelphc path/to/lelphc_exe -D
+\end{lstlisting}
+
+Finally, check the \texttt{SAVE} directory:
+
+\begin{lstlisting}[]
+ls SAVE/ndb.elph*
+\end{lstlisting}
+
+for the Yambo-compatible databases.
+
+%%%% BODY ends here 
+    
+\cleardoublepage
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{splncs04.bst}
+\bibliography{refs}
+\pretocmd{\chapter}{\pagenumbering{arabic}
+\renewcommand*{\thepage}{\thechapter.\arabic{page}}}{}{} 
+\end{document}
