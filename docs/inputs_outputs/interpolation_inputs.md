@@ -111,14 +111,14 @@ These variables control the interpolation calculations.
     * **Type:** `REAL`
     * **Default:** `1.0`
     * **Description:**
-        Ewald parameter used for screened long-range interactions (dipoles, quadrupoles, phonon dynamical matrices).
+        Ewald parameter used for seperation of long-range and short range potentials. Used for interpolation of $\partial V_{scf}$
         * Must be a positive value.
 
 === "eta_ph"
     * **Type:** `REAL`
     * **Default:** `1.0`
     * **Description:**
-        Ewald summation parameter used specifically for the interpolation of dynamical matrices.
+        Ewald parameter used for seperation of long-range and short range force constants. Used specifically for the interpolation of dynamical matrices.
         * Must be a positive value.
 
 === "qlist_file"

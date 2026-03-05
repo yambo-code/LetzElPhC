@@ -207,7 +207,7 @@ In this section, we discuss how to use the LetzElPhC code to generate dynamical 
 The procedure is as follows
 
 1.  Create an input file for interpolation (e.g., `interpolate.in`).
-2.  Run the `lelphc` preprocessor:
+2.  Run the `lelphc` interpolation program:
     ```bash
     lelphc -i --code=qe -F interpolate.in
     ```

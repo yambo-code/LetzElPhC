@@ -287,7 +287,6 @@ static void long_range_2D_kernel(
     ELPH_float Zborn_buf[3] = {0.0, 0.0, 0.0};
     ELPH_float Qpole_buf[3] = {0.0, 0.0, 0.0};
     //
-    ELPH_float qplusG_par[3] = {qplusG[0], qplusG[1], 0.0};
     if (Zval)
     {
         for (int i = 0; i < 3; ++i)
@@ -298,7 +297,7 @@ static void long_range_2D_kernel(
     // compute (q+G).Z
     if (epslion && Zborn_k)
     {
-        MatVec3f(Zborn_k, qplusG_par, true, Zborn_buf);
+        MatVec3f(Zborn_k, qplusG, true, Zborn_buf);
     }
     // compute (q+G)_x Q_xyz * (q+G)_y
     // (pol,pol,atom_dir)
@@ -311,15 +310,15 @@ static void long_range_2D_kernel(
                 for (int k = 0; k < 3; ++k)
                 {
                     Qpole_buf[k] =
-                        Qpole_buf[k] + qplusG_par[i] * qplusG_par[j] *
-                                           Qpole_k[k + 3 * j + 9 * i];
+                        Qpole_buf[k] +
+                        qplusG[i] * qplusG[j] * Qpole_k[k + 3 * j + 9 * i];
                 }
             }
         }
         // subtract Qzz|q+G|^2
         for (int i = 0; i < 3; ++i)
         {
-            Qpole_buf[i] -= (Gp_norm * Gp_norm * Qpole_k[i + 24]);
+            Qpole_buf[i] -= (q_G_square * Qpole_k[i + 24]);
         }
     }
     // compute decay factors
