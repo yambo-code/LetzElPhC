@@ -9,6 +9,11 @@
 
 void free_wfc_type(struct WFC* Wfc)
 {
+    if (!Wfc)
+    {
+        return;
+    }
+
     free(Wfc->wfc);
     free(Wfc->gvec);
     free(Wfc->Fk);
