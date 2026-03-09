@@ -353,7 +353,7 @@ static void long_range_2D_kernel(
         ELPH_float term =
             (sin(x * Gz * zlat * 0.5) - x * sin(Gz * zlat * 0.5)) /
             (Gz * Gz * (1.0 - x));
-        f_Gz = -2.0 * I * term;
+        f_Gz = -2.0 * I * term / zlat;
     }
     // Computes f(G_z). Limits f(0) = 0 exactly by initialization.
 
