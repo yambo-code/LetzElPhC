@@ -384,14 +384,14 @@ static void long_range_2D_kernel(
 
             if (Zborn_k)
             {
-                Z_z_val = Zborn_k[6 + i];
+                Z_z_val = Zborn_k[6 + i] / epslion[8];
             }
             // Safely extracts the Z_z tensor component
 
             ELPH_cmplx term_out = 2.0 * Gp_norm * Gp_norm *
-                                  (Z_z_val - I * Q_z[i]) * tau_k[2] * f_Gz *
+                                  (Z_z_val - I * Q_z[i]) * f_Gz *
                                   eps_tilde_perp_inv;
-            // Out-of-plane term coupled directly to f(G_z) and atom height z
+            // Out-of-plane term coupled directly to f(G_z)
 
             V_ind = (zlat / (4.0 * I)) * (f_q / Gp_norm) * qpar_dot_tau *
                     (term_in + term_out);
