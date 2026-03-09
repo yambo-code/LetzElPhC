@@ -641,10 +641,6 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
                     struct Pseudo* pseudo, struct Phonon* phonon)
 {
-    // free pseudo data
-    // Important to free f_coeff first else memory leak
-    // free fCoeff
-    free_f_Coeff(pseudo);
     // free wfcs
     ND_int nkiBZ = lattice->nkpts_iBZ;
     /* Free wavefunctions */

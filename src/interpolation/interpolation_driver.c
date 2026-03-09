@@ -12,6 +12,7 @@
 #include "common/cwalk/cwalk.h"
 #include "common/dtypes.h"
 #include "common/error.h"
+#include "common/free_dtypes.h"
 #include "common/init_dtypes.h"
 #include "common/numerical_func.h"
 #include "common/parallel.h"
@@ -971,7 +972,10 @@ void interpolation_driver(const char* ELPH_input_file,
     // free user input
     free_interpolation_usr_input(input_data);
     //
-    free_save_data(NULL, lattice, pseudo, phonon);
+    free_Pseudo_type(pseudo);
+    free_lattice_type(lattice);
+    free_phonon_type(phonon);
+
     free(lattice);
     free(phonon);
     free(pseudo);

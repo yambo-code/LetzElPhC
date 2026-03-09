@@ -5,6 +5,7 @@
 
 #include "dtypes.h"
 #include "elphC.h"
+#include "nonloc/fcoeff.h"
 
 void free_wfc_type(struct WFC* Wfc)
 {
@@ -112,10 +113,7 @@ void free_Pseudo_type(struct Pseudo* pseudo)
         return;
     }
 
-    // NM: Carefull, pseudo->fCoeff contains
-    // data, so the user must free them
-    // using free_f_Coeff in fcoeff.c
-    // before call this function.
+    free_f_Coeff(pseudo);
     free(pseudo->fCoeff);
     free_Vloc_table_type(pseudo->vloc_table);
     free(pseudo->Fsign);
