@@ -18,8 +18,6 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               struct Phonon* phonon,
                               enum ELPH_dft_code dft_code);
 
-void free_phonon_data(struct Phonon* phonon);
-
 void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
                     struct Pseudo* pseudo, struct Phonon* phonon);
 

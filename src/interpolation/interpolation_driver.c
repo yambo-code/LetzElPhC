@@ -104,6 +104,11 @@ void interpolation_driver(const char* ELPH_input_file,
     apply_acoustic_sum_rule_born_charges(asr_born, phonon->Zborn,
                                          lattice->natom);
     //
+    // In case of 2D, we need to convert 3D quadrupoles to 2D
+    if (lattice->dimension == '2')
+    {
+        quadrupole_3d_to_2d(lattice, phonon);
+    }
     // We need atomic masses
     ELPH_float* atomic_masses = malloc(sizeof(*atomic_masses) * lattice->natom);
     CHECK_ALLOC(atomic_masses);
