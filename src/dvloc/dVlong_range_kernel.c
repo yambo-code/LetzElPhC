@@ -90,9 +90,14 @@ void dVlong_range_kernel(const ELPH_float* qpt, const ELPH_float* gvecs,
         {
             ELPH_float qplusG_par_norm =
                 sqrt(qplusG[0] * qplusG[0] + qplusG[1] * qplusG[1]);
-            ELPH_float f_q =
-                1.0 - tanh(qplusG_par_norm * eta_induced * 0.25 * zlat);
-            // Evaluates f(|q|) using L = eta_induced*zlat/2
+
+            // Evaluates f(|q|) using L = eta_induced*4*pi*alpha_per*1.001
+            // Note eta_induced >= 1 to satisfy stablity condition
+            ELPH_float Leff =
+                epslion ? eta_induced * zlat * 1.001 * (1.0 - 1.0 / epslion[8])
+                        : zlat * 0.5;
+            ELPH_float f_q = 1.0 - tanh(qplusG_par_norm * 0.5 * Leff);
+
             if (fabs(f_q) < ELPH_EPS && (!Zvals || qplusG_norm2 > EcutRy))
             {
                 continue;
@@ -229,6 +234,13 @@ static void long_range_2D_kernel(
     const ELPH_float eta_bare, const ELPH_float eta_induced,
     ELPH_cmplx* out_buf)
 {
+    // Note Quadrupoles must be 2D normalized ones as given in
+    // Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
+    //
+    // Ref : Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
+    // C Zhang et al Phys. Rev. B 106, 115423
+    // S.ponce et al Phys. Rev. B 107, 155424
+    //
     UNUSED_VAR(qz);
 
     if (!Zval && !Zborn_k && !Qpole_k)
@@ -260,11 +272,15 @@ static void long_range_2D_kernel(
     ELPH_float cutoff_fac = 1.0 - exp(-qGp * 0.5) * cos_sin_fac;
     // Standard 2D Coulomb cutoff for the bare potential
 
-    ELPH_float f_q = 1.0 - tanh(Gp_norm * eta_induced * 0.25 * zlat);
-    // Evaluates f(|q|) using L = eta_induced*zlat/2
+    // Evaluates f(|q|) using L = eta_induced*4*pi*alpha_per*1.001
+    // Note eta_induced >= 1 to satisfy stablity condition
+    ELPH_float Leff =
+        epslion ? eta_induced * zlat * 1.001 * (1.0 - 1.0 / epslion[8])
+                : zlat * 0.5;
+    ELPH_float f_q = 1.0 - tanh(Gp_norm * 0.5 * Leff);
 
     ELPH_float eps_tilde_par = 1.0;
-    ELPH_float eps_tilde_perp = 1.0;
+    // ELPH_float eps_tilde_perp = 1.0;
 
     if (epslion)
     {
@@ -281,14 +297,28 @@ static void long_range_2D_kernel(
         }
         // In-plane macroscopic screening
 
-        ELPH_float alpha_perp =
-            (1.0 - 1.0 / epslion[8]) * zlat / (4.0 * ELPH_PI);
-        eps_tilde_perp = 1.0 - 2.0 * ELPH_PI * Gp_norm * f_q * alpha_perp;
-        // Out-of-plane macroscopic screening
+        /* ELPH_float alpha_perp = */
+        /*     (1.0 - 1.0 / epslion[8]) * zlat / (4.0 * ELPH_PI); */
+        // eps_tilde_perp = 1.0 - 2.0 * ELPH_PI * Gp_norm * f_q * alpha_perp;
+        //  Out-of-plane macroscopic screening
     }
 
-    ELPH_float eps_tilde_perp_inv =
-        (fabs(eps_tilde_perp) > ELPH_EPS) ? (1.0 / eps_tilde_perp) : 0.0;
+    /* ELPH_float eps_tilde_perp_inv = */
+    /*     (fabs(eps_tilde_perp) > ELPH_EPS) ? (1.0 / eps_tilde_perp) : 0.0; */
+    ELPH_float eps_tilde_perp_inv = 1.0;
+    /*
+     * Note on out-of-plane macroscopic screening:
+     * Using the exact 1/eps_perp formulation from Royo's paper introduces
+     * severe numerical instabilities at large q (near the BZ boundary). Since
+     * the term x = 2 * PI * |q| * f(q) * alpha_perp is strictly bounded < 1, we
+     * perform a Taylor expansion of the inverse screening: 1/(1-x) = 1 + x +
+     * ... The out-of-plane dipole term already carries a |q| prefactor.
+     * Retaining the dynamic x term (which is proportional to |q|) causes the
+     * potential to unphysically grow as O(|q|^2) at large q, which destroys the
+     * Wannier Wigner-Seitz truncation and causes Gibbs ringing. By truncating
+     * to the 0th order (eps_tilde_perp_inv = 1.0), we preserve the exact O(|q|)
+     * V-shape physics at Gamma while perfectly stabilizing the boundaries.
+     */
 
     ELPH_float Zval_buf[3] = {0.0, 0.0, 0.0};
     if (Zval)

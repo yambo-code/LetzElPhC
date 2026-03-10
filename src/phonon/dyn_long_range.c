@@ -133,8 +133,7 @@ static void add_ph_dyn_long_range_internal(
     // qpt in crystal coordinater
     //
     // (3D) X. Gonze et al  Phys. Rev. B 50, 13035(R)
-    // (2D ) T. Sohier et al Nano Lett. 2017, 17, 6, 3758–3763
-    // (2D) S. Ponce et al PHYSICAL REVIEW B 107, 155424 (2023)
+    // (2D ) M Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
     //
     // if atomic_masses is NULL, then the dynamical matrices are not mass
     // normalized.
@@ -252,12 +251,16 @@ static void add_ph_dyn_long_range_internal(
         ELPH_float q_eps_q = dot3_macro(tmp_buf, qplusG);
         ELPH_float q_eps_q_per = 1.0;
 
-        ELPH_float decay_fac = exp(-q_eps_q * q_eps_q * 0.125 / eta);
+        ELPH_float decay_fac = exp(-fabs(q_eps_q) * 0.125 / eta);
 
         if (lattice->dimension == '2')
         {
             // In 2D f(q) = 1-tanh(K*eta/2) is the decay factor
-            decay_fac = 1 - tanh(qplusG_norm * eta * 0.25 * zlat);
+            // Evaluates f(|q|) using L = eta_induced*4*pi*alpha_per*1.001
+            // Note eta >= 1 to satisfy stablity condition
+            ELPH_float Leff =
+                eta * zlat * 1.001 * (1.0 - 1.0 / phonon->epsilon[8]);
+            decay_fac = 1 - tanh(qplusG_norm * 0.5 * Leff);
             // L = eta * zlat/2
             if (fabs(decay_fac) < ELPH_EPS)
             {
@@ -266,8 +269,16 @@ static void add_ph_dyn_long_range_internal(
 
             q_eps_q *= decay_fac;
             q_eps_q += qplusG_norm;
-            q_eps_q_per = 1 - 0.5 * zlat * qplusG_norm * decay_fac *
-                                  (1.0 - 1.0 / phonon->epsilon[8]);
+            /* q_eps_q_per = 1 - 0.5 * zlat * qplusG_norm * decay_fac * */
+            /*                       (1.0 - 1.0 / phonon->epsilon[8]); */
+            q_eps_q_per = 1.0;
+            // Note: The exact Royo 1/eps_perp causes unphysical divergence far
+            // from Gamma. Because x = 2*PI*|q|*f(q)*alpha_perp < 1, we Taylor
+            // expand 1/(1-x) ~ 1 + x. The out-of-plane dipole already has a |q|
+            // prefactor. Keeping the x ~ |q| term creates unphysical O(|q|^2)
+            // growth that breaks Wannier interpolation. Truncating to 0th-order
+            // (1.0) keeps the exact linear physics at Gamma and stabilizes the
+            // boundary.
             if (fabs(q_eps_q_per) < ELPH_EPS)
             {
                 q_eps_q_per = 0.0;

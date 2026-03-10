@@ -109,6 +109,26 @@ void interpolation_driver(const char* ELPH_input_file,
     if (lattice->dimension == '2')
     {
         quadrupole_3d_to_2d(lattice, phonon);
+        if (input_data->eta_induced < 1)
+        {
+            if (0 == mpi_comms->commW_rank)
+            {
+                puts(
+                    "Warning : eta_induced < 1 leads to unstable condition. "
+                    "forcing it to be 1");
+            }
+            input_data->eta_induced = 1.0;
+        }
+        if (input_data->eta_ph < 1)
+        {
+            if (0 == mpi_comms->commW_rank)
+            {
+                puts(
+                    "Warning : eta_ph < 1 leads to unstable condition. forcing "
+                    "it to be 1");
+            }
+            input_data->eta_ph = 1.0;
+        }
     }
     // We need atomic masses
     ELPH_float* atomic_masses = malloc(sizeof(*atomic_masses) * lattice->natom);
