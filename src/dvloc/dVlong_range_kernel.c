@@ -56,9 +56,10 @@ void dVlong_range_kernel(const ELPH_float* qpt, const ELPH_float* gvecs,
     // //
     //
     // (3D) C. Verdi, F. Giustino PhysRevLett.115.176401
-    // (2D) T Deng et. al Phys. Rev. B 103, 075410 (2021)
-    // (2D) T Sohier et. al  Phys. Rev. B 96, 075448 (2017)
-    // Quadrupoles : G Brunin et al Phys. Rev. Lett. 125, 136601
+    //      Quadrupoles : G Brunin et al Phys. Rev. Lett. 125, 136601
+    // (2D) : Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
+    //        C Zhang et al Phys. Rev. B 106, 115423
+    //        S.ponce et al Phys. Rev. B 107, 155424
     //
     for (ND_int i = 0; i < (3 * natom * npw_loc); ++i)
     {
@@ -237,9 +238,10 @@ static void long_range_2D_kernel(
     // Note Quadrupoles must be 2D normalized ones as given in
     // Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
     //
-    // Ref : Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
-    // C Zhang et al Phys. Rev. B 106, 115423
-    // S.ponce et al Phys. Rev. B 107, 155424
+    // Ref :
+    // 1) Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
+    // 2) C Zhang et al Phys. Rev. B 106, 115423
+    // 3) S.ponce et al Phys. Rev. B 107, 155424
     //
     UNUSED_VAR(qz);
 
@@ -374,6 +376,26 @@ static void long_range_2D_kernel(
         cexp(-I * (qplusG[0] * tau_k[0] + qplusG[1] * tau_k[1]));
     // In-plane phase factor for the induced potential
 
+    // -------------------------------------------------------------------------
+    // SPATIAL COORDINATE FFT EVALUATION
+    // -------------------------------------------------------------------------
+    // We evaluate the spatial coordinate 'z' using the 3D FFT framework.
+    // Simply transforming f(z) = z causes severe wrap-around artifacts due to
+    // the assumed periodicity of the discrete Fourier transform.
+    //
+    // Naive Fix: Truncating the signal with a step function (z * Theta(c/2 -
+    // |z|)) creates a sharp discontinuity at the edges, resulting in heavy
+    // Gibbs oscillations throughout the spatial domain upon inverse FFT.
+    //
+    // Robust Fix: We use a continuous trapezoidal window. This perfectly
+    // matches f(z) = z in our region of interest [-x*c/2, x*c/2] (where 'x' is
+    // slightly less than 1), and drops linearly to 0 at the boundaries. Because
+    // the function is continuous, its Fourier coefficients decay rapidly (as
+    // 1/k^2), effectively eliminating the Gibbs ringing. Analytical Expression:
+    // $$F(k) = -\frac{2i}{k^2 c} \left[ \frac{c/2}{c/2 - a} \sin(ka)
+    // - \frac{a}{c/2 - a} \sin\left(\frac{kc}{2}\right) \right]$$
+    //
+    //
     ELPH_float x = 0.95;
     ELPH_float Gz = qplusG[2];
     ELPH_cmplx f_Gz = 0.0;
