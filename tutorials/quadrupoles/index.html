@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../../theory/asr/">
+        <link rel="prev" href="../silicon_walkthrough/">
       
       
-        <link rel="next" href="../quadrupoles/">
+        <link rel="next" href="../../tests/">
       
       
         
@@ -23,7 +23,7 @@
     
     
       
-        <title>Silicon Walkthrough - LetzElPhC Documentation</title>
+        <title>Dynamical Quadrupoles - LetzElPhC Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#silicon-walkthrough-qe-letzelphc" class="md-skip">
+        <a href="#extracting-dynamical-quadrupoles-for-electronphonon-interpolation" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Silicon Walkthrough
+              Dynamical Quadrupoles
             
           </span>
         </div>
@@ -343,7 +343,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../silicon_walkthrough/" class="md-tabs__link">
           
   
   
@@ -1128,6 +1128,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../silicon_walkthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Silicon Walkthrough
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1147,7 +1175,7 @@
   <span class="md-ellipsis">
     
   
-    Silicon Walkthrough
+    Dynamical Quadrupoles
   
 
     
@@ -1165,7 +1193,7 @@
   <span class="md-ellipsis">
     
   
-    Silicon Walkthrough
+    Dynamical Quadrupoles
   
 
     
@@ -1191,10 +1219,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#step-1-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        Step 1: Prerequisites
       
     </span>
   </a>
@@ -1202,10 +1230,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#directory-structure" class="md-nav__link">
+  <a href="#step-2-preparing-the-phin-template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Directory Structure
+        Step 2: Preparing the ph.in Template
       
     </span>
   </a>
@@ -1213,10 +1241,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-scf-calculation" class="md-nav__link">
+  <a href="#step-3-generating-the-dfpt-input-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: SCF Calculation
+        Step 3: Generating the DFPT Input Files
       
     </span>
   </a>
@@ -1224,10 +1252,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-phonon-calculation" class="md-nav__link">
+  <a href="#step-4-running-the-dfpt-calculations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Phonon Calculation
+        Step 4: Running the DFPT Calculations
       
     </span>
   </a>
@@ -1235,61 +1263,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-nscf-calculation-yambo-setup" class="md-nav__link">
+  <a href="#step-5-fitting-the-quadrupole-tensors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: NSCF Calculation &amp; Yambo Setup
+        Step 5: Fitting the Quadrupole Tensors
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step 3: NSCF Calculation &amp; Yambo Setup">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-interpreting-the-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Interpreting the Diagnostics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6: Interpreting the Diagnostics">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#initialize-yambo-database" class="md-nav__link">
+  <a href="#1-matrix-rank-the-passfail-check" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Initialize Yambo Database
+        1. Matrix Rank — The Pass/Fail Check
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-4-letzelphc-preprocessing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: LetzElPhC Preprocessing
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-5-letzelphc-calculation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 5: LetzElPhC Calculation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 5: LetzElPhC Calculation">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
+  <a href="#2-r2-score-the-gold-standard" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Output
+        2. R² Score — The Gold Standard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-relative-norm-error-the-magnitude-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Relative Norm Error — The Magnitude Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-rmse-the-absolute-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. RMSE — The Absolute Scale
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-mean-relative-error-the-illusion-to-ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Mean Relative Error — The Illusion to Ignore
       
     </span>
   </a>
@@ -1305,34 +1349,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../quadrupoles/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dynamical Quadrupoles
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1399,10 +1415,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#step-1-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        Step 1: Prerequisites
       
     </span>
   </a>
@@ -1410,10 +1426,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#directory-structure" class="md-nav__link">
+  <a href="#step-2-preparing-the-phin-template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Directory Structure
+        Step 2: Preparing the ph.in Template
       
     </span>
   </a>
@@ -1421,10 +1437,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-scf-calculation" class="md-nav__link">
+  <a href="#step-3-generating-the-dfpt-input-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: SCF Calculation
+        Step 3: Generating the DFPT Input Files
       
     </span>
   </a>
@@ -1432,10 +1448,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-phonon-calculation" class="md-nav__link">
+  <a href="#step-4-running-the-dfpt-calculations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Phonon Calculation
+        Step 4: Running the DFPT Calculations
       
     </span>
   </a>
@@ -1443,61 +1459,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-nscf-calculation-yambo-setup" class="md-nav__link">
+  <a href="#step-5-fitting-the-quadrupole-tensors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: NSCF Calculation &amp; Yambo Setup
+        Step 5: Fitting the Quadrupole Tensors
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step 3: NSCF Calculation &amp; Yambo Setup">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-interpreting-the-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Interpreting the Diagnostics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6: Interpreting the Diagnostics">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#initialize-yambo-database" class="md-nav__link">
+  <a href="#1-matrix-rank-the-passfail-check" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Initialize Yambo Database
+        1. Matrix Rank — The Pass/Fail Check
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-4-letzelphc-preprocessing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: LetzElPhC Preprocessing
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-5-letzelphc-calculation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 5: LetzElPhC Calculation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 5: LetzElPhC Calculation">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
+  <a href="#2-r2-score-the-gold-standard" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Output
+        2. R² Score — The Gold Standard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-relative-norm-error-the-magnitude-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Relative Norm Error — The Magnitude Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-rmse-the-absolute-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. RMSE — The Absolute Scale
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-mean-relative-error-the-illusion-to-ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Mean Relative Error — The Illusion to Ignore
       
     </span>
   </a>
@@ -1529,136 +1561,206 @@
   
 
 
-<h1 id="silicon-walkthrough-qe-letzelphc">Silicon Walkthrough (QE + LetzElPhC)</h1>
-<p>This tutorial provides a step-by-step walkthrough of the example located in <code>examples/qe/silicon</code>. We will compute the electron-phonon matrix elements for bulk Silicon.</p>
-<h2 id="prerequisites">Prerequisites</h2>
+<h1 id="extracting-dynamical-quadrupoles-for-electronphonon-interpolation">Extracting Dynamical Quadrupoles for Electron–Phonon Interpolation</h1>
+<p>In polar and piezoelectric materials, atomic displacements generate microscopic electric quadrupoles <a href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.9.021050">(Royo et al., PRX 2019)</a>.
+In 2D materials, these quadrupoles are also responsible for coupling out-of-plane phonon modes to in-plane
+electric fields <a href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.041027">(Royo et al., PRX 2021)</a>.
+To achieve accurate electron–phonon interpolation in such systems, the long-range analytical
+contribution of these quadrupoles must be subtracted from the change in potentials on the coarse
+grid. This leaves a perfectly smooth, short-range residual that can be safely interpolated onto a
+fine grid.</p>
+<p>Unlike Born effective charges, which are a byproduct of standard phonon calculations, the quadrupole
+tensors require a dedicated extraction procedure. This tutorial covers how to compute them using
+Quantum ESPRESSO (≥ 7.5) and the <a href="https://gitlab.com/QEF/q-e/-/blob/develop/test-suite/ph_multipole/multipole.py"><code>multipole.py</code></a> script.</p>
+<hr />
+<h2 id="step-1-prerequisites">Step 1: Prerequisites</h2>
+<p>Before starting, ensure the following are in place:</p>
 <ul>
-<li>Quantum Espresso (<code>pw.x</code>, <code>ph.x</code>)</li>
-<li>Yambo (<code>p2y</code>, <code>yambo</code>)</li>
-<li>LetzElPhC (<code>lelphc</code>)</li>
-<li>The <code>Si.upf</code> pseudopotential (included in the example directory).</li>
+<li>A converged SCF calculation with its <code>.save</code> folder present in the working directory.</li>
+<li>The SCF input file is named <strong><code>scf.in</code></strong>.</li>
+<li>Quantum ESPRESSO version <strong>≥ 7.5</strong> is available.</li>
 </ul>
-<h2 id="directory-structure">Directory Structure</h2>
-<p>The example directory is organized as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>examples/qe/silicon/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── Si.upf          # Pseudopotential
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── run.sh          # All-in-one script
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── scf/            # Step 1: SCF
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── ph/             # Step 2: Phonons
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── nscf/           # Step 3: NSCF &amp; Yambo Setup
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└── elph/           # Step 4: LetzElPhC Calculation
-</code></pre></div>
-<p>You can run the entire workflow using <code>./run.sh</code>, but we will go through each step manually to understand the process.</p>
 <hr />
-<h2 id="step-1-scf-calculation">Step 1: SCF Calculation</h2>
-<p>First, we perform a self-consistent field (SCF) calculation to obtain the ground state density.</p>
-<p><strong>Input:</strong> <code>scf/scf.in</code></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">&amp;</span><span class="n">CONTROL</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="n">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;si&#39;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="n">calculation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;scf&#39;</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="p">...</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">/</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">&amp;</span><span class="nb">SYSTEM</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">  </span><span class="n">ibrav</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">nat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">ntyp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="n">ecutwfc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="mf">0.0</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p">...</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="o">/</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">...</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">K_POINTS</span><span class="w"> </span><span class="n">automatic</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="mi">4</span><span class="w">  </span><span class="mi">4</span><span class="w">  </span><span class="mi">4</span><span class="w">  </span><span class="mi">0</span><span class="w">  </span><span class="mi">0</span><span class="w">  </span><span class="mi">0</span>
+<h2 id="step-2-preparing-the-phin-template">Step 2: Preparing the <code>ph.in</code> Template</h2>
+<p><code>multipole.py</code>  requires a template <code>ph.in</code> file. The template is provided below — save it as <code>ph.in</code> in the same directory containing your <code>.save</code> folder.
+<div class="highlight"><span class="filename">ph.in</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">phonons</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">grid</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w"> </span><span class="p">&amp;</span><span class="n">inputph</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="n">reduce_io</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="n">outdir</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="c">! Set you output directory</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="n">prefix</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;your_prefix&#39;</span><span class="p">,</span><span class="w"> </span><span class="c">! your scf prefix</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="n">tr2_ph</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-20</span><span class="p">,</span><span class="w">       </span><span class="c">! Set this bit high for good values</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="n">search_sym</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.,</span><span class="w">     </span><span class="c">! Symmetry must be off for random q-point clouds.</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="n">lmultipole</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.,</span><span class="w">      </span><span class="c">! Writes the charge-density response to disk.</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="n">fildrho</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;drho.dat.{}&#39;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="n">fildvscf</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;drhodv.dat.{}&#39;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w"> </span><span class="o">/</span>
+</code></pre></div></p>
+<div class="admonition warning">
+<ul>
+<li><strong><code>tr2_ph</code></strong> : A loose threshold produces noisy response functions that degrade the fit.</li>
+</ul>
+</div>
+<hr />
+<h2 id="step-3-generating-the-dfpt-input-files">Step 3: Generating the DFPT Input Files</h2>
+<p>After creating the <code>ph.in</code> template file, run <code>multipole.py</code> in preparation mode from the directory containing your <code>.save</code> folder:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-e<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>-p<span class="w"> </span>--alat<span class="w"> </span>1B<span class="w"> </span>--q_min<span class="w"> </span><span class="m">0</span>.005<span class="w"> </span>--q_max<span class="w"> </span><span class="m">0</span>.015<span class="w"> </span>--nq<span class="w"> </span><span class="m">25</span>
 </code></pre></div>
-<p><strong>Command:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>scf
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pw.x<span class="w"> </span>&lt;<span class="w"> </span>scf.in<span class="w"> </span>&gt;<span class="w"> </span>scf.out
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">cd</span><span class="w"> </span>..
+This command produces <code>qpoints.dat</code> and a set of <code>ph.in.X</code> input files, one per q-point.</p>
+<p><strong>Flag reference:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-p</code></td>
+<td>Preparation mode — generates <code>qpoints.dat</code> and the numbered <code>ph.in.X</code> input files.</td>
+</tr>
+<tr>
+<td><code>--order 3</code></td>
+<td>Fits up to quadrupole order (<span class="arithmatex">\(\mathcal{O}(q^3)\)</span>).</td>
+</tr>
+<tr>
+<td><code>-e</code> / <code>--epsil_order 4</code></td>
+<td><strong>3D bulk only.</strong> Simultaneously fits and subtracts the macroscopic electric-field divergence alongside the multipoles.</td>
+</tr>
+<tr>
+<td><code>--alat 1B</code></td>
+<td>Sets the lattice parameter units to Bohr (a.u.). Here, <code>1B</code> represents <code>1 Bohr</code>. <strong>Replace</strong> <code>1</code> with the actual numerical values. You can easily find the value in the output of your <code>scf</code> run (search for <code>lattice parameter (alat)</code>).</td>
+</tr>
+<tr>
+<td><code>--q_min</code> / <code>--q_max</code></td>
+<td>Defines the spherical q-point shell (in units of <span class="arithmatex">\(2\pi/a\)</span>). This needs to checked carefully (see <a href="#step-6-interpreting-the-diagnostics">Step 6</a>). A good starting range is <code>q_min = 0.001 * alat</code> and <code>q_max = 0.003*alat</code></td>
+</tr>
+<tr>
+<td><code>--nq 15</code></td>
+<td>Number of randomised q-points within the shell.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">2D materials</p>
+<p>For 2D materials, it is recommended to perform a separate <code>scf</code> run without the <code>assume_isolated</code> flag, solely for computing the quadrupoles.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>In most cases, it is better to turn off spin-orbit coupling to reduce computational cost.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Choosing <code>--nq</code></p>
+<p>Highly anisotropic or strongly piezoelectric materials (e.g., wurtzite-type structures) require
+more points (15–25) to properly sample the 3D asymmetry of the response. As a rule of thumb,
+use at least <strong>1.5 × (free multipole components)</strong> — see <a href="#step-6-interpreting-the-diagnostics">Step 6</a>.</p>
+</div>
+<hr />
+<h2 id="step-4-running-the-dfpt-calculations">Step 4: Running the DFPT Calculations</h2>
+<p>Submit the calculations for each generated q-point:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>srun<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">SLURM_NTASKS</span><span class="si">}</span><span class="w"> </span>ph.x<span class="w"> </span>-nk<span class="w"> </span><span class="m">8</span><span class="w"> </span>&lt;<span class="w"> </span>ph.in.X<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>ph.out
+</code></pre></div></p>
+<div class="admonition tip">
+<p class="admonition-title">Computational cost</p>
+<p>Each q-point requires only a <strong>single</strong> self-consistent response loop, making these runs
+significantly cheaper than a full phonon calculation (phonons require roughly <span class="arithmatex">\(3 \times natom\)</span>). The investment is well worth the
+improvement in phonon deformation potentials and interpolation accuracy.</p>
+</div>
+<hr />
+<h2 id="step-5-fitting-the-quadrupole-tensors">Step 5: Fitting the Quadrupole Tensors</h2>
+<p>Once all <code>drho.dat.X</code> files have been generated, run the least-squares fit using the <strong>same physics
+flags</strong> as in Step 2:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-f<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>--alat<span class="w"> </span>1B
+</code></pre></div></p>
+<p>The script will:</p>
+<ol>
+<li>Apply your crystal's spatial symmetry constraints to the tensor components.</li>
+<li>Analytically subtract the macroscopic electric-field contribution (if <code>-e</code> was specified).</li>
+<li>Solve an overdetermined least-squares system for the multipole tensors.</li>
+</ol>
+<p>After the fit completes, copy the output file to your <code>ph_save</code> directory:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp<span class="w"> </span>quadrupole.fmt<span class="w"> </span>/path/to/ph_save/
 </code></pre></div></p>
 <hr />
-<h2 id="step-2-phonon-calculation">Step 2: Phonon Calculation</h2>
-<p>Next, we calculate the phonons and the deformation potentials (<span class="arithmatex">\(\delta V_{SCF}\)</span>) on a uniform q-grid.</p>
-<p><strong>Input:</strong> <code>ph/ph.in</code></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">&amp;</span><span class="n">inputph</span><span class="w"> </span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="n">nq1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nq2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nq3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">   </span><span class="c">! 2x2x2 q-grid</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="n">fildyn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;si.dyn&#39;</span><span class="p">,</span><span class="w"> </span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="n">tr2_ph</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-12</span><span class="p">,</span><span class="w"> </span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="n">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;si&#39;</span><span class="p">,</span><span class="w"> </span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="n">fildvscf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;dvscf&#39;</span><span class="p">,</span><span class="w">          </span><span class="c">! Important: Save potential changes</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="n">ldisp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.,</span><span class="w"> </span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="n">reduce_io</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="o">/</span><span class="w"> </span>
-</code></pre></div>
-<p><strong>Important Notes:</strong>
-*   We use a <strong>2x2x2 q-grid</strong>.
-*   <code>fildvscf</code> is specified to save the potential variation files.</p>
-<p><strong>Command:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">cd</span><span class="w"> </span>ph
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>cp<span class="w"> </span>-r<span class="w"> </span>../scf/si.*<span class="w"> </span>.<span class="w">  </span><span class="c1"># Copy SCF data</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>ph.x<span class="w"> </span>&lt;<span class="w"> </span>ph.in<span class="w"> </span>&gt;<span class="w"> </span>ph.out
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nb">cd</span><span class="w"> </span>..
+<h2 id="step-6-interpreting-the-diagnostics">Step 6: Interpreting the Diagnostics</h2>
+<p>The script prints a diagnostic block similar to the following:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Summary of multipole tensors fitting:
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>- Free multipole components:    10
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>- Rank of coefficient matrix:   10
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>- RMSE:                         8.57e-04 |e| / bohr³
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>- Mean relative error:          7.20e+07
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>- Relative norm error:          0.0626
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>- R² score:                     0.9961
 </code></pre></div></p>
+<p>Each metric answers a specific question about the quality of your fit. If the fit quality is poor, you need to rerun the calculations with better inputs, mostly adjusting <code>q_min</code>, <code>q_max</code>, and <code>nq</code>.</p>
 <hr />
-<h2 id="step-3-nscf-calculation-yambo-setup">Step 3: NSCF Calculation &amp; Yambo Setup</h2>
-<p>We need the electronic wavefunctions on a k-grid that is commensurate with our phonon q-grid.</p>
-<p><strong>Input:</strong> <code>nscf/nscf.in</code></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">&amp;</span><span class="n">CONTROL</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="n">calculation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;nscf&#39;</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="n">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;si&#39;</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="p">...</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="o">/</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">&amp;</span><span class="nb">SYSTEM</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="p">...</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="n">nbnd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w">                  </span><span class="c">! Number of bands</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="n">force_symmorphic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w">  </span><span class="c">! Crucial for Yambo compatibility</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="o">/</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">...</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">K_POINTS</span><span class="w"> </span><span class="n">automatic</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="mi">4</span><span class="w">  </span><span class="mi">4</span><span class="w">  </span><span class="mi">4</span><span class="w">  </span><span class="mi">0</span><span class="w">  </span><span class="mi">0</span><span class="w">  </span><span class="mi">0</span><span class="w">         </span><span class="c">! 4x4x4 k-grid (commensurate with 2x2x2 q-grid)</span>
-</code></pre></div>
-<p><strong>Command:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>nscf
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>cp<span class="w"> </span>-r<span class="w"> </span>../scf/si.*<span class="w"> </span>.<span class="w">  </span><span class="c1"># Copy SCF data</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>pw.x<span class="w"> </span>&lt;<span class="w"> </span>nscf.in<span class="w"> </span>&gt;<span class="w"> </span>nscf.out
-</code></pre></div></p>
-<h3 id="initialize-yambo-database">Initialize Yambo Database</h3>
-<p>Once the NSCF run is complete, we enter the save directory and initialize the Yambo database.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>si.save
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>p2y<span class="w">        </span><span class="c1"># Convert QE data to Yambo format</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>yambo<span class="w">      </span><span class="c1"># Initialize Yambo SAVE directory</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">cd</span><span class="w"> </span>../..
-</code></pre></div>
+<h4 id="1-matrix-rank-the-passfail-check">1. Matrix Rank — The Pass/Fail Check</h4>
+<blockquote>
+<p><strong>Rule:</strong> <code>Rank of coefficient matrix</code> ≥ <code>Free multipole components</code></p>
+</blockquote>
+<p><strong>Free multipole components</strong> is the number of symmetry-independent tensor elements your crystal
+requires (e.g., 10 for a wurtzite structure). <strong>Rank</strong> is the number of linearly independent
+equations provided by your q-point cloud. If the rank falls short, the system is underdetermined
+and the fit is unreliable — increase <code>--nq</code> and rerun.</p>
 <hr />
-<h2 id="step-4-letzelphc-preprocessing">Step 4: LetzElPhC Preprocessing</h2>
-<p>Before running the main calculation, we run the preprocessor in the phonon directory to organize the phonon data into a <code>ph_save</code> directory.</p>
-<p><strong>Command:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">cd</span><span class="w"> </span>ph
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>lelphc<span class="w"> </span>-pp<span class="w"> </span>--code<span class="o">=</span>qe<span class="w"> </span>-F<span class="w"> </span>ph.in
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nb">cd</span><span class="w"> </span>..
-</code></pre></div>
-This creates <code>ph/ph_save</code>.</p>
+<h4 id="2-r2-score-the-gold-standard">2. R² Score — The Gold Standard</h4>
+<blockquote>
+<p><strong>Target:</strong> R² &gt; 0.99</p>
+</blockquote>
+<p>This measures how well the fitted analytical surface reproduces the raw DFT response data <em>after</em>
+the electric-field contribution has been removed. Interpretation:</p>
+<table>
+<thead>
+<tr>
+<th>R² value</th>
+<th>Diagnosis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>≥ 0.99</td>
+<td>Excellent fit.</td>
+</tr>
+<tr>
+<td>0.90 – 0.99</td>
+<td>Acceptable; consider tightening <code>tr2_ph</code> or adjusting the q-bracket.</td>
+</tr>
+<tr>
+<td>&lt; 0.90</td>
+<td>Likely noise-dominated or q-points are outside the valid analytical regime. Adjust <code>--q_min</code>/<code>--q_max</code>.</td>
+</tr>
+<tr>
+<td>&lt; 0.0</td>
+<td>The 3D non-analytic electric field was not properly subtracted. Verify the <code>-e</code> flag is being used for 3D bulk.</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="step-5-letzelphc-calculation">Step 5: LetzElPhC Calculation</h2>
-<p>Finally, we compute the electron-phonon matrix elements.</p>
-<p><strong>Input:</strong> <code>elph/elph.in</code></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="na">nkpool</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s">1</span><span class="w"> </span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="na">nqpool</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s">1</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="na">start_bnd</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s">2</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="na">end_bnd</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="s">6</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="na">save_dir</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s">../nscf/si.save/SAVE</span><span class="w">   </span><span class="c1"># Path to Yambo SAVE</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="na">ph_save_dir</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s">../ph/ph_save</span><span class="w">          </span><span class="c1"># Path to ph_save</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="na">kernel</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="s">dfpt</span><span class="w">                   </span><span class="c1"># Use full DFPT screening</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="na">convention</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s">standard</span><span class="w">               </span><span class="c1"># &lt;k+q|dV|k&gt;</span>
-</code></pre></div>
-<p><strong>Command:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>elph
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>lelphc<span class="w"> </span>-F<span class="w"> </span>elph.in
-</code></pre></div></p>
-<h3 id="output">Output</h3>
-<p>The code will generate:
-*   Standard output with progress information.
-*   <strong><code>ndb.elph</code></strong>: The database containing the electron-phonon matrix elements (in LetzElPhC format).
-*   If running with Yambopy or converting later, this can be transformed into Yambo's <code>ndb.elph_gkkp</code> databases.</p>
+<h4 id="3-relative-norm-error-the-magnitude-check">3. Relative Norm Error — The Magnitude Check</h4>
+<blockquote>
+<p><strong>Target:</strong> &lt; 0.10</p>
+</blockquote>
+<p>This compares the Euclidean norm of the fitted tensor to the norm of the DFT data vector. A value
+of 0.06 means the overall magnitude of the fit deviates from the data by only 6% — an exceptionally
+tight result for complex polar materials.</p>
+<hr />
+<h4 id="4-rmse-the-absolute-scale">4. RMSE — The Absolute Scale</h4>
+<blockquote>
+<p><strong>Target:</strong> 10⁻³ to 10⁻⁵ |e| / bohr³</p>
+</blockquote>
+<p>The root-mean-square error gives the absolute physical residual between the fit and the data. Values
+in this range confirm that the discrepancy is microscopic relative to the physical scale of the
+response.</p>
+<hr />
+<h4 id="5-mean-relative-error-the-illusion-to-ignore">5. Mean Relative Error — The Illusion to Ignore</h4>
+<blockquote>
+<p><strong>Rule:</strong> Disregard this metric for symmetric and piezoelectric crystals.</p>
+</blockquote>
+<p>Crystal symmetry often forces specific tensor components to be <em>exactly</em> zero. In practice, DFT
+outputs floating-point noise on the order of <span class="arithmatex">\(10^{-15}\)</span> rather than a true zero. The
+component-by-component division used to compute this metric then divides by near-zero denominators,
+causing the mean to explode to tens of millions of percent. <strong>If your R² and RMSE are excellent,
+this number is meaningless and should be ignored entirely.</strong></p>
 
 
 

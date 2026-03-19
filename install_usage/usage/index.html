@@ -913,34 +913,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#3-interpolation-calculation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Interpolation Calculation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Interpolation Calculation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#input-file-description-interpolatein" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Input File Description (interpolate.in)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1405,6 +1377,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/quadrupoles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamical Quadrupoles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1643,34 +1643,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#3-interpolation-calculation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Interpolation Calculation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Interpolation Calculation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#input-file-description-interpolatein" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Input File Description (interpolate.in)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1861,21 +1833,26 @@ Check the <code>SAVE</code> directory for Yambo-compatible databases:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ls<span class="w"> </span>SAVE/ndb.elph*
 </code></pre></div></p>
 <hr />
-<h2 id="3-interpolation-calculation">3. Interpolation Calculation</h2>
-<p>Computing phonons (dynamical matrices and deformation potentials) is often computationally demanding; therefore, it is necessary to rely on interpolation methods. This is commonly done for dynamical matrices and has become the default approach for obtaining phonon dispersions.</p>
-<p>In this section, we discuss how to use the LetzElPhC code to generate dynamical matrices and deformation potentials by performing phonon calculations on a coarse grid and subsequently obtaining results on a much finer grid through Fourier interpolation.</p>
-<p>The procedure is as follows</p>
-<ol>
-<li>Create an input file for interpolation (e.g., <code>interpolate.in</code>).</li>
-<li>Run the <code>lelphc</code> preprocessor:
+<!--
+## 3. Interpolation Calculation
+
+Computing phonons (dynamical matrices and deformation potentials) is often computationally demanding; therefore, it is necessary to rely on interpolation methods. This is commonly done for dynamical matrices and has become the default approach for obtaining phonon dispersions.
+
+In this section, we discuss how to use the LetzElPhC code to generate dynamical matrices and deformation potentials by performing phonon calculations on a coarse grid and subsequently obtaining results on a much finer grid through Fourier interpolation.
+
+The procedure is as follows
+
+1.  Create an input file for interpolation (e.g., `interpolate.in`).
+2.  Run the `lelphc` interpolation program:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>lelphc<span class="w"> </span>-i<span class="w"> </span>--code<span class="o">=</span>qe<span class="w"> </span>-F<span class="w"> </span>interpolate.in
-</code></pre></div></li>
-<li>
-<p>A new ph_save directory is created, which can be directly used as input for the electron–phonon code to compute phonons on fine q-points, as usual.</p>
-<p>The flag <code>-i</code> tells the code to run the interpolation program.</p>
-</li>
-</ol>
-<h4 id="input-file-description-interpolatein">Input File Description (<code>interpolate.in</code>)</h4>
+</code></pre></div>
+3. A new ph_save directory is created, which can be directly used as input for the electron–phonon code to compute phonons on fine q-points, as usual.
+
+    The flag `-i` tells the code to run the interpolation program.
+
+
+#### Input File Description (`interpolate.in`)
+
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="na">ph_save_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">ph_save</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># Directory containing the coarse grid phonon data</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
@@ -1916,6 +1893,7 @@ Check the <code>SAVE</code> directory for Yambo-compatible databases:
 <a id="__codelineno-10-38" name="__codelineno-10-38" href="#__codelineno-10-38"></a><span class="c1"># qlist_file = &quot;&quot;</span>
 <a id="__codelineno-10-39" name="__codelineno-10-39" href="#__codelineno-10-39"></a><span class="c1"># Optional: File containing a specific list of q-points to interpolate</span>
 </code></pre></div>
+-->
 
 
 

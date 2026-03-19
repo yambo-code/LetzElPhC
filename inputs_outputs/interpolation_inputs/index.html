@@ -1159,6 +1159,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/quadrupoles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamical Quadrupoles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1370,8 +1398,9 @@ See <code>qlist_file</code> for details.</p>
 <li><strong>Type:</strong> <code>REAL</code></li>
 <li><strong>Default:</strong> <code>1.0</code></li>
 <li><strong>Description:</strong>
-    Ewald parameter used for screened long-range interactions (dipoles, quadrupoles, phonon dynamical matrices).<ul>
-<li>Must be a positive value.</li>
+    Ewald parameter used for seperation of long-range and short range potentials. Used for interpolation of <span class="arithmatex">\(\partial V_{scf}\)</span><ul>
+<li>Must be a positive value. For 2D systems, must be <code>eta_induced &gt;= 1</code></li>
+<li>In the case of 3D, a Gaussian decay factor <span class="arithmatex">\(e^{-\frac{|\mathbf{q}+\mathbf{G}|^2}{4\eta_{\text{induced}}}}\)</span> is applied. For 2D, the macroscopic decay is governed by <span class="arithmatex">\(1 - \tanh\left(\frac{|\mathbf{q}+\mathbf{G}|_{\parallel} L}{2}\right)\)</span>, where the effective slab thickness is bounded by the out-of-plane polarizability condition <span class="arithmatex">\(L = 4\pi\alpha_{\perp} \times 1.001 \times \eta_{\text{induced}}\)</span>.</li>
 </ul>
 </li>
 </ul>
@@ -1381,8 +1410,9 @@ See <code>qlist_file</code> for details.</p>
 <li><strong>Type:</strong> <code>REAL</code></li>
 <li><strong>Default:</strong> <code>1.0</code></li>
 <li><strong>Description:</strong>
-    Ewald summation parameter used specifically for the interpolation of dynamical matrices.<ul>
-<li>Must be a positive value.</li>
+    Ewald parameter used for seperation of long-range and short range force constants. Used specifically for the interpolation of dynamical matrices.<ul>
+<li>Must be a positive value. For 2D systems, must be <code>eta_ph &gt;= 1</code></li>
+<li>In the case of 3D, a Gaussian decay factor <span class="arithmatex">\(e^{-\frac{|\mathbf{q}+\mathbf{G}|^2}{4\eta_{\text{ph}}}}\)</span> is applied. For 2D, the macroscopic decay is governed by <span class="arithmatex">\(1 - \tanh\left(\frac{|\mathbf{q}+\mathbf{G}|_{\parallel} L}{2}\right)\)</span>, where the effective slab thickness is bounded by the out-of-plane polarizability condition <span class="arithmatex">\(L = 4\pi\alpha_{\perp} \times 1.001 \times \eta_{\text{ph}}\)</span>.</li>
 </ul>
 </li>
 </ul>
