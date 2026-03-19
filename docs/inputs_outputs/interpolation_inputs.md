@@ -111,15 +111,17 @@ These variables control the interpolation calculations.
     * **Type:** `REAL`
     * **Default:** `1.0`
     * **Description:**
-        Ewald parameter used for screened long-range interactions (dipoles, quadrupoles, phonon dynamical matrices).
-        * Must be a positive value.
+        Ewald parameter used for seperation of long-range and short range potentials. Used for interpolation of $\partial V_{scf}$
+        * Must be a positive value. For 2D systems, must be `eta_induced >= 1`
+        * In the case of 3D, a Gaussian decay factor $e^{-\frac{|\mathbf{q}+\mathbf{G}|^2}{4\eta_{\text{induced}}}}$ is applied. For 2D, the macroscopic decay is governed by $1 - \tanh\left(\frac{|\mathbf{q}+\mathbf{G}|_{\parallel} L}{2}\right)$, where the effective slab thickness is bounded by the out-of-plane polarizability condition $L = 4\pi\alpha_{\perp} \times 1.001 \times \eta_{\text{induced}}$.
 
 === "eta_ph"
     * **Type:** `REAL`
     * **Default:** `1.0`
     * **Description:**
-        Ewald summation parameter used specifically for the interpolation of dynamical matrices.
-        * Must be a positive value.
+        Ewald parameter used for seperation of long-range and short range force constants. Used specifically for the interpolation of dynamical matrices.
+        * Must be a positive value. For 2D systems, must be `eta_ph >= 1`
+        * In the case of 3D, a Gaussian decay factor $e^{-\frac{|\mathbf{q}+\mathbf{G}|^2}{4\eta_{\text{ph}}}}$ is applied. For 2D, the macroscopic decay is governed by $1 - \tanh\left(\frac{|\mathbf{q}+\mathbf{G}|_{\parallel} L}{2}\right)$, where the effective slab thickness is bounded by the out-of-plane polarizability condition $L = 4\pi\alpha_{\perp} \times 1.001 \times \eta_{\text{ph}}$.
 
 === "qlist_file"
     * **Type:** `STRING`

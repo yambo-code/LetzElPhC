@@ -49,5 +49,3 @@ void multiply_eikr(ELPH_cmplx* pot_grid, const ELPH_float* qpt_crys,
 
 void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
                         const struct ELPH_MPI_Comms* Comm);
-
-void free_vlocg_table(struct Vloc_table* vloc_table);

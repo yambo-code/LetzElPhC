@@ -36,3 +36,5 @@ void apply_acoustic_sum_rule_fc(enum asr_kind mode, const ND_int* qgrid,
 
 void apply_acoustic_sum_rule_born_charges(enum asr_kind mode, ELPH_float* Zborn,
                                           const ND_int natom);
+
+void quadrupole_3d_to_2d(struct Lattice* lattice, struct Phonon* phonon);

@@ -14,6 +14,15 @@
  * but still let's stick to the stardard !
  * */
 
+void init_wfc_type(struct WFC* wfc)
+{
+    memset(wfc, 0, sizeof(*wfc));
+
+    wfc->wfc = NULL;
+    wfc->gvec = NULL;
+    wfc->Fk = NULL;
+}
+
 void init_lattice_type(struct Lattice* lattice)
 {
     memset(lattice, 0, sizeof(*lattice));

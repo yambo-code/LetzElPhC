@@ -56,9 +56,10 @@ void dVlong_range_kernel(const ELPH_float* qpt, const ELPH_float* gvecs,
     // //
     //
     // (3D) C. Verdi, F. Giustino PhysRevLett.115.176401
-    // (2D) T Deng et. al Phys. Rev. B 103, 075410 (2021)
-    // (2D) T Sohier et. al  Phys. Rev. B 96, 075448 (2017)
-    // Quadrupoles : G Brunin et al Phys. Rev. Lett. 125, 136601
+    //      Quadrupoles : G Brunin et al Phys. Rev. Lett. 125, 136601
+    // (2D) : Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
+    //        C Zhang et al Phys. Rev. B 106, 115423
+    //        S.ponce et al Phys. Rev. B 107, 155424
     //
     for (ND_int i = 0; i < (3 * natom * npw_loc); ++i)
     {
@@ -82,9 +83,26 @@ void dVlong_range_kernel(const ELPH_float* qpt, const ELPH_float* gvecs,
             qplusG[i] = 2 * ELPH_PI * (qpt[i] + gtmp[i]);
         }
         const ELPH_float qplusG_norm2 = dot3_macro(qplusG, qplusG);
-        if (qplusG_norm2 > EcutRy)
+        if (diminsion == '3' && qplusG_norm2 > EcutRy)
         {
             continue;
+        }
+        if (diminsion == '2')
+        {
+            ELPH_float qplusG_par_norm =
+                sqrt(qplusG[0] * qplusG[0] + qplusG[1] * qplusG[1]);
+
+            // Evaluates f(|q|) using L = eta_induced*4*pi*alpha_per*1.001
+            // Note eta_induced >= 1 to satisfy stablity condition
+            ELPH_float Leff =
+                epslion ? eta_induced * zlat * 1.001 * (1.0 - 1.0 / epslion[8])
+                        : zlat * 0.5;
+            ELPH_float f_q = 1.0 - tanh(qplusG_par_norm * 0.5 * Leff);
+
+            if (fabs(f_q) < ELPH_EPS && (!Zvals || qplusG_norm2 > EcutRy))
+            {
+                continue;
+            }
         }
         for (ND_int ia = 0; ia < natom; ++ia)
         {
@@ -217,77 +235,94 @@ static void long_range_2D_kernel(
     const ELPH_float eta_bare, const ELPH_float eta_induced,
     ELPH_cmplx* out_buf)
 {
-    // Compute long range part of the electron-phonon matrix elements for 2D
-    // case. Zval -> valence charge (for monopole) Z_born_k-> born charges (for
-    // dipole) Qpole_k -> Quadrupoles In general we donot need monolope when we
-    // considered total dVSCF i.e dV_ext + dVHa_xc. But in Q.E, only dVHa_xc is
-    // considered, so sometime we need to subtract the monopole (if there is
-    // external potential this will cancell the monopole long range compoment)
+    // Note Quadrupoles must be 2D normalized ones as given in
+    // Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
     //
-    // G space dipole term for frohlich in 2D
-    // NM : We do everything in G space and add a cutoff like the hatree
-    // to avoid the fake periodicity and rapidly converge with Gz vectors.
-    // T Deng et. al Phys. Rev. B 103, 075410 (2021)
-    // T Sohier et. al  Phys. Rev. B 96, 075448 (2017)
-    // S. Ponce et al PHYSICAL REVIEW B 107, 155424 (2023)
-
-    // tau_k are atomic coordinates of atom k in cart
-    // q+G, qz in cart with 2*pi included ,
-    // Zborn_k, born charges for atom k
-    // zlat : lattice parameter along z parameter.
-
+    // Ref :
+    // 1) Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
+    // 2) C Zhang et al Phys. Rev. B 106, 115423
+    // 3) S.ponce et al Phys. Rev. B 107, 155424
+    //
     UNUSED_VAR(qz);
 
     if (!Zval && !Zborn_k && !Qpole_k)
     {
         return;
     }
-    //
+
     ELPH_float q_G_square = dot3_macro(qplusG, qplusG);
-    //
+
     if (sqrt(q_G_square) < ELPH_EPS)
     {
-        // skip q+G = 0 term
         return;
     }
-    // struture factor
+    // Skip q+G = 0 term
+
     ELPH_cmplx qdot_tau = cexp(-I * (dot3_macro(qplusG, tau_k)));
+    // Structure factor (3D) used exclusively for the bare potential
 
     ELPH_float Gp_norm = sqrt(qplusG[0] * qplusG[0] + qplusG[1] * qplusG[1]);
     ELPH_float qGp = zlat * Gp_norm;
     ELPH_float cos_sin_fac = cos(qplusG[2] * zlat * 0.5);
+
     if (Gp_norm > ELPH_EPS)
     {
         cos_sin_fac =
             cos_sin_fac - sin(qplusG[2] * zlat * 0.5) * qplusG[2] / Gp_norm;
     }
-    ELPH_float cutoff_fac = 1 - exp(-qGp * 0.5) * cos_sin_fac;
 
-    ELPH_float q_eps_q = q_G_square;
+    ELPH_float cutoff_fac = 1.0 - exp(-qGp * 0.5) * cos_sin_fac;
+    // Standard 2D Coulomb cutoff for the bare potential
+
+    // Evaluates f(|q|) using L = eta_induced*4*pi*alpha_per*1.001
+    // Note eta_induced >= 1 to satisfy stablity condition
+    ELPH_float Leff =
+        epslion ? eta_induced * zlat * 1.001 * (1.0 - 1.0 / epslion[8])
+                : zlat * 0.5;
+    ELPH_float f_q = 1.0 - tanh(Gp_norm * 0.5 * Leff);
+
+    ELPH_float eps_tilde_par = 1.0;
+    // ELPH_float eps_tilde_perp = 1.0;
+
     if (epslion)
     {
-        // compute (q+G).eps.(q+G)
-        q_eps_q = (epslion[0] - 1) * qplusG[0] * qplusG[0] +
-                  (epslion[4] - 1) * qplusG[1] * qplusG[1] +
-                  (epslion[1] + epslion[3]) * qplusG[0] * qplusG[1];
-        q_eps_q *= (0.5 * zlat);
-        if (Gp_norm < ELPH_EPS)
+        ELPH_float q_alpha_q =
+            (epslion[0] - 1.0) * qplusG[0] * qplusG[0] +
+            (epslion[4] - 1.0) * qplusG[1] * qplusG[1] +
+            (epslion[1] + epslion[3]) * qplusG[0] * qplusG[1];
+        q_alpha_q *= (0.5 * zlat);
+        // Computes 2 * PI * q . alpha_par . q
+
+        if (Gp_norm > ELPH_EPS)
         {
-            q_eps_q = 0.0;
+            eps_tilde_par = 1.0 + f_q * q_alpha_q / Gp_norm;
         }
-        else
-        {
-            q_eps_q /= (Gp_norm);
-        }
-        //
-        q_eps_q += 1.0;
+        // In-plane macroscopic screening
+
+        /* ELPH_float alpha_perp = */
+        /*     (1.0 - 1.0 / epslion[8]) * zlat / (4.0 * ELPH_PI); */
+        // eps_tilde_perp = 1.0 - 2.0 * ELPH_PI * Gp_norm * f_q * alpha_perp;
+        //  Out-of-plane macroscopic screening
     }
 
+    /* ELPH_float eps_tilde_perp_inv = */
+    /*     (fabs(eps_tilde_perp) > ELPH_EPS) ? (1.0 / eps_tilde_perp) : 0.0; */
+    ELPH_float eps_tilde_perp_inv = 1.0;
+    /*
+     * Note on out-of-plane macroscopic screening:
+     * Using the exact 1/eps_perp formulation from Royo's paper introduces
+     * severe numerical instabilities at large q (near the BZ boundary). Since
+     * the term x = 2 * PI * |q| * f(q) * alpha_perp is strictly bounded < 1, we
+     * perform a Taylor expansion of the inverse screening: 1/(1-x) = 1 + x +
+     * ... The out-of-plane dipole term already carries a |q| prefactor.
+     * Retaining the dynamic x term (which is proportional to |q|) causes the
+     * potential to unphysically grow as O(|q|^2) at large q, which destroys the
+     * Wannier Wigner-Seitz truncation and causes Gibbs ringing. By truncating
+     * to the 0th order (eps_tilde_perp_inv = 1.0), we preserve the exact O(|q|)
+     * V-shape physics at Gamma while perfectly stabilizing the boundaries.
+     */
+
     ELPH_float Zval_buf[3] = {0.0, 0.0, 0.0};
-    ELPH_float Zborn_buf[3] = {0.0, 0.0, 0.0};
-    ELPH_float Qpole_buf[3] = {0.0, 0.0, 0.0};
-    //
-    ELPH_float qplusG_par[3] = {qplusG[0], qplusG[1], 0.0};
     if (Zval)
     {
         for (int i = 0; i < 3; ++i)
@@ -295,44 +330,128 @@ static void long_range_2D_kernel(
             Zval_buf[i] = -(*Zval) * qplusG[i];
         }
     }
-    // compute (q+G).Z
+
+    ELPH_float qplusG_par[3] = {qplusG[0], qplusG[1], 0.0};
+    ELPH_float Zborn_buf[3] = {0.0, 0.0, 0.0};
+
     if (epslion && Zborn_k)
     {
         MatVec3f(Zborn_k, qplusG_par, true, Zborn_buf);
     }
-    // compute (q+G)_x Q_xyz * (q+G)_y
-    // (pol,pol,atom_dir)
+    // Computes in-plane q . Z
+
+    ELPH_float Q_in[3] = {0.0, 0.0, 0.0};
+    ELPH_float Q_zz[3] = {0.0, 0.0, 0.0};
+    ELPH_float Q_z[3] = {0.0, 0.0, 0.0};
+
     if (epslion && Qpole_k)
     {
-        for (int i = 0; i < 3; ++i)
+        for (int a = 0; a < 3; ++a)
         {
-            for (int j = 0; j < 3; ++j)
+            for (int j = 0; j < 2; ++j)
             {
-                for (int k = 0; k < 3; ++k)
+                for (int k = 0; k < 2; ++k)
                 {
-                    Qpole_buf[k] =
-                        Qpole_buf[k] + qplusG_par[i] * qplusG_par[j] *
-                                           Qpole_k[k + 3 * j + 9 * i];
+                    Q_in[a] += qplusG_par[j] * qplusG_par[k] *
+                               Qpole_k[a + 3 * k + 9 * j];
                 }
             }
-        }
-        // subtract Qzz|q+G|^2
-        for (int i = 0; i < 3; ++i)
-        {
-            Qpole_buf[i] -= (Gp_norm * Gp_norm * Qpole_k[i + 24]);
+            // Computes in-plane q . q . Q
+
+            Q_zz[a] = Qpole_k[a + 3 * 2 + 9 * 2];
+            // Isolates the Q_zz tensor component
+
+            for (int k = 0; k < 2; ++k)
+            {
+                Q_z[a] += qplusG_par[k] * Qpole_k[a + 3 * k + 9 * 2];
+            }
+            // Computes the cross term z^ . q . Q
         }
     }
-    // compute decay factors
+
     ELPH_float df_bare = exp(-q_G_square * 0.25 / eta_bare);
-    ELPH_float df_ind = exp(-q_G_square * 0.25 / eta_induced);
+    // Retains decay factor specifically for the bare potential calculation
+
+    ELPH_cmplx qpar_dot_tau =
+        cexp(-I * (qplusG[0] * tau_k[0] + qplusG[1] * tau_k[1]));
+    // In-plane phase factor for the induced potential
+
+    // -------------------------------------------------------------------------
+    // SPATIAL COORDINATE FFT EVALUATION
+    // -------------------------------------------------------------------------
+    // We evaluate the spatial coordinate 'z' using the 3D FFT framework.
+    // Simply transforming f(z) = z causes severe wrap-around artifacts due to
+    // the assumed periodicity of the discrete Fourier transform.
+    //
+    // Naive Fix: Truncating the signal with a step function (z * Theta(c/2 -
+    // |z|)) creates a sharp discontinuity at the edges, resulting in heavy
+    // Gibbs oscillations throughout the spatial domain upon inverse FFT.
+    //
+    // Robust Fix: We use a continuous trapezoidal window. This perfectly
+    // matches f(z) = z in our region of interest [-x*c/2, x*c/2] (where 'x' is
+    // slightly less than 1), and drops linearly to 0 at the boundaries. Because
+    // the function is continuous, its Fourier coefficients decay rapidly (as
+    // 1/k^2), effectively eliminating the Gibbs ringing. Analytical Expression:
+    // $$F(k) = -\frac{2i}{k^2 c} \left[ \frac{c/2}{c/2 - a} \sin(ka)
+    // - \frac{a}{c/2 - a} \sin\left(\frac{kc}{2}\right) \right]$$
+    //
+    //
+    ELPH_float x = 0.95;
+    ELPH_float Gz = qplusG[2];
+    ELPH_cmplx f_Gz = 0.0;
+
+    if (fabs(Gz) > ELPH_EPS)
+    {
+        ELPH_float term =
+            (sin(x * Gz * zlat * 0.5) - x * sin(Gz * zlat * 0.5)) /
+            (Gz * Gz * (1.0 - x));
+        f_Gz = -2.0 * I * term / zlat;
+    }
+    // Computes f(G_z). Limits f(0) = 0 exactly by initialization.
+
+    ELPH_float g_Gz = 0.0;
+
+    if (fabs(Gz) < ELPH_EPS)
+    {
+        g_Gz = 1.0;
+    }
+    // Defines delta function to strictly trigger at G_z = 0
 
     for (int i = 0; i < 3; ++i)
     {
-        out_buf[i] =
-            qdot_tau * cutoff_fac *
-            (Zval_buf[i] * df_bare +
-             (Zborn_buf[i] - I * 0.5 * Qpole_buf[i]) * df_ind / q_eps_q) /
-            q_G_square;
+        ELPH_cmplx V_bare =
+            qdot_tau * cutoff_fac * Zval_buf[i] * df_bare / q_G_square;
+        // Keeps the bare potential completely isolated and untouched
+
+        ELPH_cmplx V_ind = 0.0;
+
+        if (Gp_norm > ELPH_EPS)
+        {
+            ELPH_cmplx term_in = (2.0 * I * Zborn_buf[i] + Q_in[i] -
+                                  Gp_norm * Gp_norm * Q_zz[i]) *
+                                 g_Gz / eps_tilde_par;
+            // In-plane term bounded by g(G_z)
+
+            ELPH_float Z_z_val = 0.0;
+
+            if (Zborn_k)
+            {
+                Z_z_val = Zborn_k[6 + i] / epslion[8];
+            }
+            // Safely extracts the Z_z tensor component
+
+            ELPH_cmplx term_out = 2.0 * Gp_norm * Gp_norm *
+                                  (Z_z_val - I * Q_z[i]) * f_Gz *
+                                  eps_tilde_perp_inv;
+            // Out-of-plane term coupled directly to f(G_z)
+
+            V_ind = (zlat / (4.0 * I)) * (f_q / Gp_norm) * qpar_dot_tau *
+                    (term_in + term_out);
+        }
+        // Assembles the final induced potential if q_parallel is strictly
+        // non-zero
+
+        out_buf[i] = V_bare + V_ind;
     }
 
     return;

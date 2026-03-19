@@ -15,6 +15,8 @@
 #include "common/cwalk/cwalk.h"
 #include "common/dtypes.h"
 #include "common/error.h"
+#include "common/free_dtypes.h"
+#include "common/init_dtypes.h"
 #include "common/numerical_func.h"
 #include "common/parallel.h"
 #include "dvloc/dvloc.h"
@@ -545,6 +547,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     //
     for (ND_int ik = 0; ik < nibz; ++ik)
     {
+        init_wfc_type(wfc_temp + ik);
         /*set total pws */
         (wfc_temp + ik)->npw_total = rint(nGmax[ik]);
 
@@ -667,41 +670,9 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 }
 
 // ============ free's
-
-void free_phonon_data(struct Phonon* phonon)
-{
-    free(phonon->qpts_iBZ);
-    free(phonon->qpts_BZ);
-    free(phonon->ph_syms);
-    free(phonon->qmap);
-    free(phonon->nqstar);
-    free(phonon->epsilon);
-    free(phonon->Zborn);
-    free(phonon->Qpole);
-}
-
 void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
                     struct Pseudo* pseudo, struct Phonon* phonon)
 {
-    // free pseudo data
-    free_f_Coeff(lattice, pseudo);
-    // free fCoeff
-    free_vlocg_table(pseudo->vloc_table);
-    // free the local interpolation interpolation table
-    free(pseudo->Fsign);
-    free(pseudo->PP_table);
-
-    if (pseudo->loc_pseudo)
-    {
-        for (ND_int itype = 0; itype < pseudo->ntype; ++itype)
-        {
-            free(pseudo->loc_pseudo[itype].Vloc_atomic);
-            free(pseudo->loc_pseudo[itype].r_grid);
-            free(pseudo->loc_pseudo[itype].rab_grid);
-        }
-    }
-    free(pseudo->loc_pseudo);
-
     // free wfcs
     ND_int nkiBZ = lattice->nkpts_iBZ;
     /* Free wavefunctions */
@@ -709,24 +680,17 @@ void free_save_data(struct WFC* wfcs, struct Lattice* lattice,
     {
         for (ND_int ik = 0; ik < nkiBZ; ++ik)
         {
-            free((wfcs + ik)->wfc);
-            free((wfcs + ik)->gvec);
-            free((wfcs + ik)->Fk);
+            free_wfc_type(wfcs + ik);
         }
     }
     free(wfcs);
 
+    // free pseudo
+    free_Pseudo_type(pseudo);
     // free lattice data
-    free(lattice->atomic_pos);
-    free(lattice->atom_type);
-    free(lattice->kpt_iredBZ);
-    free(lattice->kpt_fullBZ);
-    free(lattice->kpt_fullBZ_crys);
-    free(lattice->kmap);
-    free(lattice->syms);
-
+    free_lattice_type(lattice);
     // free the phonon data
-    free_phonon_data(phonon);
+    free_phonon_type(phonon);
 }
 
 // ----

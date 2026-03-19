@@ -198,6 +198,7 @@ ls SAVE/ndb.elph*
 
 ---
 
+<!--
 ## 3. Interpolation Calculation
 
 Computing phonons (dynamical matrices and deformation potentials) is often computationally demanding; therefore, it is necessary to rely on interpolation methods. This is commonly done for dynamical matrices and has become the default approach for obtaining phonon dispersions.
@@ -207,7 +208,7 @@ In this section, we discuss how to use the LetzElPhC code to generate dynamical 
 The procedure is as follows
 
 1.  Create an input file for interpolation (e.g., `interpolate.in`).
-2.  Run the `lelphc` preprocessor:
+2.  Run the `lelphc` interpolation program:
     ```bash
     lelphc -i --code=qe -F interpolate.in
     ```
@@ -259,3 +260,4 @@ eta_ph = 1.0
 # qlist_file = ""
 # Optional: File containing a specific list of q-points to interpolate
 ```
+-->

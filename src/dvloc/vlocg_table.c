@@ -152,14 +152,3 @@ void create_vlocg_table(const struct Lattice* lattice, struct Pseudo* pseudo,
     free(work_array);
     ELPH_stop_clock("Vloc table");
 }
-
-void free_vlocg_table(struct Vloc_table* vloc_table)
-{
-    // free the allocate Vloc_table
-    free(vloc_table->g_co);
-    free(vloc_table->vlocg);
-    free(vloc_table->vploc_co);
-    vloc_table->g_co = NULL;
-    vloc_table->vlocg = NULL;
-    vloc_table->vploc_co = NULL;
-}
