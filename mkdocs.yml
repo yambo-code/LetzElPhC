@@ -82,5 +82,6 @@ nav:
       - Acoustic Sum Rules: theory/asr.md
   - Tutorials:
       - Silicon Walkthrough: tutorials/silicon_walkthrough.md
+      - Dynamical Quadrupoles: tutorials/quadrupoles.md
   - Testing: tests.md
   

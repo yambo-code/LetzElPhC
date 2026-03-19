@@ -17,6 +17,7 @@
 #include "common/numerical_func.h"
 #include "common/parallel.h"
 #include "common/print_info.h"
+#include "common/progess_bar.h"
 #include "dvloc/dvloc.h"
 #include "elphC.h"
 #include "interpolation.h"
@@ -100,21 +101,37 @@ void interpolation_driver(const char* ELPH_input_file,
     {
         error_msg("Only qe is supported currently.");
     }
+    if (0 == mpi_comms->commW_rank)
+    {
+        fprintf(stdout, "\n# Read DFT input Data.\n");
+    }
     //
     // Apply acoustic sum rule for born charges
     apply_acoustic_sum_rule_born_charges(asr_born, phonon->Zborn,
                                          lattice->natom);
+    if (0 == mpi_comms->commW_rank && phonon->Zborn && asr_born != ASR_NONE)
+    {
+        fprintf(stdout,
+                "\n# Applying acoustic sum rule (%s) for born charges.\n",
+                input_data->zasr);
+    }
     //
     // In case of 2D, we need to convert 3D quadrupoles to 2D
     if (lattice->dimension == '2')
     {
+        if (0 == mpi_comms->commW_rank && phonon->Qpole)
+        {
+            fprintf(stdout, "\n# Converting 3D Quadrupoles to 2D.\n");
+        }
+
         quadrupole_3d_to_2d(lattice, phonon);
         if (input_data->eta_induced < 1)
         {
             if (0 == mpi_comms->commW_rank)
             {
                 puts(
-                    "Warning : eta_induced < 1 leads to unstable condition. "
+                    "\n# Warning : eta_induced < 1 leads to unstable "
+                    "condition. "
                     "forcing it to be 1");
             }
             input_data->eta_induced = 1.0;
@@ -124,7 +141,8 @@ void interpolation_driver(const char* ELPH_input_file,
             if (0 == mpi_comms->commW_rank)
             {
                 puts(
-                    "Warning : eta_ph < 1 leads to unstable condition. forcing "
+                    "\n# Warning : eta_ph < 1 leads to unstable condition. "
+                    "forcing "
                     "it to be 1");
             }
             input_data->eta_ph = 1.0;
@@ -174,6 +192,11 @@ void interpolation_driver(const char* ELPH_input_file,
     ND_int* ws_vecs_dyn = NULL;
     ND_int* ws_degen_dyn = NULL;
     ND_int n_ws_vecs_dyn = 0;
+
+    if (0 == mpi_comms->commW_rank)
+    {
+        fprintf(stdout, "\n# Constructing Wigner seitz cell ...\n");
+    }
 
     n_ws_vecs_dyn = build_wigner_seitz_vectors(
         q_grid_co, lattice->alat_vec, ELPH_EPS, lattice->atomic_pos,
@@ -257,6 +280,14 @@ void interpolation_driver(const char* ELPH_input_file,
     // dvscf and dyn IO and expand to ful BZ and remove long-range parts *
     // *******************************************************************
     //
+    if (0 == mpi_comms->commW_rank)
+    {
+        fprintf(stdout, "\n# Reading phonon data for coarse grid :\n");
+    }
+    // start the progress bar
+    struct progress_bar pbar[1];
+    start_progressbar(pbar, mpi_comms->commW_rank, phonon->nq_iBZ);
+
     ND_int iqpt_tmp = 0;
     for (ND_int iqco = 0; iqco < phonon->nq_iBZ; ++iqco)
     {
@@ -324,6 +355,8 @@ void interpolation_driver(const char* ELPH_input_file,
             }
             ++iqpt_tmp;
         }
+        // update the progress bar
+        print_progressbar(pbar);
     }
 
     //
@@ -332,6 +365,10 @@ void interpolation_driver(const char* ELPH_input_file,
     // *******************************************************************
     if (dVscfs_co)
     {
+        if (0 == mpi_comms->commW_rank)
+        {
+            fprintf(stdout, "# Performing dvscf q->R ...\n");
+        }
         for (ND_int i = 0; i < phonon->nq_BZ; ++i)
         {
             ND_int iq = indices_q2fft[i];
@@ -444,6 +481,10 @@ void interpolation_driver(const char* ELPH_input_file,
     // *******************************************************************
     //
     // fourier transform phonons
+    if (0 == mpi_comms->commW_rank)
+    {
+        fprintf(stdout, "\n# Performing dynmat q->R ...\n");
+    }
     fft_q2R(dyns_co, q_grid_co, lattice->nmodes * lattice->nmodes);
     //
     // IN case of rotational sum rules, we also need to add long range force
@@ -469,6 +510,12 @@ void interpolation_driver(const char* ELPH_input_file,
     mass_normalize_force_constants(atomic_masses, phonon->nq_BZ, lattice->natom,
                                    0.5, dyns_co);
 
+    if (0 == mpi_comms->commW_rank && asr_fc != ASR_NONE)
+    {
+        fprintf(stdout,
+                "\n# Applying acoustic sum rule (%s) for force constants.\n",
+                input_data->asr);
+    }
     // Apply Acoustic sum rule for force constants
     apply_acoustic_sum_rule_fc(asr_fc, q_grid_co, lattice->natom, dyns_co,
                                lattice->atomic_pos, lattice->alat_vec,
@@ -515,12 +562,21 @@ void interpolation_driver(const char* ELPH_input_file,
         nqpts_to_interpolate = generate_iBZ_kpts(
             qgrid_new, phonon->nph_sym, symms_iBZexpand, lattice->alat_vec,
             lattice->blat_vec, qpts_interpolation, true);
+
+        if (0 == mpi_comms->commW_rank)
+        {
+            fprintf(stdout, "\n# Qgrid : (%lld, %lld, %lld)\n",
+                    (long long)qgrid_new[0], (long long)qgrid_new[1],
+                    (long long)qgrid_new[2]);
+        }
     }
     else
     {
         qpts_usr_provide = true;
         if (0 == mpi_comms->commW_rank)
         {
+            fprintf(stdout, "\n# Reading user provided qpoints from %s\n",
+                    input_data->qlist_file);
             qpts_interpolation = parse_qpt_entries(input_data->qlist_file,
                                                    &nqpts_to_interpolate);
             if (!qpts_interpolation)
@@ -544,6 +600,11 @@ void interpolation_driver(const char* ELPH_input_file,
                               ELPH_MPI_float, 0, mpi_comms->commW);
         MPI_error_msg(mpi_error);
     }
+    if (0 == mpi_comms->commW_rank)
+    {
+        fprintf(stdout, "\n# Number of qpoints to interpolate : %lld\n",
+                (long long)nqpts_to_interpolate);
+    }
     // local part
     ELPH_cmplx* Vlocr = NULL;
 
@@ -558,6 +619,11 @@ void interpolation_driver(const char* ELPH_input_file,
     //
     if (write_dVbare)
     {
+        if (0 == mpi_comms->commW_rank)
+        {
+            fprintf(stdout, "\n# Printing dVbare ...\n");
+        }
+
         // In case the user wants to dum dVbare, we contruct it. Note that
         // This is not actually added. Instead, in the long_range_term, the
         // long_range monopole term is added to completely avoid reconstruting
@@ -697,6 +763,15 @@ void interpolation_driver(const char* ELPH_input_file,
         }
         else
         {
+            if (0 == mpi_comms->commW_rank)
+            {
+                fprintf(stdout,
+                        "\n# Applying LO-TO splitting at the Gamma point. "
+                        "Direction : (%.6f, %.6f, %.6f)\n",
+                        input_data->loto_dir[0] / loto_dir_norm,
+                        input_data->loto_dir[1] / loto_dir_norm,
+                        input_data->loto_dir[2] / loto_dir_norm);
+            }
             ELPH_float tmp_loto_dir[3];
             for (ND_int ix = 0; ix < 3; ++ix)
             {
@@ -713,6 +788,12 @@ void interpolation_driver(const char* ELPH_input_file,
     // *******************************************************************
     //
     // now interpolate
+    if (0 == mpi_comms->commW_rank)
+    {
+        fprintf(stdout, "\n# Performing interpolation i.e R->q :\n");
+    }
+    start_progressbar(pbar, mpi_comms->commW_rank, nqpts_to_interpolate);
+    //
     for (ND_int iq = 0; iq < nqpts_to_interpolate; ++iq)
     {
         char read_buf[1024];
@@ -938,6 +1019,8 @@ void interpolation_driver(const char* ELPH_input_file,
                     alat_scale[ix] * qpt_interpolate_cart[ix] / (2 * ELPH_PI);
             }
         }
+        // update the progress bar
+        print_progressbar(pbar);
     }
     //
     //
