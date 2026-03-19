@@ -133,8 +133,7 @@ static void add_ph_dyn_long_range_internal(
     // qpt in crystal coordinater
     //
     // (3D) X. Gonze et al  Phys. Rev. B 50, 13035(R)
-    // (2D ) T. Sohier et al Nano Lett. 2017, 17, 6, 3758–3763
-    // (2D) S. Ponce et al PHYSICAL REVIEW B 107, 155424 (2023)
+    // (2D ) M Royo et al PHYSICAL REVIEW X 11, 041027 (2021)
     //
     // if atomic_masses is NULL, then the dynamical matrices are not mass
     // normalized.
@@ -192,10 +191,27 @@ static void add_ph_dyn_long_range_internal(
     ELPH_cmplx* Zdotq_tau =
         calloc(2 * Gvec_size * 3 * natom, sizeof(*Zdotq_tau));
     CHECK_ALLOC(Zdotq_tau);
+
+    // In the case of 2D, we need to seperate out the perperndicular
+    // contribution
+    ELPH_cmplx* Zdotq_tau_per = NULL;
+    if (lattice->dimension == '2')
+    {
+        Zdotq_tau_per =
+            calloc(2 * Gvec_size * 3 * natom, sizeof(*Zdotq_tau_per));
+        CHECK_ALLOC(Zdotq_tau_per);
+    }
     // leave it to the compilers(most will very likely remove it )
     for (ND_int i = 0; i < (2 * Gvec_size * 3 * natom); ++i)
     {
         Zdotq_tau[i] = 0.0;
+    }
+    if (Zdotq_tau_per)
+    {
+        for (ND_int i = 0; i < (2 * Gvec_size * 3 * natom); ++i)
+        {
+            Zdotq_tau_per[i] = 0.0;
+        }
     }
     //
     ELPH_OMP_PAR_FOR_SIMD
@@ -204,6 +220,16 @@ static void add_ph_dyn_long_range_internal(
         ELPH_cmplx* out_tmp1 = Zdotq_tau + ig * 3 * natom;
         ELPH_cmplx* out_tmp2 =
             Zdotq_tau + ig * 3 * natom + Gvec_size * 3 * natom;
+        //
+        ELPH_cmplx* out_tmp1_per = NULL;
+        ELPH_cmplx* out_tmp2_per = NULL;
+        if (Zdotq_tau_per)
+        {
+            out_tmp1_per = Zdotq_tau_per + ig * 3 * natom;
+            out_tmp2_per =
+                Zdotq_tau_per + ig * 3 * natom + Gvec_size * 3 * natom;
+        }
+        //
         const ND_int Gx = ig / (Ggrid[1] * GridZ);
         const ND_int Gy = (ig % (Ggrid[1] * GridZ)) / GridZ;
         const ND_int Gz = (ig % (Ggrid[1] * GridZ)) % GridZ;
@@ -223,13 +249,45 @@ static void add_ph_dyn_long_range_internal(
         //
         MatVec3f(eps_alpha, qplusG, false, tmp_buf);
         ELPH_float q_eps_q = dot3_macro(tmp_buf, qplusG);
+        ELPH_float q_eps_q_per = 1.0;
 
-        ELPH_float decay_fac = exp(-q_eps_q * q_eps_q * 0.125 / eta);
+        ELPH_float decay_fac = exp(-fabs(q_eps_q) * 0.125 / eta);
 
         if (lattice->dimension == '2')
         {
+            // In 2D f(q) = 1-tanh(K*eta/2) is the decay factor
+            // Evaluates f(|q|) using L = eta_induced*4*pi*alpha_per*1.001
+            // Note eta >= 1 to satisfy stablity condition
+            ELPH_float Leff =
+                eta * zlat * 1.001 * (1.0 - 1.0 / phonon->epsilon[8]);
+            decay_fac = 1 - tanh(qplusG_norm * 0.5 * Leff);
+            // L = eta * zlat/2
+            if (fabs(decay_fac) < ELPH_EPS)
+            {
+                continue;
+            }
+
+            q_eps_q *= decay_fac;
             q_eps_q += qplusG_norm;
-            decay_fac = exp(-qplusG_norm * qplusG_norm * 0.125 / eta);
+            /* q_eps_q_per = 1 - 0.5 * zlat * qplusG_norm * decay_fac * */
+            /*                       (1.0 - 1.0 / phonon->epsilon[8]); */
+            q_eps_q_per = 1.0;
+            // Note: The exact Royo 1/eps_perp causes unphysical divergence far
+            // from Gamma. Because x = 2*PI*|q|*f(q)*alpha_perp < 1, we Taylor
+            // expand 1/(1-x) ~ 1 + x. The out-of-plane dipole already has a |q|
+            // prefactor. Keeping the x ~ |q| term creates unphysical O(|q|^2)
+            // growth that breaks Wannier interpolation. Truncating to 0th-order
+            // (1.0) keeps the exact linear physics at Gamma and stabilizes the
+            // boundary.
+            if (fabs(q_eps_q_per) < ELPH_EPS)
+            {
+                q_eps_q_per = 0.0;
+            }
+            else
+            {
+                q_eps_q_per = -qplusG_norm / q_eps_q_per;
+            }
+            decay_fac = sqrt(decay_fac);
         }
         //
         for (ND_int ia = 0; ia < natom; ++ia)
@@ -294,6 +352,34 @@ static void add_ph_dyn_long_range_internal(
                     (tmp_buf[i] - I * 0.5 * Qpole_buf[i]) * qdot_tau;
                 out_tmp_buf2[i] = out_tmp_buf[i] * q_eps_q;
             }
+            // Out of plane term for 2D
+            if (Zdotq_tau_per)
+            {
+                qdot_tau *= q_eps_q;
+                for (ND_int i = 0; i < 3; ++i)
+                {
+                    if (Z_k)
+                    {
+                        out_tmp1_per[3 * ia + i] += Z_k[i + 6] * qdot_tau *
+                                                    q_eps_q_per /
+                                                    phonon->epsilon[8];
+                        out_tmp2_per[3 * ia + i] +=
+                            Z_k[i + 6] * qdot_tau / phonon->epsilon[8];
+                    }
+                    if (Q_k)
+                    {
+                        for (ND_int ixx = 0; ixx < 3; ++ixx)
+                        {
+                            out_tmp1_per[3 * ia + i] -= I * qplusG[ixx] *
+                                                        Q_k[i + 18 + 3 * ixx] *
+                                                        qdot_tau * q_eps_q_per;
+                            out_tmp2_per[3 * ia + i] -= qplusG[ixx] * I *
+                                                        Q_k[i + 18 + 3 * ixx] *
+                                                        qdot_tau;
+                        }
+                    }
+                }
+            }
         }
     }
     //
@@ -302,7 +388,14 @@ static void add_ph_dyn_long_range_internal(
                  dyn_mat, factor, 1.0, nmodes, nmodes, nmodes, nmodes, nmodes,
                  Gvec_size);
     //
+    if (Zdotq_tau_per)
+    {
+        matmul_cmplx('C', 'N', Zdotq_tau_per + Gvec_size * 3 * natom,
+                     Zdotq_tau_per, dyn_mat, factor, 1.0, nmodes, nmodes,
+                     nmodes, nmodes, nmodes, Gvec_size);
+    }
     free(Zdotq_tau);
+    free(Zdotq_tau_per);
     //
     //
     ELPH_stop_clock("dyn lr part");

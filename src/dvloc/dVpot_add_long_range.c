@@ -101,6 +101,11 @@ void dV_add_longrange(const ELPH_float* qpt, struct Lattice* lattice,
         Gbox[i] = MIN(Gbox[i], lattice->fft_dims[i]);
     }
 
+    if (lattice->dimension == '2')
+    {
+        Gbox[2] = lattice->fft_dims[2];
+    }
+
     ND_int G_vecs_xy, Gxy_shift;
     G_vecs_xy = get_mpi_local_size_idx(Gbox[0] * Gbox[1], &Gxy_shift, commK);
     if (G_vecs_xy < 1)

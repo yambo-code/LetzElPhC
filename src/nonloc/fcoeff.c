@@ -142,11 +142,9 @@ void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
     return;
 }
 
-void free_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo)
+void free_f_Coeff(struct Pseudo* pseudo)
 {
-    UNUSED_VAR(lattice);
-
-    if (!pseudo->fCoeff)
+    if (!pseudo || !pseudo->fCoeff)
     {
         return;
     }
