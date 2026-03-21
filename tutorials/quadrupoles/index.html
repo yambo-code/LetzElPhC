@@ -1606,6 +1606,26 @@ Quantum ESPRESSO (≥ 7.5) and the <a href="https://gitlab.com/QEF/q-e/-/blob/de
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-e<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>-p<span class="w"> </span>--alat<span class="w"> </span>1B<span class="w"> </span>--q_min<span class="w"> </span><span class="m">0</span>.005<span class="w"> </span>--q_max<span class="w"> </span><span class="m">0</span>.015<span class="w"> </span>--nq<span class="w"> </span><span class="m">25</span>
 </code></pre></div>
 This command produces <code>qpoints.dat</code> and a set of <code>ph.in.X</code> input files, one per q-point.</p>
+<p>One of the important things to notice is the number of free components for the multipole tensors printed in the summary:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Summary of multipole tensors:
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>- Born effective charges
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  Size: 27  | Free: 4
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  Index 0   | Mo  | Free: 2
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  Index 2   | Te  | Free: 2
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  Index 3   | Te  | Free: 2
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>- Quadrupoles
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  Size: 81  | Free: 12
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  Index 0   | Mo  | Free: 4
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  Index 2   | Te  | Free: 4
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  Index 3   | Te  | Free: 4
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>- Total number of free components: 16
+</code></pre></div></p>
+<div class="admonition warning">
+<p class="admonition-title">Choosing <code>--nq</code></p>
+<p>The number of q-points must always exceed the <strong>Total number of free components</strong>. As a rule of thumb,
+use at least <strong>1.5 ×</strong> this value, and verify the quality of the fit afterwards — see
+<a href="#step-6-interpreting-the-diagnostics">Step 6</a> for guidance.</p>
+</div>
 <p><strong>Flag reference:</strong></p>
 <table>
 <thead>
@@ -1649,16 +1669,10 @@ This command produces <code>qpoints.dat</code> and a set of <code>ph.in.X</code>
 <p class="admonition-title">Tip</p>
 <p>In most cases, it is better to turn off spin-orbit coupling to reduce computational cost.</p>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Choosing <code>--nq</code></p>
-<p>Highly anisotropic or strongly piezoelectric materials (e.g., wurtzite-type structures) require
-more points (15–25) to properly sample the 3D asymmetry of the response. As a rule of thumb,
-use at least <strong>1.5 × (free multipole components)</strong> — see <a href="#step-6-interpreting-the-diagnostics">Step 6</a>.</p>
-</div>
 <hr />
 <h2 id="step-4-running-the-dfpt-calculations">Step 4: Running the DFPT Calculations</h2>
 <p>Submit the calculations for each generated q-point:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>srun<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">SLURM_NTASKS</span><span class="si">}</span><span class="w"> </span>ph.x<span class="w"> </span>-nk<span class="w"> </span><span class="m">8</span><span class="w"> </span>&lt;<span class="w"> </span>ph.in.X<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>ph.out
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>srun<span class="w"> </span>-n<span class="w"> </span><span class="si">${</span><span class="nv">SLURM_NTASKS</span><span class="si">}</span><span class="w"> </span>ph.x<span class="w"> </span>-nk<span class="w"> </span><span class="m">8</span><span class="w"> </span>&lt;<span class="w"> </span>ph.in.X<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>ph.out
 </code></pre></div></p>
 <div class="admonition tip">
 <p class="admonition-title">Computational cost</p>
@@ -1670,7 +1684,7 @@ improvement in phonon deformation potentials and interpolation accuracy.</p>
 <h2 id="step-5-fitting-the-quadrupole-tensors">Step 5: Fitting the Quadrupole Tensors</h2>
 <p>Once all <code>drho.dat.X</code> files have been generated, run the least-squares fit using the <strong>same physics
 flags</strong> as in Step 2:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-f<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>--alat<span class="w"> </span>1B
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-f<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>--alat<span class="w"> </span>1B
 </code></pre></div></p>
 <p>The script will:</p>
 <ol>
@@ -1679,18 +1693,18 @@ flags</strong> as in Step 2:
 <li>Solve an overdetermined least-squares system for the multipole tensors.</li>
 </ol>
 <p>After the fit completes, copy the output file to your <code>ph_save</code> directory:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp<span class="w"> </span>quadrupole.fmt<span class="w"> </span>/path/to/ph_save/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cp<span class="w"> </span>quadrupole.fmt<span class="w"> </span>/path/to/ph_save/
 </code></pre></div></p>
 <hr />
 <h2 id="step-6-interpreting-the-diagnostics">Step 6: Interpreting the Diagnostics</h2>
 <p>The script prints a diagnostic block similar to the following:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Summary of multipole tensors fitting:
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>- Free multipole components:    10
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>- Rank of coefficient matrix:   10
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>- RMSE:                         8.57e-04 |e| / bohr³
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>- Mean relative error:          7.20e+07
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>- Relative norm error:          0.0626
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>- R² score:                     0.9961
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Summary of multipole tensors fitting:
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>- Free multipole components:    10
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>- Rank of coefficient matrix:   10
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>- RMSE:                         8.57e-04 |e| / bohr³
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>- Mean relative error:          7.20e+07
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>- Relative norm error:          0.0626
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>- R² score:                     0.9961
 </code></pre></div></p>
 <p>Each metric answers a specific question about the quality of your fit. If the fit quality is poor, you need to rerun the calculations with better inputs, mostly adjusting <code>q_min</code>, <code>q_max</code>, and <code>nq</code>.</p>
 <hr />
