@@ -21,11 +21,11 @@ physical properties due to electron-phonon coupling—such as mobilities, etc,
 one should prefer other tools such as the EPW, Perturbo, Epiq, Phoebe codes.
 
 # Acknowledgments
-Ludger Wirtz (Supervisor)
-Fulvio Paleari (Testing and Yambopy interface)
-University of Luxembourg (Funding)
-HPC @ Uni.lu (Computing resources)
-Henry Fried (Logo)
+Ludger Wirtz (Supervisor) 
+Fulvio Paleari (Testing and Yambopy interface) 
+University of Luxembourg (Funding) 
+HPC @ Uni.lu (Computing resources) 
+Henry Fried (Logo) 
 
 # TODO  
 1) ~~Support XML format for dynamical matrices~~

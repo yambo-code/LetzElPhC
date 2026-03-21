@@ -124,7 +124,10 @@ void interpolation_driver(const char* ELPH_input_file,
             fprintf(stdout, "\n# Converting 3D Quadrupoles to 2D.\n");
         }
 
-        quadrupole_3d_to_2d(lattice, phonon);
+        if (phonon->Qpole)
+        {
+            quadrupole_3d_to_2d(lattice, phonon);
+        }
         if (input_data->eta_induced < 1)
         {
             if (0 == mpi_comms->commW_rank)

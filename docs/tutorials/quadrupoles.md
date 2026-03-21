@@ -55,6 +55,28 @@ python3 multipole.py -e --order 3 --epsil_order 4 -p --alat 1B --q_min 0.005 --q
 ```
 This command produces `qpoints.dat` and a set of `ph.in.X` input files, one per q-point.
 
+One of the important things to notice is the number of free components for the multipole tensors printed in the summary:
+```text
+Summary of multipole tensors:
+- Born effective charges
+  Size: 27  | Free: 4
+  Index 0   | Mo  | Free: 2
+  Index 2   | Te  | Free: 2
+  Index 3   | Te  | Free: 2
+- Quadrupoles
+  Size: 81  | Free: 12
+  Index 0   | Mo  | Free: 4
+  Index 2   | Te  | Free: 4
+  Index 3   | Te  | Free: 4
+- Total number of free components: 16
+```
+
+!!! warning "Choosing `--nq`"
+    The number of q-points must always exceed the **Total number of free components**. As a rule of thumb,
+    use at least **1.5 ×** this value, and verify the quality of the fit afterwards — see
+    [Step 6](#step-6-interpreting-the-diagnostics) for guidance.
+
+
 **Flag reference:**
 
 | Flag | Purpose |
@@ -72,12 +94,6 @@ This command produces `qpoints.dat` and a set of `ph.in.X` input files, one per 
 
 !!! tip "Tip"
     In most cases, it is better to turn off spin-orbit coupling to reduce computational cost.
-
-!!! note "Choosing `--nq`"
-    Highly anisotropic or strongly piezoelectric materials (e.g., wurtzite-type structures) require
-    more points (15–25) to properly sample the 3D asymmetry of the response. As a rule of thumb,
-    use at least **1.5 × (free multipole components)** — see [Step 6](#step-6-interpreting-the-diagnostics).
-
 
 ---
 
