@@ -21,7 +21,7 @@ void quadrupole_3d_to_2d(struct Lattice* lattice, struct Phonon* phonon)
     {
         return;
     }
-    if (phonon->epsilon && (phonon->Zborn || phonon->Qpole))
+    if (phonon->epsilon && phonon->Qpole)
     {
         ELPH_float* Qpoles_2D = calloc(27 * lattice->natom, sizeof(*Qpoles_2D));
         CHECK_ALLOC(Qpoles_2D);
@@ -36,18 +36,9 @@ void quadrupole_3d_to_2d(struct Lattice* lattice, struct Phonon* phonon)
                                      lattice->atomic_pos, phonon->Zborn,
                                      phonon->Qpole, Qpoles_2D);
 
-        if (phonon->Qpole)
-        {
-            memcpy(phonon->Qpole, Qpoles_2D,
-                   27 * lattice->natom * sizeof(*Qpoles_2D));
-            free(Qpoles_2D);
-        }
-        else
-        {
-            phonon->Qpole = Qpoles_2D;
-            // Note we donot need to free here, as when we free phonon struct.
-            // it gets automatically freed.
-        }
+        memcpy(phonon->Qpole, Qpoles_2D,
+               27 * lattice->natom * sizeof(*Qpoles_2D));
+        free(Qpoles_2D);
     }
     return;
 }
