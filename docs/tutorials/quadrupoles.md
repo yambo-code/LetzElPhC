@@ -76,7 +76,8 @@ Summary of multipole tensors:
     use at least **1.5 ×** this value, and verify the quality of the fit afterwards — see
     [Step 6](#step-6-interpreting-the-diagnostics) for guidance.
 
-
+!!! warning "Non-polar materials"
+    Add the flag --non_polar for non_polar materials.
 **Flag reference:**
 
 | Flag | Purpose |
@@ -116,7 +117,7 @@ srun -n ${SLURM_NTASKS} ph.x -nk 8 < ph.in.X | tee ph.out
 Once all `drho.dat.X` files have been generated, run the least-squares fit using the **same physics
 flags** as in Step 2:
 ```bash
-python3 multipole.py -f --order 3 --epsil_order 4 --alat 1B
+python3 multipole.py -f --order 3 --epsil_order 4 --alat 1B --nq 25
 ```
 
 The script will:
