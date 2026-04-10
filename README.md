@@ -35,6 +35,7 @@ Muralidhar Nalabothula\
 Prof. Ludger Wirtz (Supervisor)
 
 # Acknowledgments
+Riccardo Reho (Testing and Documentation)
 Fulvio Paleari (Testing and Yambopy interface)\
 University of Luxembourg (Funding)\
 HPC @ Uni.lu (Computing resources)\
