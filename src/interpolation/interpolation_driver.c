@@ -353,8 +353,9 @@ void interpolation_driver(const char* ELPH_input_file,
                             eigs_co, eigs_co_star);
             if (dVscfs_co)
             {
-                rotate_dvscf(dV_co_tmp, sym_star, lattice, dvscf_composite_form,
-                             dV_co_star, mpi_comms->commK);
+                rotate_dvscf(phonon->qpts_iBZ + iqco * 3, dV_co_tmp, sym_star,
+                             lattice, dvscf_composite_form, dV_co_star,
+                             mpi_comms->commK);
             }
             ++iqpt_tmp;
         }

@@ -19,9 +19,10 @@
 This file contains function to rotate dvscf
 */
 
-void rotate_dvscf(const ELPH_cmplx* dvscf_in, struct symmetry* sym,
-                  const struct Lattice* lattice, const bool composite_form,
-                  ELPH_cmplx* restrict dvscf_out, MPI_Comm commK)
+void rotate_dvscf(const ELPH_float* qpt, const ELPH_cmplx* dvscf_in,
+                  struct symmetry* sym, const struct Lattice* lattice,
+                  const bool composite_form, ELPH_cmplx* restrict dvscf_out,
+                  MPI_Comm commK)
 {
     // dvscf : (nmodes, nmag, Nx, Ny, Nz_loc)
     // composite_form : if true. dvscf is in V*s_0 + Bx*sx + By*Sy + Bz*sz
@@ -223,6 +224,13 @@ void rotate_dvscf(const ELPH_cmplx* dvscf_in, struct symmetry* sym,
         }
     }
 
+    // compute phase factor from fractional translation
+    ELPH_float qcart[3] = {0.0, 0.0, 0.0};
+    ELPH_float Rqcart[3] = {0.0, 0.0, 0.0};
+    MatVec3f(lattice->blat_vec, qpt, false, qcart);
+    MatVec3f(sym->Rmat, qcart, false, Rqcart);
+    const ELPH_cmplx exp_iRqv = cexp(-I * (dot3_macro(Rqcart, sym->tau)));
+
     // rotate the fft grid
     for (ND_int iset = 0; iset < nmodes * nmag; ++iset)
     {
@@ -239,7 +247,7 @@ void rotate_dvscf(const ELPH_cmplx* dvscf_in, struct symmetry* sym,
         {
             for (ND_int i = 0; i < nfft; ++i)
             {
-                tmp_buf2[i] = tmp_buf1[rot_idx[i]];
+                tmp_buf2[i] = exp_iRqv * tmp_buf1[rot_idx[i]];
             }
         }
 
