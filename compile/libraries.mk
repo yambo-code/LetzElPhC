@@ -14,3 +14,5 @@ EP_S2= [Sep,io/qe] [Sep,common] [Sep,dvloc] [Sep,elph] [Sep,wfc] [Sep,symmetries
 EP_S3= [Sep,common/cwalk] [Sep,preprocessor] [Sep,interpolation] [Sep,common/ELPH_hash_map] [Sep,phonon] [Sep,common/kdtree] [Sep,parser]
 #
 SERVICES_LIBS += ${EP_S1} ${EP_S2} ${EP_S3}
+
+PLUGINS_include = test
