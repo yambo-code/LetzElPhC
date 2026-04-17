@@ -1,0 +1,3 @@
+objs = blas_lapack.o error.o parallel.o string_func.o print_ELPH_logo.o init_dtypes.o progess_bar.o print_info.o \
+       ELPH_timers.o ELPH_copy.o ELPH_POSIX_func.o spline.o numerical_func.o lsmr_solver.o free_dtypes.o \
+       

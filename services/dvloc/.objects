@@ -1,0 +1,2 @@
+objs = dvscf_basis_rotation.o compute_Vbare_loc.o add_dvscf.o multiply_eikr.o VlocG_atom.o dVlong_range_kernel.o \
+       dVpot_add_long_range.o dVbare_loc.o vlocg_table.o 

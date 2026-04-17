@@ -1,0 +1,1 @@
+objs = quadrupole_3Dto2D.o mass_normalize_phonons.o asr.o dyn_long_range.o pol_vecs_to_dyn.o 

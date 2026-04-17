@@ -1,0 +1,2 @@
+objs = get_data_from_qe.o read_tensors.o read_dvscf.o read_dyn.o read_qexml.o read_patterns.o interpolation_qe_io.o \
+       parse_upf.o write_dyn_dvscf_qe.o get_dvscf_dyn_qe.o 

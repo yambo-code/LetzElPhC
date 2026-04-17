@@ -1,0 +1,1 @@
+objs = mpi_bcast.o write_basic_data.o get_save_data.o nc4_def_var.o 

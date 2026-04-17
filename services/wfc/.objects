@@ -1,0 +1,1 @@
+objs = gen_fftbox.o su2rotate.o gsort.o rotate_Gvecs.o sortpw.o su2mat.o trans_wfc.o 

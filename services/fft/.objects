@@ -1,0 +1,1 @@
+objs = align.o transpose.o fwdfft.o convolution.o bwdfft.o planner.o 
