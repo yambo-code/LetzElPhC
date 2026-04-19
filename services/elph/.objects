@@ -1,1 +1,1 @@
-objs = set_kernel.o elph_driver.o compute_elph_matq.o compute_dmats.o 
+objs = set_kernel.o elph_driver.o compute_elph_matq.o compute_dmats.o ep_f2c_bridge.o
