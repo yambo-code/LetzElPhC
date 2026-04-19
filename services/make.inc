@@ -1,38 +1,38 @@
-CC                  :=  mpicc
+# Library paths and compiler are taken directly from yambo's configure output
+# (config/setup, two levels above this plugin directory).
+YAMBO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../../..)
+include $(YAMBO_ROOT)/config/setup
 
-### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
-### add -DCOMPILE_ELPH_DOUBLE if you want to compile the code in double precession to cflags
-#CFLAGS             := -O3 -Wall -Wextra -march=native  -fopenmp
-#LD_FLAGS           := -fopenmp 
+CC           := $(cc)
 
-##Debug flags, incase of testing always turn on the address sanitizer ! (clang is recommanded for this)
-CFLAGS       	    := -g -Wall -Wextra # -fsanitize=address,undefined -fno-omit-frame-pointer # for mkl add 
-LD_FLAGS            := -g  # -fsanitize=address,undefined  -Wl,-no_compact_unwind
+### add -DCOMPILE_ELPH_DOUBLE to compile in double precision
+CFLAGS       := -O2 -Wall -Wextra
+LD_FLAGS     :=
+OPENMP_FLAGS :=
+#-DELPH_OMP_PARALLEL_BUILD  ## uncomment for openmp build
 
-OPENMP_FLAGS   	    :=  
-#-DELPH_OMP_PARALLEL_BUILD ## uncomment for openmp build
+# FFTW: yambo's lfft/ifft cover fftw3 (double); LetzElPhC defaults to single precision (fftw3f).
+# Set -DCOMPILE_ELPH_DOUBLE in CFLAGS above to switch LetzElPhC to double precision.
+FFTW_INC     := $(ifft)
+ifeq (,$(findstring -DCOMPILE_ELPH_DOUBLE,$(CFLAGS)))
+FFTW3_LIB    := $(lfft) -lfftw3f
+else
+FFTW3_LIB    := $(lfft) -lfftw3
+endif
 
-FFTW_INC 	    :=  -I${YAMBO_EXT_LIBS}/gfortran/mpifort/include/
-FFTW3_LIB           :=  -L${YAMBO_EXT_LIBS}/gfortran/mpifort/lib -lfftw3f -lfftw3
-#FFTW_INC 	    :=  -I/opt/homebrew/include 
-#FFTW3_LIB           :=  -L/opt/homebrew/lib -lfftw3_threads -lfftw3f -lfftw3f_omp -lfftw3_omp -lfftw3
+BLAS_LIB     := $(lblas)
 
-#BLAS_LIB 	        :=  -L/opt/homebrew/opt/openblas/lib -lopenblas 
-BLAS_LIB 	        :=  -L${YAMBO_EXT_LIBS}/gfortran/mpifort/lib -lopenblas 
+# NetCDF: yambo's lnetcdf/inetcdf point to the parallel-enabled build (nc_open_par)
+NETCDF_INC   := $(inetcdf)
+NETCDF_LIB   := $(lnetcdf)
 
-NETCDF_INC          :=  -I${YAMBO_EXT_LIBS}/gfortran/mpifort/v4/parallel/include
-NETCDF_LIB 	    :=  -L${YAMBO_EXT_LIBS}/gfortran/mpifort/v4/parallel/lib -lnetcdf
-HDF5_LIB            :=  -L${YAMBO_EXT_LIBS}/gfortran/mpifort/v4/parallel/lib -lhdf5_hl -lhdf5 -lz
-#NETCDF_INC          :=  -I/Users/murali/softwares/core/include 
-#NETCDF_LIB 	    :=  -L/Users/murali/softwares/core/lib -lnetcdf
-#HDF5_LIB            :=  -L/opt/homebrew/lib  -lhdf5
+# HDF5: yambo links -lhdf5_fortran; LetzElPhC needs the C high-level API (-lhdf5_hl).
+# Extract the -L flags from yambo's hdf5 config and substitute C-appropriate libraries.
+HDF5_LIB     := $(filter -L%,$(lhdf5)) -lhdf5_hl -lhdf5 -lz
+
+INC_DIRS     :=
+LIBS         :=
 
 
-INC_DIRS            := 
-LIBS                := 
-
-
-#### Notes Extra CFLAGS
-### add -DCOMPILE_ELPH_DOUBLE if you want to compile the code in double precession
-### if you are using yambo <= 5.1.2, you need to add "-DYAMBO_LT_5_1" to cflags
-### for openmp use -DELPH_OMP_PARALLEL_BUILD in CFLAGS and set -fopenmp in LD_FLAGS and CFLAGS
+#### Notes / Extra CFLAGS
+### for openmp: add -DELPH_OMP_PARALLEL_BUILD to CFLAGS and -fopenmp to LD_FLAGS and CFLAGS
