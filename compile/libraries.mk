@@ -9,8 +9,7 @@ ifeq ($(wildcard compile/global/defs.mk),compile/global/defs.mk)
   include compile/defs.mk
 endif
 #
-EP_S1= [Sep,nonloc] [Sep,io/ezxml] [Sep,parser/inih] [Sep,io] 
-EP_S2= [Sep,io/qe] [Sep,common] [Sep,dvloc] [Sep,elph] [Sep,wfc] [Sep,symmetries] [Sep,fft]
-EP_S3= [Sep,common/cwalk] [Sep,preprocessor] [Sep,interpolation] [Sep,common/ELPH_hash_map] [Sep,phonon] [Sep,common/kdtree] [Sep,parser]
+SERVICES_LIBS += [Sep,common/kdtree] [Sep,phonon] [Sep,common/ELPH_hash_map] [Sep,interpolation] 
+SERVICES_LIBS += [Sep,preprocessor] [Sep,common/cwalk] [Sep,fft] [Sep,symmetries] [Sep,wfc] 
+SERVICES_LIBS += [Sep,common] [Sep,dvloc] [Sep,parser/inih] [Sep,parser] [Sep,io/ezxml] [Sep,io/qe] [Sep,nonloc] [Sep,io] [Sep,elph]
 #
-SERVICES_LIBS += ${EP_S1} ${EP_S2} ${EP_S3}
