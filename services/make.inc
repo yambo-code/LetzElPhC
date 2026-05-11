@@ -15,7 +15,8 @@ OPENMP_FLAGS :=
 # Set -DCOMPILE_ELPH_DOUBLE in CFLAGS above to switch LetzElPhC to double precision.
 FFTW_INC     := $(ifft)
 ifeq (,$(findstring -DCOMPILE_ELPH_DOUBLE,$(CFLAGS)))
-FFTW3_LIB    := $(lfft) -lfftw3f
+# lfft from yambo already contains -lfftw3f; strip before appending to avoid duplicate
+FFTW3_LIB    := $(filter-out -lfftw3f,$(lfft)) -lfftw3f
 else
 FFTW3_LIB    := $(lfft) -lfftw3
 endif
