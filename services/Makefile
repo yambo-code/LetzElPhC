@@ -1,45 +1,49 @@
-include make.inc
-
-TARGET 		 :=  lelphc
-
-#### make start here
-
-SUBDIR = nonloc io/ezxml parser/inih io \
-		 io/qe common dvloc elph wfc \
-		 symmetries fft common/cwalk \
-		 preprocessor interpolation \
-		 common/ELPH_hash_map phonon \
-		 common/kdtree parser
-
-.SUFFIXES :
-
-INCS = $(wildcard *.h $(foreach fd, $(SUBDIR), $(fd)/*.h))
-SRCS = $(wildcard *.c $(foreach fd, $(SUBDIR), $(fd)/*.c))
-OBJS = $(addprefix ./, $(SRCS:c=o)) 
-
-INC_DIRS += -I. $(FFTW_INC) $(NETCDF_INC)
-LIBS     += $(FFTW3_LIB) $(BLAS_LIB) $(NETCDF_LIB) $(HDF5_LIB) -lm
-
-
-PHONY := $(TARGET)
-$(TARGET): $(OBJS) 
-	$(CC) -o ./$@ $(OBJS) $(LIBS) $(LD_FLAGS)
-
-%.o: %.c $(INCS) make.inc
-	$(CC) $(CFLAGS) -c $< $(INC_DIRS) $(OPENMP_FLAGS) -o $@
-
-
-PHONY += clean
-clean:
-	rm ./$(TARGET) $(OBJS)
-
-PHONY += echoes
-echoes:
-	@echo "INC files: $(INCS)"
-	@echo "SRC files: $(SRCS)"
-	@echo "OBJ files: $(OBJS)"
-	@echo "LIB files: $(LIBS)"
-	@echo "INC DIR: $(INC_DIRS)"
-
-
-.PHONY = $(PHONY)
+#
+# License-Identifier: GPL
+#
+# Copyright (C) 2016 The Yambo Team
+#
+# Authors (see AUTHORS file for details): HM
+#
+# VARIABLES (static and dynamical)
+#
+include dyn_variables.mk
+include $(compdir)/compile/local/static_variables.mk
+include $(compdir)/compile/local/defs.mk
+include $(compdir)/compile/defs.mk
+#
+# SETUP
+#
+include $(compdir)/config/setup
+#
+# Module dependencies
+#
+-include local_modules.dep
+#
+# Include directories (headers)
+#
+include $(compdir)/compile/headers.mk
+#
+# Libraries 
+#
+include $(compdir)/compile/libraries.mk
+ifneq "$(wildcard $(compdir)/plugins/plugins.pulled)" ""
+ include $(compdir)/plugins/*/compile/headers_and_libs.mk
+endif
+#
+# OBJECTS
+#
+include objects.mk
+#
+# OPERATIONS
+#
+include $(compdir)/compile/local/operations.mk
+#
+# RULES
+#
+include $(compdir)/compile/local/rules.mk
+#
+# FUNCTIONS
+#
+include $(compdir)/compile/local/functions.mk
+#
