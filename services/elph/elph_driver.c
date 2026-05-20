@@ -714,6 +714,7 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
             if (mpi_comms->commK_rank == 0)
             {
                 dvG_fill_fn((int)iqpt_iBZg, (const void*)dVG,
+                            (const void*)omega_ph,
                             (int)phonon->nq_iBZ,
                             (int)nmodes, (int)lattice->nmag,
                             (int)lattice->fft_dims[0],

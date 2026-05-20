@@ -20,12 +20,14 @@ typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
 /*
  * Callback for dV_q^nu(G) in reciprocal space, called once per iBZ q-point
  * from commK rank 0.
- *   iq_iBZ  : 0-based global iBZ q-point index
- *   dVG     : C row-major (nmodes, nmag, nfft_x, nfft_y, nfft_z) after forward FFT
- *   nq_iBZ  : total number of iBZ q-points
+ *   iq_iBZ   : 0-based global iBZ q-point index
+ *   dVG      : C row-major (nmodes, nmag, nfft_x, nfft_y, nfft_z) after forward FFT
+ *   ph_freqs : phonon frequencies omega_ph[nmodes] in Hartree (ELPH_float*)
+ *   nq_iBZ   : total number of iBZ q-points
  */
 typedef void (*elph_dvG_fill_fn)(int iq_iBZ,
                                   const void* dVG,
+                                  const void* ph_freqs,
                                   int nq_iBZ, int nmodes, int nmag,
                                   int nfft_x, int nfft_y, int nfft_z);
 
