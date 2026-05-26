@@ -10,4 +10,5 @@
 # like "common/dtypes.h", so the plugin services root must be on the
 # include path.
 #
-# ep plugin is superseded by letz; include paths defined in letz/compile/headers_and_libs.mk
+iheaders        += $(IFLAG)$(srcdir)/plugins/letz/services
+include_headers += $(IFLAG)$(srcdir)/plugins/letz/services

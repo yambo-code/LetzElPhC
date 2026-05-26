@@ -5,4 +5,8 @@
 #
 # Authors (see AUTHORS file for details): AM MN RR
 #
-# lelphc/clean_lelphc targets defined in plugins/letz/compile/targets.mk
+lelphc:
+	$(MAKE) -C $(srcdir)/plugins/letz/services
+
+clean_lelphc:
+	-$(MAKE) -C $(srcdir)/plugins/letz/services clean
