@@ -33,4 +33,6 @@ EP_S5= [Sletz,wfc] [Sletz,fft] [Sletz,phonon] [Sletz,parser]
 EP_S6= [Sletz,common] [Sletz,common/cwalk] [Sletz,common/ELPH_hash_map] \
         [Sletz,common/kdtree] [Sletz,io/ezxml] [Sletz,parser/inih]
 #
-SERVICES_LIBS += ${EP_S1} ${EP_S2} ${EP_S3} ${EP_S4} ${EP_S5} ${EP_S6}
+ifneq (,$(filter yambo_ep ypp_ep,$(MAKECMDGOALS)))
+  SERVICES_LIBS += ${EP_S1} ${EP_S2} ${EP_S3} ${EP_S4} ${EP_S5} ${EP_S6}
+endif

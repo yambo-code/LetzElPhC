@@ -25,7 +25,8 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              const int varid_dmat, const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm,
-                             elph_fill_fn fill_fn)
+                             elph_fill_fn fill_fn,
+                             const ND_int iqpt_iBZ)
 {
     /*
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
@@ -152,7 +153,9 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
                         (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
                         (int)lattice->nspin, (int)nbnds,
-                        (int)lattice->start_band);
+                        (int)lattice->start_band,
+                        (int)iqpt_iBZ,
+                        (const void*)(phonon->qpts_BZ + 3 * startp[0]));
             }
             else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
                                            countp, elph_kq_mn)))
@@ -222,7 +225,9 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                     fill_fn((int)startp[0], (int)startp[1], gSq_buff,
                             (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
                             (int)lattice->nspin, (int)nbnds,
-                            (int)lattice->start_band);
+                            (int)lattice->start_band,
+                            (int)iqpt_iBZ,
+                            (const void*)(phonon->qpts_BZ + 3 * startp[0]));
                 }
                 else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
                                                countp, gSq_buff)))
