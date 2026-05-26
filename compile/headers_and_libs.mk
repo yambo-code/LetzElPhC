@@ -10,5 +10,5 @@
 # like "common/dtypes.h", so the plugin services root must be on the
 # include path.
 #
-iheaders        += $(IFLAG)$(srcdir)/plugins/ep/services
-include_headers += $(IFLAG)$(srcdir)/plugins/ep/services
+iheaders        += $(IFLAG)$(srcdir)/plugins/letz/services
+include_headers += $(IFLAG)$(srcdir)/plugins/letz/services
