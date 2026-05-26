@@ -9,9 +9,9 @@ ifeq ($(wildcard compile/global/defs.mk),compile/global/defs.mk)
   include compile/defs.mk
 endif
 #
-EP_S1= [Sep,nonloc] [Sep,io/ezxml] [Sep,parser/inih] [Sep,io] 
-EP_S2= [Sep,io/qe] [Sep,common] [Sep,dvloc] [Sep,elph] [Sep,wfc] [Sep,symmetries] [Sep,fft]
-EP_S3= [Sep,common/cwalk] [Sep,preprocessor] [Sep,interpolation] [Sep,common/ELPH_hash_map] [Sep,phonon] [Sep,common/kdtree] [Sep,parser]
+EP_S1= [Sletz,nonloc] [Sletz,io/ezxml] [Sletz,parser/inih] [Sletz,io] 
+EP_S2= [Sletz,io/qe] [Sletz,common] [Sletz,dvloc] [Sletz,elph] [Sletz,wfc] [Sletz,symmetries] [Sletz,fft]
+EP_S3= [Sletz,common/cwalk] [Sletz,preprocessor] [Sletz,interpolation] [Sletz,common/ELPH_hash_map] [Sletz,phonon] [Sletz,common/kdtree] [Sletz,parser]
 #
 ifneq (,$(filter yambo_ep ypp_ep,$(MAKECMDGOALS)))
   SERVICES_LIBS += ${EP_S1} ${EP_S2} ${EP_S3}
