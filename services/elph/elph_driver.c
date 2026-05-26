@@ -304,7 +304,7 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, ncid_elph, varid_elph, ncid_dmat,
                                 varid_dmat, kernel->non_loc,
-                                input_data->kminusq, mpi_comms, NULL);
+                                input_data->kminusq, mpi_comms, NULL, iqpt_iBZg);
     }
 
     free(eig_Sq);
@@ -525,7 +525,8 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, 0, 0, ncid_dmat,
                                 varid_dmat, kernel->non_loc,
-                                input_data->kminusq, mpi_comms, fill_fn);
+                                input_data->kminusq, mpi_comms, fill_fn,
+                                iqpt_iBZg);
     }
 
     if (mpi_comms->commK_rank == 0)
@@ -727,7 +728,8 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, 0, 0, ncid_dmat,
                                 varid_dmat, kernel->non_loc,
-                                input_data->kminusq, mpi_comms, fill_fn);
+                                input_data->kminusq, mpi_comms, fill_fn,
+                                iqpt_iBZg);
     }
 
     if (mpi_comms->commK_rank == 0)
