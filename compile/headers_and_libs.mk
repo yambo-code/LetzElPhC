@@ -12,3 +12,4 @@
 #
 iheaders        += $(IFLAG)$(srcdir)/plugins/letz/services
 include_headers += $(IFLAG)$(srcdir)/plugins/letz/services
+llibs           += -lcblas

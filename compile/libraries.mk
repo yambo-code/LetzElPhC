@@ -25,13 +25,12 @@ endif
 #   elph_driver_f2c / elph_driver_cb_f2c / elph_driver_cb2_f2c
 # These are the ONLY entry points yambo_ep calls into LetzElPhC.
 #
-EP_S1= [Sletz,interpolation] [Sletz,elph]
-EP_S2= [Sletz,io/qe]
-EP_S3= [Sletz,io]
-EP_S4= [Sletz,dvloc] [Sletz,nonloc] [Sletz,symmetries] [Sletz,preprocessor]
-EP_S5= [Sletz,wfc] [Sletz,fft] [Sletz,phonon] [Sletz,parser]
-EP_S6= [Sletz,common] [Sletz,common/cwalk] [Sletz,common/ELPH_hash_map] \
-        [Sletz,common/kdtree] [Sletz,io/ezxml] [Sletz,parser/inih]
+EP_S1= [Sletz,interpolation] 
+EP_S2= [Sletz,io/qe] [Sletz,common/ELPH_hash_map] [Sletz,common] [Sletz,symmetries] [Sletz,nonloc] 
+EP_S3= [Sletz,dvloc] [Sletz,io] [Sletz,io/ezxml]
+EP_S4= [Sletz,wfc] [Sletz,fft] [Sletz,dvloc] [Sletz,common/cwalk] [Sletz,preprocessor]
+EP_S5= [Sletz,phonon]  [Sletz,parser/inih] [Sletz,parser]
+EP_S6= [Sletz,common/kdtree] [Sletz,elph]
 #
 ifneq (,$(filter yambo_ep ypp_ep,$(MAKECMDGOALS)))
   SERVICES_LIBS += ${EP_S1} ${EP_S2} ${EP_S3} ${EP_S4} ${EP_S5} ${EP_S6}
