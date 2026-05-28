@@ -74,10 +74,18 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     struct WFC* wfcs;
 
     // read the SAVE data and phonon related data.
+    if (dft_code == DFT_CODE_QE)
+    {
+        get_data_from_qe(lattice, phonon, pseudo, input_data->ph_save_dir, NULL,
+                         mpi_comms);
+    }
+    else
+    {
+        error_msg("Only QE supported");
+    }
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon,
-                             dft_code);
+                             input_data->ph_save_dir, lattice, pseudo, phonon);
 
     // print info about lattice and phonons
     print_lattice_info(mpi_comms, lattice);
@@ -421,10 +429,18 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
 
     struct WFC* wfcs;
 
+    if (dft_code == DFT_CODE_QE)
+    {
+        get_data_from_qe(lattice, phonon, pseudo, input_data->ph_save_dir, NULL,
+                         mpi_comms);
+    }
+    else
+    {
+        error_msg("Only QE supported");
+    }
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon,
-                             dft_code);
+                             input_data->ph_save_dir, lattice, pseudo, phonon);
 
     print_lattice_info(mpi_comms, lattice);
     print_phonon_info(mpi_comms, phonon);
@@ -606,10 +622,18 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
 
     struct WFC* wfcs;
 
+    if (dft_code == DFT_CODE_QE)
+    {
+        get_data_from_qe(lattice, phonon, pseudo, input_data->ph_save_dir, NULL,
+                         mpi_comms);
+    }
+    else
+    {
+        error_msg("Only QE supported");
+    }
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon,
-                             dft_code);
+                             input_data->ph_save_dir, lattice, pseudo, phonon);
 
     print_lattice_info(mpi_comms, lattice);
     print_phonon_info(mpi_comms, phonon);

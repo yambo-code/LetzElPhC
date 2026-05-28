@@ -22,7 +22,6 @@
 #include "dvloc/dvloc.h"
 #include "elphC.h"
 #include "io.h"
-#include "io/qe/qe_io.h"
 #include "mpi_bcast.h"
 #include "nonloc/fcoeff.h"
 #include "symmetries/symmetries.h"
@@ -54,8 +53,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               ND_int start_band, ND_int end_band,
                               struct WFC** wfcs, char* ph_save_dir,
                               struct Lattice* lattice, struct Pseudo* pseudo,
-                              struct Phonon* phonon,
-                              enum ELPH_dft_code dft_code)
+                              struct Phonon* phonon)
 {
     /* This function allocates and reads data from SAVE dir.
     The following data is read : wfcs(in iBZ), lattice and pseudo
@@ -75,18 +73,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     int mpi_error;
 
-    // first get the basic dft/dfpt data from dft code (code specific) before
-    // anything
     char* pp_head = "ns.kb_pp_pwscf";  // Change this accordingly
-    if (dft_code == DFT_CODE_QE)
-    {
-        // char* pp_head = "ns.kb_pp_pwscf";
-        get_data_from_qe(lattice, phonon, pseudo, ph_save_dir, NULL, Comm);
-    }
-    else
-    {
-        error_msg("Only QE supported");
-    }
 
     lattice->nfftz_loc = get_mpi_local_size_idx(
         lattice->fft_dims[2], &(lattice->nfftz_loc_shift), Comm->commK);
