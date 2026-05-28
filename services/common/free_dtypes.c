@@ -5,7 +5,6 @@
 
 #include "dtypes.h"
 #include "elphC.h"
-#include "nonloc/fcoeff.h"
 
 void free_wfc_type(struct WFC* Wfc)
 {
@@ -108,34 +107,5 @@ void free_local_pseudo_type(struct local_pseudo* lpseudo)
     lpseudo->r_grid = NULL;
     lpseudo->rab_grid = NULL;
 
-    return;
-}
-
-void free_Pseudo_type(struct Pseudo* pseudo)
-{
-    if (!pseudo)
-    {
-        return;
-    }
-
-    free_f_Coeff(pseudo);
-    free(pseudo->fCoeff);
-    free_Vloc_table_type(pseudo->vloc_table);
-    free(pseudo->Fsign);
-    free(pseudo->PP_table);
-
-    if (pseudo->loc_pseudo)
-    {
-        for (ND_int itype = 0; itype < pseudo->ntype; ++itype)
-        {
-            free_local_pseudo_type(pseudo->loc_pseudo + itype);
-        }
-    }
-    free(pseudo->loc_pseudo);
-
-    pseudo->loc_pseudo = NULL;
-    pseudo->PP_table = NULL;
-    pseudo->Fsign = NULL;
-    pseudo->fCoeff = NULL;
     return;
 }
