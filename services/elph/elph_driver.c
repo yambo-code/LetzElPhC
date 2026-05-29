@@ -52,7 +52,7 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                           mpi_comms);
 
     // print logo and stated message
-    print_ELPH_logo(mpi_comms->commW_rank, stdout);
+    print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
     print_info_msg(mpi_comms->commW_rank,
                    "********** Program started **********");
     print_input_info(input_data->save_dir, input_data->ph_save_dir,
@@ -408,7 +408,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
                           mpi_comms);
 
-    print_ELPH_logo(mpi_comms->commW_rank, stdout);
+    print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
     print_info_msg(mpi_comms->commW_rank,
                    "********** Program started **********");
     print_input_info(input_data->save_dir, input_data->ph_save_dir,
@@ -601,7 +601,7 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
                           mpi_comms);
 
-    print_ELPH_logo(mpi_comms->commW_rank, stdout);
+    print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
     print_info_msg(mpi_comms->commW_rank,
                    "********** Program started **********");
     print_input_info(input_data->save_dir, input_data->ph_save_dir,

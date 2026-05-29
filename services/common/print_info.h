@@ -8,6 +8,9 @@ void print_ELPH_logo(int mpi_rank, FILE* output);
 
 void print_info_msg(int mpi_rank, const char* fmt, ...);
 
+void  elph_set_log_file(FILE* fp);
+FILE* elph_get_log_file(void);
+
 void print_input_info(const char* save_dir, const char* ph_save_dir,
                       const char* kernel, const bool kminusq,
                       const enum ELPH_dft_code dft_code,
