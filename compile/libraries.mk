@@ -13,12 +13,12 @@ endif
 # Static linker is left-to-right: symbol-users before symbol-providers.
 #
 # Dependency tiers (each tier depends only on equal/lower tiers):
-#   T5 drivers      : interpolation, elph
-#   T4 QE I/O       : io/qe
-#   T3 main I/O     : io
-#   T2 kernels+pp   : dvloc, symmetries, nonloc, preprocessor
-#   T1 primitives   : fft, parser, phonon, wfc
-#   T0 base+vendors : common, common/kdtree, io/ezxml, common/ELPH_hash_map,
+#   T6 drivers      : interpolation, elph
+#   T5 QE I/O       : io/qe
+#   T4 main I/O     : io
+#   T3 kernels+pp   : dvloc, symmetries, nonloc, preprocessor
+#   T2 primitives   : fft, parser, phonon, wfc
+#   T1 base+vendors : common, common/kdtree, io/ezxml, common/ELPH_hash_map,
 #                     parser/inih, common/cwalk
 #
 # elph (T5) hosts the Fortran-to-C ABI boundary (ep_f2c_bridge.c):
@@ -31,7 +31,7 @@ EP_S1= [Sletz,interpolation]
 EP_S2= [Sletz,io/qe] [Sletz,common/ELPH_hash_map] [Sletz,common] [Sletz,symmetries] [Sletz,nonloc] 
 EP_S3= [Sletz,dvloc] [Sletz,io] [Sletz,io/ezxml]
 EP_S4= [Sletz,wfc] [Sletz,fft] [Sletz,dvloc] [Sletz,common/cwalk] [Sletz,preprocessor]
-EP_S5= [Sletz,phonon]  [Sletz,parser/inih] [Sletz,parser]
+EP_S5= [Sletz,phonon] [Sletz,parser/inih] [Sletz,parser]
 EP_S6= [Sletz,common/kdtree] [Sletz,elph]
 #
 ifneq (,$(filter yambo_ep ypp_ep,$(MAKECMDGOALS)))
