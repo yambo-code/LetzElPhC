@@ -59,16 +59,17 @@ ND_int bz_expand(const ND_int Nibz, const ND_int Nsym,
         int iden_idx = -1;
         for (ND_int isym = 0; isym < Nsym; ++isym)
         {
-            ELPH_float sum_diff = 3;
+            ELPH_float sum_diff = 0.0;
+
             for (ND_int ix = 0; ix < 9; ++ix)
             {
-                sum_diff += symms[isym].Rmat[ix] * symms[isym].Rmat[ix];
+                ELPH_float identity_val = (ix % 4 == 0) ? 1.0 : 0.0;
+                ELPH_float diff = symms[isym].Rmat[ix] - identity_val;
+                sum_diff += diff * diff;
             }
-            for (ND_int ix = 0; ix < 3; ++ix)
-            {
-                sum_diff -= 2.0 * symms[isym].Rmat[ix * 4];
-            }
-            sum_diff = sqrt(fabs(sum_diff)) / 3;
+
+            sum_diff = sqrt(sum_diff) / 3.0;
+
             if (sum_diff < 1e-5)
             {
                 iden_idx = isym;
