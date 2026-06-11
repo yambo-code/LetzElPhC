@@ -197,6 +197,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     if (start_band < 1 || end_band < 1)
     {
+#if !defined _Y6_LETZ
         if (Comm->commW_rank == 0)
         {
             fprintf(stderr,
@@ -204,12 +205,14 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                     "matrix elements for all bands, "
                     "Bands index belong to [1,nbnds] \n");
         }
+#endif
         start_band = 1;
         end_band = lattice->total_bands;
     }
     if (start_band > lattice->total_bands || end_band > lattice->total_bands ||
         start_band >= end_band)
     {
+#if !defined _Y6_LETZ
         if (Comm->commW_rank == 0)
         {
             fprintf(
@@ -217,6 +220,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                 "Warning : invalid bands used in calculation. computing matrix "
                 "elements for all bands \n");
         }
+#endif
         start_band = 1;
         end_band = lattice->total_bands;
     }

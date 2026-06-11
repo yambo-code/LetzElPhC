@@ -18,10 +18,13 @@ This file contains functions which are os dependent.
 #include "io/ezxml/ezxml.h"
 #include "preprocessor.h"
 
-static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
-                           ND_int buffer_size);
+static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,ND_int buffer_size);
 
-void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path )
+#if defined _Y6_LETZ
+void create_ph_save_dir_pp_qe(const char* inp_file,char* ph_path,char* scf_path )
+#else
+void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path, const char* scf_path )
+#endif
 {
     //  parse the input file
     // open the  qe ph.x input file
@@ -307,7 +310,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path )
     snprintf(prefix_dir, 100, "%s.save", scf_prefix);
 
     cwk_path_join_multiple(
-        (const char*[]){out_dir, prefix_dir, "data-file-schema.xml", NULL},
+        (const char*[]){scf_path,out_dir, prefix_dir, "data-file-schema.xml", NULL},
         src_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
     cwk_path_join_multiple(
@@ -353,7 +356,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path )
         char* tmp_str = pseudo_file_xml->txt;
 
         cwk_path_join_multiple(
-            (const char*[]){out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,
+            (const char*[]){scf_path,out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,
             PH_X_INP_READ_BUF_SIZE);
 
         cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, tmp_str, NULL},
