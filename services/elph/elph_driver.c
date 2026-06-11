@@ -25,6 +25,7 @@ THe starting point for the entire code
 #include "io/qe/qe_io.h"
 #include "parser/parser.h"
 #include "symmetries/symmetries.h"
+#include "common/string_func.h"
 
 void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world)
@@ -441,6 +442,9 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
                              input_data->ph_save_dir, lattice, pseudo, phonon);
+    char DM_name[100];
+    strlcpy_custom(DM_name, input_data->ph_save_dir,100);
+    strlcat(DM_name,"/ndb.Dmats", 100);
 
     print_lattice_info(mpi_comms, lattice);
     print_phonon_info(mpi_comms, phonon);
@@ -448,7 +452,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     print_info_msg(mpi_comms->commW_rank, "");
     print_info_msg(mpi_comms->commW_rank,
                    "=== Computing Dmats for phonon symmetries ===");
-    compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym,
+    compute_and_write_dmats(DM_name, wfcs, lattice, phonon->nph_sym,
                             phonon->ph_syms, mpi_comms);
 
     ND_int nmodes = lattice->nmodes;
@@ -470,7 +474,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
 
     if (mpi_comms->commK_rank == 0)
     {
-        if ((nc_err = nc_open_par("ndb.Dmats", NC_NOWRITE, mpi_comms->commR,
+        if ((nc_err = nc_open_par(DM_name, NC_NOWRITE, mpi_comms->commR,
                                   MPI_INFO_NULL, &ncid_dmat)))
         {
             ERR(nc_err);
@@ -635,13 +639,17 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
                              input_data->ph_save_dir, lattice, pseudo, phonon);
 
+    char DM_name[100];
+    strlcpy_custom(DM_name, input_data->ph_save_dir,100);
+    strlcat(DM_name,"/ndb.Dmats", 100);
+
     print_lattice_info(mpi_comms, lattice);
     print_phonon_info(mpi_comms, phonon);
 
     print_info_msg(mpi_comms->commW_rank, "");
     print_info_msg(mpi_comms->commW_rank,
                    "=== Computing Dmats for phonon symmetries ===");
-    compute_and_write_dmats("ndb.Dmats", wfcs, lattice, phonon->nph_sym,
+    compute_and_write_dmats(DM_name, wfcs, lattice, phonon->nph_sym,
                             phonon->ph_syms, mpi_comms);
 
     ND_int nmodes = lattice->nmodes;
@@ -663,7 +671,7 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
 
     if (mpi_comms->commK_rank == 0)
     {
-        if ((nc_err = nc_open_par("ndb.Dmats", NC_NOWRITE, mpi_comms->commR,
+        if ((nc_err = nc_open_par(DM_name, NC_NOWRITE, mpi_comms->commR,
                                   MPI_INFO_NULL, &ncid_dmat)))
         {
             ERR(nc_err);

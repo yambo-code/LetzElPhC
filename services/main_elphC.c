@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
             {
                 if (calc_info->code == DFT_CODE_QE)
                 {
-                    create_ph_save_dir_pp_qe(calc_info->input_file);
+                    create_ph_save_dir_pp_qe(calc_info->input_file,calc_info->ph_save_dir);
                 }
             }
         }

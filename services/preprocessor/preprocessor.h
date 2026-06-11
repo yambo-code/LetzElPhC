@@ -9,7 +9,7 @@
 
 void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info);
 
-void create_ph_save_dir_pp_qe(const char* inp_file);
+void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path);
 
 void ELPH_print_version(void);
 void ELPH_print_help(void);
