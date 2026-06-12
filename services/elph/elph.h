@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 
+#include "parser/parser.h"
 #include "common/dtypes.h"
 #include "elphC.h"
 
@@ -46,7 +47,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  * iBZ q-point with the full dV_q^nu(G) potential in reciprocal space.
  * Either callback may be NULL to skip that output.
  */
-void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
+void elph_driver_cb2(struct elph_usr_input* input_data, enum ELPH_dft_code dft_code,
                      MPI_Comm comm_world, elph_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn);
 

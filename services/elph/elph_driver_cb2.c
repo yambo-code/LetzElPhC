@@ -31,14 +31,14 @@
  * once per iBZ q-point from commK rank 0 with dV_q^nu(G) in G-space.
  * Either callback may be NULL to skip that output.
  */
-void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
+void elph_driver_cb2(struct elph_usr_input* input_data,enum ELPH_dft_code dft_code,
                      MPI_Comm comm_world, elph_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn)
 {
-    struct elph_usr_input* input_data;
+    /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
 
-    read_elph_input_file(ELPH_input_file, &input_data, comm_world);
+    /* read_elph_input_file(ELPH_input_file, &input_data, comm_world);*/
 
     struct kernel_info* kernel = malloc(sizeof(struct kernel_info));
     init_kernel(kernel);
@@ -224,7 +224,7 @@ void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     int World_rank_tmp = mpi_comms->commW_rank;
 
     free(kernel);
-    free_elph_usr_input(input_data);
+    /*free_elph_usr_input(input_data);*/
     free_save_data(wfcs, lattice, pseudo, phonon);
     free(lattice);
     free(pseudo);
