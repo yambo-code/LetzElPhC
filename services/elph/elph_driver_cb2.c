@@ -33,7 +33,7 @@
  */
 void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,enum ELPH_dft_code dft_code,
                      MPI_Comm comm_world, elph_fill_fn fill_fn,
-                     elph_dvG_fill_fn dvG_fill_fn)
+                     elph_dvG_fill_fn dvG_fill_fn,int i_control)
 {
     /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
@@ -50,12 +50,15 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
     create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
                           mpi_comms);
 
-    print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
-    print_info_msg(mpi_comms->commW_rank,
-                   "********** Program started **********");
-    print_input_info(input_data->save_dir, input_data->ph_save_dir,
-                     input_data->kernel_str, input_data->kminusq, dft_code,
-                     mpi_comms);
+    if (i_control == 0 ) 
+    {
+      print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
+      print_info_msg(mpi_comms->commW_rank,
+                     "********** Program started **********");
+      print_input_info(input_data->save_dir, input_data->ph_save_dir,
+                       input_data->kernel_str, input_data->kminusq, dft_code,
+                       mpi_comms);
+    }
 
     struct Lattice* lattice = malloc(sizeof(struct Lattice));
     CHECK_ALLOC(lattice);
@@ -80,9 +83,14 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
     {
         error_msg("Only QE supported");
     }
+    if (i_control< 0 )
+    {
+         return;
+    }
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
                              input_data->ph_save_dir, lattice, pseudo, phonon);
+
 
     char DM_name[100];
     strlcpy_custom(DM_name, input_data->ph_save_dir,100);

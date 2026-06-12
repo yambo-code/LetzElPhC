@@ -49,7 +49,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  */
 void elph_driver_cb2(struct elph_usr_input* input_data, struct Y6_info* y6_data, enum ELPH_dft_code dft_code,
                      MPI_Comm comm_world, elph_fill_fn fill_fn,
-                     elph_dvG_fill_fn dvG_fill_fn);
+                     elph_dvG_fill_fn dvG_fill_fn,int i_control);
 
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              struct Pseudo* pseudo, struct Phonon* phonon,
