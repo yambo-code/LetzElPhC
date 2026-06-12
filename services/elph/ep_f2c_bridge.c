@@ -90,15 +90,14 @@ void elph_driver_cb_f2c(const char* input_file, int dft_code, MPI_Fint f_comm,
  * compatibility but ignored — callbacks resolved directly by the linker to
  * avoid the arm64 gfortran procedure-descriptor segfault.
  */
-void elph_driver_cb2_f2c(struct elph_usr_input* input_data, int dft_code, MPI_Fint f_comm,
+void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_data, 
+                         int dft_code, MPI_Fint f_comm,
                          void* fill_fn_ptr, void* dvG_fill_fn_ptr,
                          const char* log_path)
 {
-    printf("\n f2c %s\n",input_data->save_dir);
-    printf("\n f2c %s\n",input_data->scf_path);
     MPI_Comm c_comm = MPI_Comm_f2c(f_comm);
     open_letz_log(c_comm, log_path);
-    elph_driver_cb2(input_data,(enum ELPH_dft_code)dft_code, c_comm,
+    elph_driver_cb2(input_data,y6_data,(enum ELPH_dft_code)dft_code, c_comm,
                     (elph_fill_fn)elph_coll_fill_gkkp,
                     (elph_dvG_fill_fn)elph_coll_fill_dvg);
     close_letz_log();

@@ -31,7 +31,7 @@
  * once per iBZ q-point from commK rank 0 with dV_q^nu(G) in G-space.
  * Either callback may be NULL to skip that output.
  */
-void elph_driver_cb2(struct elph_usr_input* input_data,enum ELPH_dft_code dft_code,
+void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,enum ELPH_dft_code dft_code,
                      MPI_Comm comm_world, elph_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn)
 {
@@ -216,6 +216,21 @@ void elph_driver_cb2(struct elph_usr_input* input_data,enum ELPH_dft_code dft_co
             ERR(nc_err);
         }
     }
+    // Filling Y6 info//
+    y6_data->natom=lattice->natom; 
+    y6_data->nsym=lattice->nsym; 
+    y6_data->timerev=lattice->timerev; 
+    y6_data->nspin=lattice->nspin; 
+    y6_data->nspinor=lattice->nspinor; 
+    y6_data->total_bands=lattice->total_bands; 
+    y6_data->start_band=lattice->start_band; 
+    y6_data->end_band=lattice->end_band; 
+    y6_data->nbnds=lattice->nbnds; 
+    y6_data->lattice_dim=lattice->dimension; 
+    y6_data->nmag=lattice->nmag; 
+    y6_data->nmodes=lattice->nmodes; 
+    printf("MAG %i",lattice->nmag);
+    printf("MODES %i",lattice->nmodes);
 
     free(omega_ph);
     free(eigVec);
