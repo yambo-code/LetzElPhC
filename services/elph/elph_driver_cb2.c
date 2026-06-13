@@ -30,10 +30,12 @@
  * Extended callback variant: like elph_driver_cb plus dvG_fill_fn called
  * once per iBZ q-point from commK rank 0 with dV_q^nu(G) in G-space.
  * Either callback may be NULL to skip that output.
+ * comm_q, comm_k: Y6 PAR communicators for q,k distribution (nqpool/nkpool derived from these).
  */
 void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,enum ELPH_dft_code dft_code,
                      MPI_Comm comm_world, elph_fill_fn fill_fn,
-                     elph_dvG_fill_fn dvG_fill_fn,int i_control)
+                     elph_dvG_fill_fn dvG_fill_fn,int i_control,
+                     MPI_Comm comm_q, MPI_Comm comm_k)
 {
     /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
@@ -47,6 +49,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
     struct ELPH_MPI_Comms* mpi_comms = malloc(sizeof(struct ELPH_MPI_Comms));
     CHECK_ALLOC(mpi_comms);
 
+    /* Create parallel communicators using Y6 scheme communicators for pool distribution */
     create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
                           mpi_comms);
 

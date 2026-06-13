@@ -89,16 +89,20 @@ void elph_driver_cb_f2c(const char* input_file, int dft_code, MPI_Fint f_comm,
  * Extended callback bridge: fill_fn_ptr and dvG_fill_fn_ptr are kept for API
  * compatibility but ignored — callbacks resolved directly by the linker to
  * avoid the arm64 gfortran procedure-descriptor segfault.
+ * Communicators (f_comm_q, f_comm_k) passed from Y6 PAR schemes for MPI distribution.
  */
-void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_data, 
+void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_data,
                          int dft_code, MPI_Fint f_comm,
                          void* fill_fn_ptr, void* dvG_fill_fn_ptr,
-                         const char* log_path, int i_control)
+                         const char* log_path, int i_control,
+                         MPI_Fint f_comm_q, MPI_Fint f_comm_k)
 {
     MPI_Comm c_comm = MPI_Comm_f2c(f_comm);
+    MPI_Comm c_comm_q = MPI_Comm_f2c(f_comm_q);
+    MPI_Comm c_comm_k = MPI_Comm_f2c(f_comm_k);
     open_letz_log(c_comm, log_path);
     elph_driver_cb2(input_data,y6_data,(enum ELPH_dft_code)dft_code, c_comm,
                     (elph_fill_fn)elph_coll_fill_gkkp,
-                    (elph_dvG_fill_fn)elph_coll_fill_dvg,i_control);
+                    (elph_dvG_fill_fn)elph_coll_fill_dvg,i_control,c_comm_q,c_comm_k);
     close_letz_log();
 }

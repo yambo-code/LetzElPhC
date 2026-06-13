@@ -56,6 +56,8 @@ struct calc_details
     // name of the input file.
     // can be elph input or DFT-Phonon input
     // base on calc_type
+    char ph_save_dir[512];
+    // phonon save directory path for QE preprocessor
 };
 
 struct symmetry
