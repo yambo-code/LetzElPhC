@@ -18,6 +18,7 @@
 #include "common/print_info.h"
 #include "dvloc/dvloc.h"
 #include "dvG_utils.h"
+#include "yambo.h"
 #include "elph.h"
 #include "elphC.h"
 #include "fft/fft.h"
@@ -32,15 +33,13 @@
  * Either callback may be NULL to skip that output.
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution (nqpool/nkpool derived from these).
  */
-void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,enum ELPH_dft_code dft_code,
-                     MPI_Comm comm_world, elph_fill_fn fill_fn,
+void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
+                     elph_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
-                     MPI_Comm comm_q, MPI_Comm comm_k)
+                     MPI_Comm comm_world)
 {
     /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
-
-    /* read_elph_input_file(ELPH_input_file, &input_data, comm_world);*/
 
     struct kernel_info* kernel = malloc(sizeof(struct kernel_info));
     init_kernel(kernel);
@@ -52,6 +51,18 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
     /* Create parallel communicators using Y6 scheme communicators for pool distribution */
     create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
                           mpi_comms);
+
+    /*
+    fprintf(stderr,"\n");
+    for (int i = 0; i < y6_work->NK; i++) {
+        fprintf(stderr," R %i K %i\n ",mpi_comms->commW_rank, y6_work->K[i]);
+    }
+    fprintf(stderr,"\n");
+    for (int i = 0; i < y6_work->NQ; i++) {
+        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_work->Q[i]);
+    }
+    fprintf(stderr,"\n");
+    */
 
     if (i_control == 0 ) 
     {
@@ -109,8 +120,8 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
          free(lattice);
          free(pseudo);
          free(phonon);
-         free_parallel_comms(mpi_comms);
-         free(mpi_comms);
+         //free_parallel_comms(mpi_comms);
+         //free(mpi_comms);
          return;
     }
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
@@ -173,12 +184,13 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
                    "=== Computing Electron-phonon matrix elements ===");
     print_info_msg(mpi_comms->commW_rank, "");
 
-    for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
+    for (ND_int iqpt = 0; iqpt < y6_work->NQ; ++iqpt)
     {
         print_info_msg(mpi_comms->commW_rank, "### q-point : %d/%d",
                        (int)(iqpt + 1), (int)phonon->nq_iBZ_loc);
 
-        ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
+        //ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
+        ND_int iqpt_iBZg = y6_work->Q[iqpt];
 
         if (dft_code == DFT_CODE_QE)
         {
@@ -262,8 +274,8 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
     free(lattice);
     free(pseudo);
     free(phonon);
-    free_parallel_comms(mpi_comms);
-    free(mpi_comms);
+    //free_parallel_comms(mpi_comms);
+    //free(mpi_comms);
     fftw_fun(cleanup)();
 
     if (0 == World_rank_tmp)
