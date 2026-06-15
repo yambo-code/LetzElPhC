@@ -87,9 +87,40 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
         error_msg("Only QE supported");
     }
 
-    /* Populate y6_data (elphC_info in Fortran) with lattice/phonon metadata.
-       This happens early so query-only mode (i_control < 0) can return with
-       nmodes, natom, nsym, etc. already set for Fortran-side allocation. */
+    if (i_control < 0)
+    {
+        /* Query-only mode: read dimensions only, skip matrix computation.
+           read_lattice_dimensions populates nspin, nsym, etc. from SAVE netCDF. */
+        read_lattice_dimensions(input_data->save_dir, mpi_comms, lattice, phonon);
+
+        /* Populate y6_data (elphC_info in Fortran) with metadata. */
+        y6_data->natom=lattice->natom;
+        y6_data->nsym=lattice->nsym;
+        y6_data->timerev=lattice->timerev;
+        y6_data->nspin=lattice->nspin;
+        y6_data->nspinor=lattice->nspinor;
+        y6_data->total_bands=lattice->total_bands;
+        y6_data->start_band=lattice->start_band;
+        y6_data->end_band=lattice->end_band;
+        y6_data->nbnds=lattice->nbnds;
+        y6_data->lattice_dim=lattice->dimension;
+        y6_data->nmag=lattice->nmag;
+        y6_data->nmodes=lattice->nmodes;
+
+        /* Return after metadata population; skip gkkp/dvG computation. */
+        free(lattice);
+        free(pseudo);
+        free(phonon);
+        free_parallel_comms(mpi_comms);
+        free(mpi_comms);
+        return;
+    }
+
+    read_and_alloc_save_data(input_data->save_dir, mpi_comms,
+                             input_data->start_bnd, input_data->end_bnd, &wfcs,
+                             input_data->ph_save_dir, lattice, pseudo, phonon);
+
+    /* Populate y6_data (elphC_info in Fortran) with lattice/phonon metadata. */
     y6_data->natom=lattice->natom;
     y6_data->nsym=lattice->nsym;
     y6_data->timerev=lattice->timerev;
@@ -102,20 +133,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,e
     y6_data->lattice_dim=lattice->dimension;
     y6_data->nmag=lattice->nmag;
     y6_data->nmodes=lattice->nmodes;
-
-    if (i_control< 0 )
-    {
-         /* Query-only mode: return with y6_data populated, skip gkkp/dvG computation. */
-         free(lattice);
-         free(pseudo);
-         free(phonon);
-         free_parallel_comms(mpi_comms);
-         free(mpi_comms);
-         return;
-    }
-    read_and_alloc_save_data(input_data->save_dir, mpi_comms,
-                             input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon);
 
 
     char DM_name[100];
