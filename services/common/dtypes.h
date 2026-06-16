@@ -79,23 +79,6 @@ enum asr_kind
     ASR_ALL_HUANG
 };
 
-// Pieces of Lattice and Phonon to be passed to Yambo//
-struct Y6_info
-{
-    int natom;
-    int nsym;
-    int timerev;
-    int nspin;
-    int nspinor;
-    int total_bands;
-    int start_band;
-    int end_band;
-    int nbnds;
-    int lattice_dim;
-    int nmag;
-    int nmodes;
-};
-
 struct Lattice
 {
     // type which contains all information about the crystal structure

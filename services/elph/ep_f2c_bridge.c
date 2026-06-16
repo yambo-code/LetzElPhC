@@ -13,7 +13,9 @@
 
 #include "elph.h"   /* already pulls in common/dtypes.h and elphC.h */
 #include "common/print_info.h"
+#include <elph/yambo.h>
 #include <mpi.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -92,17 +94,26 @@ void elph_driver_cb_f2c(const char* input_file, int dft_code, MPI_Fint f_comm,
  * Communicators (f_comm_q, f_comm_k) passed from Y6 PAR schemes for MPI distribution.
  */
 void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_data,
-                         int dft_code, MPI_Fint f_comm,
-                         void* fill_fn_ptr, void* dvG_fill_fn_ptr,
+                         int dft_code, void* fill_fn_ptr, void* dvG_fill_fn_ptr,
                          const char* log_path, int i_control,
-                         MPI_Fint f_comm_q, MPI_Fint f_comm_k)
+                         int NQ_todo, int* Q_todo, int NK_todo , int* K_todo,MPI_Fint f_comm)
 {
     MPI_Comm c_comm = MPI_Comm_f2c(f_comm);
-    MPI_Comm c_comm_q = MPI_Comm_f2c(f_comm_q);
-    MPI_Comm c_comm_k = MPI_Comm_f2c(f_comm_k);
     open_letz_log(c_comm, log_path);
-    elph_driver_cb2(input_data,y6_data,(enum ELPH_dft_code)dft_code, c_comm,
+
+    struct Y6_parallel_work* y6_work = malloc(sizeof(struct Y6_parallel_work));
+
+    y6_work->Q  = malloc(NQ_todo * sizeof(int));
+    y6_work->NQ = NQ_todo-1;
+    y6_work->Q  = Q_todo;
+
+    y6_work->K  = malloc(NK_todo * sizeof(int));
+    y6_work->NK = NK_todo-1;
+    y6_work->K  = K_todo;
+
+    elph_driver_cb2(input_data,y6_data,y6_work,(enum ELPH_dft_code)dft_code,
                     (elph_fill_fn)elph_coll_fill_gkkp,
-                    (elph_dvG_fill_fn)elph_coll_fill_dvg,i_control,c_comm_q,c_comm_k);
+                    (elph_dvG_fill_fn)elph_coll_fill_dvg,i_control,c_comm);
+
     close_letz_log();
 }
