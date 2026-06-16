@@ -33,7 +33,8 @@
  * Either callback may be NULL to skip that output.
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution (nqpool/nkpool derived from these).
  */
-void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
+void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
+                     struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
                      elph_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
                      MPI_Comm comm_world)
@@ -48,12 +49,18 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
     struct ELPH_MPI_Comms* mpi_comms = malloc(sizeof(struct ELPH_MPI_Comms));
     CHECK_ALLOC(mpi_comms);
 
-    /* Create parallel communicators using Y6 scheme communicators for pool distribution */
-    create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
-                          mpi_comms);
+#ifdef _Y6_LETZ
+    /* Y6 mode: comm_world is actually comm_q from yambo PAR scheme.
+       Create full MPI structure from scratch (will be reconciled with Y6 later).
+       For now, use Y6-provided communicators for proper coordination. */
+    create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world, mpi_comms);
+#else
+    /* Standalone mode: create 2D MPI structure from comm_world */
+    create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world, mpi_comms);
+#endif
 
 
-    if (i_control == 0 ) 
+    if (i_control > 0 ) 
     {
       print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
       print_info_msg(mpi_comms->commW_rank,
@@ -83,6 +90,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
     phonon->Q_par = malloc(phonon->NQ_par * sizeof(int));
     memcpy(phonon->Q_par, y6_work->Q, phonon->NQ_par * sizeof(int));
 
+    /*
     fprintf(stderr,"\n");
     for (int i = 0; i < y6_work->NK; i++) {
         fprintf(stderr," ID %i K %i\n ",mpi_comms->commW_rank, y6_work->K[i]);
@@ -92,7 +100,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
         fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_work->Q[i]);
     }
     fprintf(stderr,"\n");
-    /*
     */
 
     struct WFC* wfcs;
@@ -107,40 +114,10 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
         error_msg("Only QE supported");
     }
 
-    if (i_control < 0)
-    {
-        /* Query-only mode: read dimensions only, skip matrix computation.
-           read_lattice_dimensions populates nspin, nsym, etc. from SAVE netCDF. */
-        read_lattice_dimensions(input_data->save_dir, mpi_comms, lattice, phonon);
+    /* Populate y6_data (elphC_info in Fortran) with lattice/phonon metadata.
+       This happens early so query-only mode (i_control < 0) can return with
+       nmodes, natom, nsym, etc. already set for Fortran-side allocation. */
 
-        /* Populate y6_data (elphC_info in Fortran) with metadata. */
-        y6_data->natom=lattice->natom;
-        y6_data->nsym=lattice->nsym;
-        y6_data->timerev=lattice->timerev;
-        y6_data->nspin=lattice->nspin;
-        y6_data->nspinor=lattice->nspinor;
-        y6_data->total_bands=lattice->total_bands;
-        y6_data->start_band=lattice->start_band;
-        y6_data->end_band=lattice->end_band;
-        y6_data->nbnds=lattice->nbnds;
-        y6_data->lattice_dim=lattice->dimension;
-        y6_data->nmag=lattice->nmag;
-        y6_data->nmodes=lattice->nmodes;
-
-        /* Return after metadata population; skip gkkp/dvG computation. */
-        free(lattice);
-        free(pseudo);
-        free(phonon);
-        free_parallel_comms(mpi_comms);
-        free(mpi_comms);
-        return;
-    }
-
-    read_and_alloc_save_data(input_data->save_dir, mpi_comms,
-                             input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon);
-
-    /* Populate y6_data (elphC_info in Fortran) with lattice/phonon metadata. */
     y6_data->natom=lattice->natom;
     y6_data->nsym=lattice->nsym;
     y6_data->timerev=lattice->timerev;
@@ -153,6 +130,8 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
     y6_data->lattice_dim=lattice->dimension;
     y6_data->nmag=lattice->nmag;
     y6_data->nmodes=lattice->nmodes;
+    y6_data->nq_ibz=phonon->nq_iBZ;
+    y6_data->nq_bz=phonon->nq_BZ;
 
     if (i_control< 0 )
     {
@@ -229,7 +208,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
                        (int)(iqpt + 1), (int)phonon->nq_iBZ_loc);
 
         ND_int iqpt_iBZg = phonon->Q_par[iqpt];
-        fprintf(stderr,"\n ID %i iq %i",mpi_comms->commW_rank,iqpt_iBZg);
+        //fprintf(stderr,"\n ID %i iq %i",mpi_comms->commW_rank,iqpt_iBZg);
 
         if (dft_code == DFT_CODE_QE)
         {
@@ -268,9 +247,12 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
             error_msg("Currently only quantum espresso supported");
         }
         free(Vlocr);
+        
+        ND_int calc_dvG=-1;
+        if (dvG_fill_fn != NULL && i_control>=2 ) { calc_dvG=1; }
 
         /* dvG callback: gather dVscf z-slabs to rank 0, FFT, call handler. */
-        if (dvG_fill_fn != NULL)
+        if (calc_dvG ==1 )
         {
             ELPH_cmplx* dVG = gather_dVscf_and_fft(dVscf, lattice,
                                                      mpi_comms->commK);

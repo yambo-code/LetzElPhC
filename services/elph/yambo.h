@@ -27,5 +27,7 @@ struct Y6_info
     int lattice_dim;
     int nmag;
     int nmodes;
+    int nq_ibz;
+    int nq_bz;
 };
 
