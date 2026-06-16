@@ -52,17 +52,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
     create_parallel_comms(input_data->nqpool, input_data->nkpool, comm_world,
                           mpi_comms);
 
-    /*
-    fprintf(stderr,"\n");
-    for (int i = 0; i < y6_work->NK; i++) {
-        fprintf(stderr," R %i K %i\n ",mpi_comms->commW_rank, y6_work->K[i]);
-    }
-    fprintf(stderr,"\n");
-    for (int i = 0; i < y6_work->NQ; i++) {
-        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_work->Q[i]);
-    }
-    fprintf(stderr,"\n");
-    */
 
     if (i_control == 0 ) 
     {
@@ -77,6 +66,10 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
     struct Lattice* lattice = malloc(sizeof(struct Lattice));
     CHECK_ALLOC(lattice);
     init_lattice_type(lattice);
+  
+    lattice->NK_par=y6_work->NK;
+    lattice->K_par = malloc(lattice->NK_par * sizeof(int));
+    memcpy(lattice->K_par, y6_work->K, lattice->NK_par * sizeof(int));
 
     struct Pseudo* pseudo = malloc(sizeof(struct Pseudo));
     CHECK_ALLOC(pseudo);
@@ -85,6 +78,22 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
     struct Phonon* phonon = malloc(sizeof(struct Phonon));
     CHECK_ALLOC(phonon);
     init_phonon_type(phonon);
+  
+    phonon->NQ_par=y6_work->NQ;
+    phonon->Q_par = malloc(phonon->NQ_par * sizeof(int));
+    memcpy(phonon->Q_par, y6_work->Q, phonon->NQ_par * sizeof(int));
+
+    fprintf(stderr,"\n");
+    for (int i = 0; i < y6_work->NK; i++) {
+        fprintf(stderr," ID %i K %i\n ",mpi_comms->commW_rank, y6_work->K[i]);
+    }
+    fprintf(stderr,"\n");
+    for (int i = 0; i < y6_work->NQ; i++) {
+        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_work->Q[i]);
+    }
+    fprintf(stderr,"\n");
+    /*
+    */
 
     struct WFC* wfcs;
 
@@ -159,7 +168,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
                              input_data->ph_save_dir, lattice, pseudo, phonon);
 
-
     char DM_name[100];
     strlcpy_custom(DM_name, input_data->ph_save_dir,100);
     strlcat(DM_name,"/ndb.Dmats", 100);
@@ -215,13 +223,13 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
                    "=== Computing Electron-phonon matrix elements ===");
     print_info_msg(mpi_comms->commW_rank, "");
 
-    for (ND_int iqpt = 0; iqpt < y6_work->NQ; ++iqpt)
+    for (ND_int iqpt = 0; iqpt < phonon->NQ_par; ++iqpt)
     {
         print_info_msg(mpi_comms->commW_rank, "### q-point : %d/%d",
                        (int)(iqpt + 1), (int)phonon->nq_iBZ_loc);
 
-        //ND_int iqpt_iBZg = iqpt + phonon->nq_shift;
-        ND_int iqpt_iBZg = y6_work->Q[iqpt];
+        ND_int iqpt_iBZg = phonon->Q_par[iqpt];
+        fprintf(stderr,"\n ID %i iq %i",mpi_comms->commW_rank,iqpt_iBZg);
 
         if (dft_code == DFT_CODE_QE)
         {

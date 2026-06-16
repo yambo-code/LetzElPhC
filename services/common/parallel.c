@@ -125,6 +125,8 @@ void create_parallel_comms(const int nqpools, const int nkpools,
     MPI_error_msg(mpi_error);
 
     mpi_error = MPI_Comm_rank(Comm->commK, &Comm->commK_rank);
+    fprintf(stderr,"\n NQ_p %i NK_q %i",nqpools,nkpools);
+    fprintf(stderr,"\n ID %i Q_id %i K_id %i",Comm->commW_rank,Comm->commQ_rank ,Comm->commK_rank);
     MPI_error_msg(mpi_error);
     // commR
     mpi_error = MPI_Comm_split(Comm->commW, Comm->commK_rank, Comm->commW_rank,
