@@ -55,6 +55,8 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         distribute_to_grps(nk_totalBZ, Comm->nkpools,
                            Comm->commQ_rank / Comm->commK_size, &kshift);
 
+    nk_this_pool=lattice->NK_par;
+
     if (nk_this_pool < 1)
     {
         error_msg(
@@ -115,10 +117,10 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     struct progress_bar pbar[1];
     start_progressbar(pbar, Comm->commW_rank, nk_this_pool);
     // compute electron-phonon matrix elements for each kpoint
-    for (ND_int ii = 0; ii < nk_this_pool; ++ii)
+    for (ND_int ii = 0; ii < lattice->NK_par; ++ii)
     {
         /* compute the global k index */
-        ND_int i = kshift + ii;
+        ND_int i = lattice->K_par[ii];
 
         int idx_k = i;
         int idx_kq = KplusQidxs[i];
@@ -146,8 +148,9 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         startp[0] = qpos;
         startp[1] = i;
         int nc_err;
-        if (Comm->commK_rank == 0)
-        {
+//        if (Comm->commK_rank == 0)
+//      {
+        fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
             if (fill_fn != NULL)
             {
                 fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
@@ -162,7 +165,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
             {
                 ERR(nc_err);
             }
-        }
+//      }
 
         // expand the el-ph matrix elements in full BZ
         const ELPH_float* kpt_BZ = lattice->kpt_fullBZ + 3 * i;

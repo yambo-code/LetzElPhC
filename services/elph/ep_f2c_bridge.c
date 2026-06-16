@@ -104,12 +104,16 @@ void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_d
     struct Y6_parallel_work* y6_work = malloc(sizeof(struct Y6_parallel_work));
 
     y6_work->Q  = malloc(NQ_todo * sizeof(int));
-    y6_work->NQ = NQ_todo-1;
-    y6_work->Q  = Q_todo;
+    y6_work->NQ = NQ_todo;
+    for (int i = 0; i < y6_work->NQ; i++) {
+      y6_work->Q[i]  = Q_todo[i]-1;
+    }
 
     y6_work->K  = malloc(NK_todo * sizeof(int));
-    y6_work->NK = NK_todo-1;
-    y6_work->K  = K_todo;
+    y6_work->NK = NK_todo;
+    for (int i = 0; i < y6_work->NK; i++) {
+      y6_work->K[i]  = K_todo[i]-1;
+    }
 
     elph_driver_cb2(input_data,y6_data,y6_work,(enum ELPH_dft_code)dft_code,
                     (elph_fill_fn)elph_coll_fill_gkkp,

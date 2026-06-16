@@ -143,7 +143,9 @@ struct Lattice
     // array of symmetries (operated on cartisian coordinates)
     bool is_soc_present;
     // system has soc if true else false
-    // -------------------------------------------------------
+    // Yambo parallel workload
+    int *K_par;
+    int NK_par;
 };
 
 struct Phonon
@@ -180,6 +182,9 @@ struct Phonon
     // (natom,3,3,3)
     // Quadrapole tensor. for now not used is kept to NULL.
     // -------------------------------------------------------
+    // Yambo parallel workload
+    int *Q_par;
+    int NQ_par;
 };
 
 struct Vloc_table
