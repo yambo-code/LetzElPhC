@@ -148,9 +148,9 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         startp[0] = qpos;
         startp[1] = i;
         int nc_err;
-//        if (Comm->commK_rank == 0)
-//      {
-        fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
+        if (Comm->commK_rank == 0)
+        {
+          //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
             if (fill_fn != NULL)
             {
                 fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
@@ -165,7 +165,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
             {
                 ERR(nc_err);
             }
-//      }
+        }
 
         // expand the el-ph matrix elements in full BZ
         const ELPH_float* kpt_BZ = lattice->kpt_fullBZ + 3 * i;
