@@ -23,21 +23,16 @@
 #include "elphC.h"
 #include "io.h"
 #include "mpi_bcast.h"
+#include "nc_utils.h"
 #include "nonloc/fcoeff.h"
 #include "symmetries/symmetries.h"
 
 /*static functions */
-static void quick_read(const int ncid, char* var_name, void* data_out);
-static void quick_read_float(const int ncid, char* var_name,
-                             ELPH_float* data_out);
 
 static void alloc_and_set_Gvec(
     ELPH_float* gvec, const ND_int ik, const ELPH_float* totalGvecs,
     const ND_int ng_total, const ELPH_float* Gvecidxs, const ND_int ng_shell,
     const ELPH_float* lat_param, const ND_int nG, const ND_int nG_shift);
-
-static void quick_read_sub(const int ncid, char* var_name, const size_t* startp,
-                           const size_t* countp, void* data_out);
 
 static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
                               ND_int nspin, ND_int nspinor, ND_int start_band,
@@ -842,72 +837,6 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
         {
             ERR(retval);
         }
-    }
-}
-
-static void quick_read(const int ncid, char* var_name, void* data_out)
-{ /*  Serial read
-      load the entire varible data to data_out pointer
-  */
-    int varid, retval;
-
-    if ((retval = nc_inq_varid(ncid, var_name, &varid)))
-    {
-        ERR(retval);  // get the varible id of the file
-    }
-
-    if ((retval = nc_get_var(ncid, varid, data_out)))
-    {
-        ERR(retval);  // get data in floats
-    }
-}
-
-static void quick_read_float(const int ncid, char* var_name,
-                             ELPH_float* data_out)
-{ /*  Serial read
-      load the entire varible data to data_out pointer
-      */
-    int varid, retval;
-
-    if ((retval = nc_inq_varid(ncid, var_name, &varid)))
-    {
-        ERR(retval);  // get the varible id of the file
-    }
-
-#if defined(COMPILE_ELPH_DOUBLE)
-    if ((retval = nc_get_var_double(ncid, varid, data_out)))
-    {
-        ERR(retval);
-    }
-#else
-    if ((retval = nc_get_var_float(ncid, varid, data_out)))
-    {
-        ERR(retval);
-    }
-#endif
-}
-
-static void quick_read_sub(const int ncid, char* var_name, const size_t* startp,
-                           const size_t* countp, void* data_out)
-{ /*  Serial read
-      load the slice of varible data to data_out pointer
-  */
-    int varid, retval;
-
-    if ((retval = nc_inq_varid(ncid, var_name, &varid)))
-    {
-        ERR(retval);  // get the varible id of the file
-    }
-
-    // collective IO
-    if ((retval = nc_var_par_access(ncid, varid, NC_COLLECTIVE)))
-    {
-        ERR(retval);  // NC_COLLECTIVE or NC_INDEPENDENT
-    }
-
-    if ((retval = nc_get_vara(ncid, varid, startp, countp, data_out)))
-    {
-        ERR(retval);  // get data in floats
     }
 }
 

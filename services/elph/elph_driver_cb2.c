@@ -3,6 +3,7 @@
 */
 #include <complex.h>
 #include <fftw3.h>
+#include <math.h>
 #include <netcdf.h>
 #include <netcdf_par.h>
 #include <stdbool.h>
@@ -11,9 +12,12 @@
 #include <string.h>
 
 #include "common/ELPH_timers.h"
+#include "common/constants.h"
+#include "common/cwalk/cwalk.h"
 #include "common/dtypes.h"
 #include "common/error.h"
 #include "common/init_dtypes.h"
+#include "common/numerical_func.h"
 #include "common/parallel.h"
 #include "common/print_info.h"
 #include "dvloc/dvloc.h"
@@ -23,10 +27,12 @@
 #include "elphC.h"
 #include "fft/fft.h"
 #include "io/io.h"
+#include "io/nc_utils.h"
 #include "io/qe/qe_io.h"
 #include "parser/parser.h"
 #include "symmetries/symmetries.h"
 #include "common/string_func.h"
+
 /*
  * Extended callback variant: like elph_driver_cb plus dvG_fill_fn called
  * once per iBZ q-point from commK rank 0 with dV_q^nu(G) in G-space.
@@ -102,8 +108,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     fprintf(stderr,"\n");
     */
 
-    struct WFC* wfcs;
-
     if (dft_code == DFT_CODE_QE)
     {
         get_data_from_qe(lattice, phonon, pseudo, input_data->ph_save_dir, NULL,
@@ -137,19 +141,49 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     y6_data->nq_ibz=phonon->nq_iBZ;
     y6_data->nq_bz=phonon->nq_BZ;
 
-    if (i_control< 0 )
-    {
-         /* Query-only mode: return with y6_data populated, skip gkkp/dvG computation. */
-         free(lattice);
-         free(pseudo);
-         free(phonon);
-         //free_parallel_comms(mpi_comms);
-         //free(mpi_comms);
-         return;
-    }
+    /* Load k-points and other data needed for both query and computation modes */
+    struct WFC* wfcs = NULL;
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
                              input_data->ph_save_dir, lattice, pseudo, phonon);
+
+    /* Populate k/q metadata for Yambo */
+    y6_data->nkpts_ibz = lattice->nkpts_iBZ;
+    y6_data->nkpts_bz = lattice->nkpts_BZ;
+    y6_data->nph_sym = phonon->nph_sym;
+    y6_data->kminusq = (int)input_data->kminusq;
+
+    /* Point to internal Letz k/q arrays */
+    y6_data->kpt_fullBZ_crys = lattice->kpt_fullBZ_crys;
+    y6_data->kmap = lattice->kmap;
+    y6_data->qpts_iBZ = phonon->qpts_iBZ;
+    y6_data->qpts_BZ = phonon->qpts_BZ;
+    y6_data->qmap = phonon->qmap;
+    y6_data->nqstar = (int*)phonon->nqstar;
+
+    /* Compute k+q indices for each q-point and expose to Yambo */
+    int* kplusq_all = malloc(phonon->nq_BZ * lattice->nkpts_BZ * sizeof(int));
+    CHECK_ALLOC(kplusq_all);
+
+    for (ND_int iq_bz = 0; iq_bz < phonon->nq_BZ; ++iq_bz) {
+        ND_int iq_ibz = phonon->qmap[2 * iq_bz];
+        ELPH_float* qpt = phonon->qpts_iBZ + iq_ibz * 3;
+
+        ELPH_float qpt_tmp[3];
+        memcpy(qpt_tmp, qpt, 3 * sizeof(ELPH_float));
+        if (input_data->kminusq) {
+            for (int xi = 0; xi < 3; ++xi) qpt_tmp[xi] = -qpt_tmp[xi];
+        }
+
+        int* kplusq_q = kplusq_all + iq_bz * lattice->nkpts_BZ;
+        get_KplusQ_idxs(lattice->nkpts_BZ, lattice->kpt_fullBZ_crys, qpt_tmp, kplusq_q);
+    }
+    y6_data->kplusq_idxs = kplusq_all;
+
+    /* Query-only mode: return early without computing gkkp */
+    if (i_control < 0) {
+        return;
+    }
 
     char DM_name[100];
     strlcpy_custom(DM_name, input_data->ph_save_dir,100);
