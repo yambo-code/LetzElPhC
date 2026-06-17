@@ -88,12 +88,12 @@ void elph_driver_cb_f2c(const char* input_file, int dft_code, MPI_Fint f_comm,
 }
 
 /*
- * Extended callback bridge: callbacks (elph_coll_fill_gkkp, elph_coll_fill_dvg)
- * resolved directly by the linker, avoiding arm64 gfortran procedure-descriptor issues.
+ * Extended callback bridge: callbacks passed from Fortran to handle Linux linking.
  * Communicators (f_comm_q, f_comm_k) passed from Y6 PAR schemes for MPI distribution.
  */
 void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_data,
-                         int dft_code, const char* log_path, int i_control,
+                         int dft_code, void* fill_fn_ptr, void* dvG_fill_fn_ptr,
+                         const char* log_path, int i_control,
                          int NQ_todo, int* Q_todo, int NK_todo , int* K_todo,
                          MPI_Fint f_comm_world, MPI_Fint f_comm_q, MPI_Fint f_comm_k)
 {
@@ -117,10 +117,10 @@ void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_d
       y6_work->K[i]  = K_todo[i]-1;
     }
 
-    /* Y6 mode: use provided communicators and yambo callbacks */
+    /* Y6 mode: use provided communicators and callbacks from Fortran */
     elph_driver_cb2(input_data,y6_data,y6_work,(enum ELPH_dft_code)dft_code,
-                    (elph_fill_fn)elph_coll_fill_gkkp,
-                    (elph_dvG_fill_fn)elph_coll_fill_dvg,i_control,c_comm_world);
+                    (elph_fill_fn)fill_fn_ptr,
+                    (elph_dvG_fill_fn)dvG_fill_fn_ptr,i_control,c_comm_world);
 
     close_letz_log();
 }
