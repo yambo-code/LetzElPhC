@@ -12,7 +12,10 @@ own risk**.
 
 In case of any bugs or other issues, please open a issue.
 
-Any contribtions to the code are always welcomed. 
+Any contribtions to the code are always welcomed.
+
+**Contributors note:** This project is released under the MIT License. To preserve that licensing, please avoid incorporating code from GPL-licensed software, including small snippets or translations of GPL code. Algorithmic ideas and published descriptions are fine, but implementations should be written independently or derived from permissively licensed sources (MIT, BSD, Apache-2.0, etc.) with appropriate attribution.
+
 
 It should be noted that this code computes only electron–phonon matrix elements and does not evaluate any additional physical quantities. If you wish to calculate physical properties using Wannier-based interpolation techniques, you should instead use specialized tools such as [EPW](https://epw-code.org/), [Perturbo](https://perturbo-code.github.io/), [Epiq](https://the-epiq-team.gitlab.io/epiq-site/), or [Phoebe](https://phoebe-team.github.io/phoebe/).
 
@@ -53,3 +56,12 @@ Henry Fried (Logo)
 
 
 
+## FFT Backend Licensing
+
+This package is licensed under the MIT License. However, FFT computations are performed through a backend library, and the license terms applicable to that backend may impose additional obligations.
+
+* **FFTW backend**: If the FFTW3 library is used, the library itself is licensed under GPLv2 or later. Programs that are distributed together with, or otherwise incorporate, the FFTW library may therefore be subject to the GPL. Merely distributing source code that depends on this package, while requiring users to obtain FFTW separately, may avoid these obligations, but users should consult the FFTW license.
+
+* **Intel MKL backend**: If Intel oneAPI Math Kernel Library (MKL) is used via its FFTW3 compatibility interface, use of the backend is subject to Intel's licensing terms rather than the FFTW license. Users distributing software linked against MKL are responsible for complying with the applicable Intel license.
+
+In all cases, this package itself remains licensed under MIT. Users are responsible for ensuring compliance with the license terms of the FFT backend they choose.
