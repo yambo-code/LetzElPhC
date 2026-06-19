@@ -210,7 +210,7 @@ int lsmr_solver(ND_int m, ND_int n,
     double* Ax = malloc(m * sizeof(*Ax));
     double* Atu = malloc(n * sizeof(*Atu));
 
-    if (!u || !v || !h || !hbar || !Ax)
+    if (!u || !v || !h || !hbar || !Ax || !Atu)
     {
         free(u);
         free(v);
