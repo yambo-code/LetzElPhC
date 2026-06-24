@@ -112,10 +112,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     {
         get_data_from_qe(lattice, phonon, pseudo, input_data->ph_save_dir, NULL,
                          mpi_comms);
-        if (mpi_comms->commW_rank == 0) {
-            fprintf(stderr, "[ELPH DEBUG] LetzElPhC read nq_iBZ=%d, nq_BZ=%d from dyn files\n",
-                    (int)phonon->nq_iBZ, (int)phonon->nq_BZ);
-        }
     }
     else
     {
