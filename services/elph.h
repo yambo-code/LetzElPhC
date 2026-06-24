@@ -11,11 +11,14 @@
  *   iq_BZ, ik_BZ : 0-based BZ indices
  *   data          : ELPH_cmplx buffer, C row-major (nmodes, nspin, nbnds, nbnds)
  *   nq..nb_start  : full-BZ dimensions (constant across calls); nb_start is 1-based
+ *   iqpt_iBZ      : original 0-based IBZ q-point index (metadata)
+ *   qpt_crys      : q-point crystal coordinates (3-element float array)
  */
 typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
                               const void* data,
                               int nq, int nk, int nmodes, int nspin,
-                              int nbnds, int nb_start);
+                              int nbnds, int nb_start,
+                              int iqpt_iBZ, const void* qpt_crys);
 
 /*
  * Callback for dV_q^nu(G) in reciprocal space, called once per iBZ q-point

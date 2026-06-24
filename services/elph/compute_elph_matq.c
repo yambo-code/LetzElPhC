@@ -145,12 +145,32 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
             add_elphNonLocal(wfcs, lattice, pseudo, ikq, ik, kqsym, ksym,
                              eigVec, elph_kq_mn, Comm);
         }
-        startp[0] = qpos;
-        startp[1] = i;
         int nc_err;
         if (Comm->commK_rank == 0)
         {
           //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
+#ifdef _Y6_LETZ
+            // Y6 mode: output identity member with iBZ q-index and iBZ q-coordinates
+            startp[0] = iqpt;  // iBZ index (0-based after cast)
+            startp[1] = i;
+            if (fill_fn != NULL)
+            {
+                fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
+                        (int)phonon->nq_iBZ, (int)nk_totalBZ, (int)nmodes,
+                        (int)lattice->nspin, (int)nbnds,
+                        (int)lattice->start_band,
+                        (int)iqpt_iBZ,
+                        (const void*)(phonon->qpts_iBZ + 3 * iqpt));  // iBZ coords
+            }
+            else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                           countp, elph_kq_mn)))
+            {
+                ERR(nc_err);
+            }
+#else
+            // Standard mode: output full BZ expansion
+            startp[0] = qpos;  // BZ index
+            startp[1] = i;
             if (fill_fn != NULL)
             {
                 fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
@@ -158,13 +178,14 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                         (int)lattice->nspin, (int)nbnds,
                         (int)lattice->start_band,
                         (int)iqpt_iBZ,
-                        (const void*)(phonon->qpts_BZ + 3 * startp[0]));
+                        (const void*)(phonon->qpts_BZ + 3 * startp[0]));  // BZ coords
             }
             else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
                                            countp, elph_kq_mn)))
             {
                 ERR(nc_err);
             }
+#endif
         }
 
         // expand the el-ph matrix elements in full BZ
@@ -222,7 +243,8 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
 
                 startp[0] = qpos_star;
                 startp[1] = idx_Sk;
-                // Write it for Sq and Sk point
+#ifndef _Y6_LETZ
+                // Write it for Sq and Sk point (skip in Y6 mode: output only identity)
                 if (fill_fn != NULL)
                 {
                     fill_fn((int)startp[0], (int)startp[1], gSq_buff,
@@ -237,6 +259,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 {
                     ERR(nc_err);
                 }
+#endif  // _Y6_LETZ
             }
         }
         mpi_error = MPI_Barrier(Comm->commK);
