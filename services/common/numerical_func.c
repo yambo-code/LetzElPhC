@@ -109,7 +109,7 @@ ELPH_float Ylm(int l_val, int m_val, ELPH_float* vec)
     ELPH_float cost, phi;
     ELPH_float norm = sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 
-    if (norm < ELPH_EPS)
+    if (norm < ELPH_EPS6)
     {
         if (l_val != 0)
         {
@@ -202,7 +202,7 @@ ELPH_float cos_angle_bw_Vec(const ELPH_float* vec1, const ELPH_float* vec2)
     ELPH_float norm2 =
         vec2[0] * vec2[0] + vec2[1] * vec2[1] + vec2[2] * vec2[2];
     ELPH_float norm = sqrt(norm1 * norm2);
-    if (norm < ELPH_EPS)
+    if (norm < ELPH_EPS6)
     {
         return 0;
     }
@@ -257,7 +257,7 @@ void normalize_Cmplx_vec(ELPH_cmplx* vec, const ND_int n)
 {
     ELPH_float norm = sqrt(cabs(Cmplxdot(vec, vec, n)));
 
-    if (norm < ELPH_EPS)
+    if (norm < ELPH_EPS6)
     {
         return;
     }
@@ -285,7 +285,7 @@ void reciprocal_vecs(const ELPH_float* lat_vec, ELPH_float* restrict blat)
     result is multiplied with 2*pi
     */
     ELPH_float det = det3x3(lat_vec);
-    if (det < ELPH_EPS)
+    if (det < ELPH_EPS6)
     {
         error_msg("Inverting singular matrix");
     }

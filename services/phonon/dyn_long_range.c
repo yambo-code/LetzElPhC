@@ -262,7 +262,7 @@ static void add_ph_dyn_long_range_internal(
                 eta * zlat * 1.001 * (1.0 - 1.0 / phonon->epsilon[8]);
             decay_fac = 1 - tanh(qplusG_norm * 0.5 * Leff);
             // L = eta * zlat/2
-            if (fabs(decay_fac) < ELPH_EPS)
+            if (fabs(decay_fac) < ELPH_EPS6)
             {
                 continue;
             }
