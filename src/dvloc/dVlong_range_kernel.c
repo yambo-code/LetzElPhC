@@ -99,7 +99,7 @@ void dVlong_range_kernel(const ELPH_float* qpt, const ELPH_float* gvecs,
                         : zlat * 0.5;
             ELPH_float f_q = 1.0 - tanh(qplusG_par_norm * 0.5 * Leff);
 
-            if (fabs(f_q) < ELPH_EPS && (!Zvals || qplusG_norm2 > EcutRy))
+            if (fabs(f_q) < ELPH_EPS6 && (!Zvals || qplusG_norm2 > EcutRy))
             {
                 continue;
             }
