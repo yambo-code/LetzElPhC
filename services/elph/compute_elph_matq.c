@@ -153,7 +153,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
           //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
             if (fill_fn != NULL)
             {
-                fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
+                fill_fn((int)startp[0], (int)startp[1], elph_kq_mn, KplusQidxs,
                         (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
                         (int)lattice->nspin, (int)nbnds,
                         (int)lattice->start_band,

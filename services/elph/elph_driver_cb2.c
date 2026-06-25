@@ -118,6 +118,12 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         error_msg("Only QE supported");
     }
 
+    /* Load k-points and other data needed for both query and computation modes */
+    struct WFC* wfcs = NULL;
+    read_and_alloc_save_data(input_data->save_dir, mpi_comms,
+                             input_data->start_bnd, input_data->end_bnd, &wfcs,
+                             input_data->ph_save_dir, lattice, pseudo, phonon);
+
     /* Populate y6_data (elphC_info in Fortran) with lattice/phonon metadata.
        This happens early so query-only mode (i_control < 0) can return with
        nmodes, natom, nsym, etc. already set for Fortran-side allocation. */
@@ -136,12 +142,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     y6_data->nmodes=lattice->nmodes;
     y6_data->nq_ibz=phonon->nq_iBZ;
     y6_data->nq_bz=phonon->nq_BZ;
-
-    /* Load k-points and other data needed for both query and computation modes */
-    struct WFC* wfcs = NULL;
-    read_and_alloc_save_data(input_data->save_dir, mpi_comms,
-                             input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon);
 
     /* Populate k/q metadata for Yambo */
     y6_data->nkpts_ibz = lattice->nkpts_iBZ;
@@ -281,8 +281,10 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         }
         free(Vlocr);
         
-        ND_int calc_dvG=-1;
+        ND_int calc_dvG =-1;
+        ND_int calc_GKKP=-1;
         if (dvG_fill_fn != NULL && i_control>=2 ) { calc_dvG=1; }
+        if (fill_fn != NULL && (i_control == 1 || i_control == 4) ) { calc_GKKP=1; }
 
         /* dvG callback: gather dVscf z-slabs to rank 0, FFT, call handler. */
         if (calc_dvG ==1 )
@@ -302,11 +304,14 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
             }
         }
 
-        compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
-                                eigVec, dVscf, 0, 0, ncid_dmat,
-                                varid_dmat, kernel->non_loc,
-                                input_data->kminusq, mpi_comms, fill_fn,
-                                iqpt_iBZg);
+        if (calc_GKKP ==1 )
+        {
+          compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
+                                  eigVec, dVscf, 0, 0, ncid_dmat,
+                                  varid_dmat, kernel->non_loc,
+                                  input_data->kminusq, mpi_comms, fill_fn,
+                                  iqpt_iBZg);
+        }
     }
 
     if (mpi_comms->commK_rank == 0)
