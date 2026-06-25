@@ -223,6 +223,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 startp[0] = qpos_star;
                 startp[1] = idx_Sk;
                 // Write it for Sq and Sk point
+#ifndef _Y6_LETZ
                 if (fill_fn != NULL)
                 {
                     fill_fn((int)startp[0], (int)startp[1], gSq_buff,
@@ -237,6 +238,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 {
                     ERR(nc_err);
                 }
+#endif
             }
         }
         mpi_error = MPI_Barrier(Comm->commK);
