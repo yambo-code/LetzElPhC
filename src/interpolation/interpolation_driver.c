@@ -202,7 +202,7 @@ void interpolation_driver(const char* ELPH_input_file,
     }
 
     n_ws_vecs_dyn = build_wigner_seitz_vectors(
-        q_grid_co, lattice->alat_vec, ELPH_EPS, lattice->atomic_pos,
+        q_grid_co, lattice->alat_vec, ELPH_EPS6, lattice->atomic_pos,
         lattice->natom, lattice->atomic_pos, lattice->natom, &ws_vecs_dyn,
         &ws_degen_dyn);
     //
@@ -212,7 +212,7 @@ void interpolation_driver(const char* ELPH_input_file,
     if (interpolate_dvscf)
     {
         n_ws_vecs_dvscf = build_wigner_seitz_vectors(
-            q_grid_co, lattice->alat_vec, ELPH_EPS, lattice->atomic_pos,
+            q_grid_co, lattice->alat_vec, ELPH_EPS6, lattice->atomic_pos,
             lattice->natom, NULL, 0, &ws_vecs_dvscf, &ws_degen_dvscf);
     }
     // find qBZ to fft grid indices
@@ -755,7 +755,7 @@ void interpolation_driver(const char* ELPH_input_file,
             }
             input_data->loto = false;
         }
-        else if (loto_dir_norm < ELPH_EPS)
+        else if (loto_dir_norm < ELPH_EPS6)
         {
             if (mpi_comms->commW_rank == 0)
             {
