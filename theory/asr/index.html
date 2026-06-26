@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1156,15 +1156,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-enforcing-of-acoustic-sum-rules" class="md-nav__link">
+  <a href="#2-enforcing-acoustic-sum-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Enforcing of Acoustic sum rules.
+        2. Enforcing Acoustic Sum Rules
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Enforcing of Acoustic sum rules.">
+    <nav class="md-nav" aria-label="2. Enforcing Acoustic Sum Rules">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1438,15 +1438,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-enforcing-of-acoustic-sum-rules" class="md-nav__link">
+  <a href="#2-enforcing-acoustic-sum-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Enforcing of Acoustic sum rules.
+        2. Enforcing Acoustic Sum Rules
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Enforcing of Acoustic sum rules.">
+    <nav class="md-nav" aria-label="2. Enforcing Acoustic Sum Rules">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1508,30 +1508,34 @@
 
 
 <h1 id="acoustic-sum-rules-and-invariance-conditions"><strong>Acoustic Sum Rules and Invariance Conditions</strong></h1>
-<div class="arithmatex">\[
+<p>The force constant matrix <span class="arithmatex">\(\Phi_{i \alpha j \beta}(\mathbf{R})\)</span> describes the interaction between atom <span class="arithmatex">\(i\)</span> and atom <span class="arithmatex">\(j\)</span> in a unit cell displaced by <span class="arithmatex">\(\mathbf{R}\)</span>. It is defined as the second derivative of the potential energy with respect to atomic displacements.
+$$
 \Phi_{i \alpha j \beta}(\mathbf{R}) = \Phi_{j \beta i \alpha }(-\mathbf{R}) 
-\]</div>
+$$</p>
 <h2 id="1-acoustic-sum-rules">1. <strong>Acoustic Sum Rules</strong></h2>
-<p>Below are Acoustic Sum Rules (ASR) obeyed by the force constant matrix.</p>
+<p>Below are Acoustic Sum Rules (ASR) obeyed by the force constant matrix. These rules are derived from the invariance of the total energy under global translations and rotations.</p>
 <h3 id="translation-invariance"><strong>Translation Invariance</strong>:</h3>
-<div class="arithmatex">\[
+<p>This condition ensures that a rigid translation of the entire crystal does not change its potential energy.
+$$
 \sum_{\mathbf{R}, j} \Phi_{i \alpha j \beta}(\mathbf{R}) = 0,
-\]</div>
-<p>where <span class="arithmatex">\(i,j\)</span> denite the atomic indices and <span class="arithmatex">\(\alpha,\beta,\gamma,\delta\)</span> denore the polarization directions. <span class="arithmatex">\(\mathbf{R}\)</span> is the position vector of the unitcell. The summation over <span class="arithmatex">\(\mathbf{R}\)</span> is in the wigner seitz cell. </p>
+$$</p>
+<p>where <span class="arithmatex">\(i,j\)</span> denote the atomic indices and <span class="arithmatex">\(\alpha,\beta,\gamma,\delta\)</span> denote the polarization directions. <span class="arithmatex">\(\mathbf{R}\)</span> is the position vector of the unit cell. The summation over <span class="arithmatex">\(\mathbf{R}\)</span> is in the Wigner-Seitz cell. </p>
 <h3 id="rotation-invariance"><strong>Rotation Invariance</strong>:</h3>
-<div class="arithmatex">\[
-\sum_{\mathbf{R}, j} \left( \Phi_{ i \alpha j \beta} (\mathbf{R}) \tau^{\gamma}_{\mathbf{R} j} - \Phi_{ i \alpha j \gamma} (\mathbf{R}) \tau^{\beta}_{\mathbf{R} j} \right) = 0,
-\]</div>
-<p>where <span class="arithmatex">\(\boldsymbol{\tau}_{\mathbf{R} j} = \mathbf{R} + \boldsymbol{\tau}_j\)</span> is the position of atom <span class="arithmatex">\(j\)</span> in unitcell located at <span class="arithmatex">\(\mathbf{R}\)</span>.<span class="arithmatex">\(\boldsymbol{\tau}_j\)</span> is the position of atom with respect to the unit cell </p>
+<p>This condition ensures that a rigid rotation of the entire crystal does not change its potential energy.
+$$
+\sum_{\mathbf{R}, j} \left( \Phi_{ i \alpha j \beta} (\mathbf{R}) \tau^{\gamma}<em>{\mathbf{R} j} - \Phi</em>{ i \alpha j \gamma} (\mathbf{R}) \tau^{\beta}_{\mathbf{R} j} \right) = 0,
+$$</p>
+<p>where <span class="arithmatex">\(\boldsymbol{\tau}_{\mathbf{R} j} = \mathbf{R} + \boldsymbol{\tau}_j\)</span> is the position of atom <span class="arithmatex">\(j\)</span> in the unit cell located at <span class="arithmatex">\(\mathbf{R}\)</span>. <span class="arithmatex">\(\boldsymbol{\tau}_j\)</span> is the position of atom <span class="arithmatex">\(j\)</span> with respect to the unit cell.</p>
 <h3 id="huang-conditions"><strong>Huang Conditions</strong>:</h3>
-<div class="arithmatex">\[
-\sum_{\mathbf{R}, i, j} \Phi_{i \alpha j \beta} (\mathbf{R}) \tau^{\gamma}_{\mathbf{R} i j} \tau^{\delta}_{\mathbf{R} i j} = \sum_{\mathbf{R}, i, j} \Phi_{ i \gamma j \delta} (\mathbf{R}) \tau^{\alpha}_{\mathbf{R} ij} \tau^{\beta}_{\mathbf{R} ij}
-\]</div>
-<p>where <span class="arithmatex">\(\boldsymbol{\tau}_{\mathbf{R} i j} = \boldsymbol{\tau}_{i} - \boldsymbol{\tau}_{j} - \mathbf{R}\)</span> is the distance between two atoms.</p>
+<p>Huang conditions are related to the symmetry of the elastic constant tensor and are necessary for the consistency between the microscopic force constants and macroscopic elasticity.
+$$
+\sum_{\mathbf{R}, i, j} \Phi_{i \alpha j \beta} (\mathbf{R}) \tau^{\gamma}<em>{\mathbf{R} i j} \tau^{\delta}</em>{\mathbf{R} i j} = \sum_{\mathbf{R}, i, j} \Phi_{ i \gamma j \delta} (\mathbf{R}) \tau^{\alpha}<em>{\mathbf{R} ij} \tau^{\beta}</em>{\mathbf{R} ij}
+$$</p>
+<p>where <span class="arithmatex">\(\boldsymbol{\tau}_{\mathbf{R} i j} = \boldsymbol{\tau}_{i} - \boldsymbol{\tau}_{j} - \mathbf{R}\)</span> is the vector between two atoms.</p>
 <hr />
-<h2 id="2-enforcing-of-acoustic-sum-rules">2. <strong>Enforcing of Acoustic sum rules.</strong></h2>
-<p>It is often the case that the force constants obtained from the standard abinito calcuations often break acoustic sum rules which leads to non-zero frequencies for the acoustic modes at the <span class="arithmatex">\(\Gamma\)</span> point.</p>
-<p>In order to enfore ASR, the first step is to explicitly write invariance conditions in form of matrix-vector product i.e <span class="arithmatex">\(A\Phi = 0\)</span>, where A is the contraint matrix and <span class="arithmatex">\(\Phi\)</span> is the force constant vector which is obtain be deflated force-constraints matrix into a vector.</p>
+<h2 id="2-enforcing-acoustic-sum-rules">2. <strong>Enforcing Acoustic Sum Rules</strong></h2>
+<p>It is often the case that the force constants obtained from standard <em>ab initio</em> calculations break acoustic sum rules due to the finite size of the grid or basis set, which leads to non-zero frequencies for the acoustic modes at the <span class="arithmatex">\(\Gamma\)</span> point.</p>
+<p>In order to enforce ASR, the first step is to explicitly write the invariance conditions in the form of a matrix-vector product <span class="arithmatex">\(A\Phi = 0\)</span>, where <span class="arithmatex">\(A\)</span> is the constraint matrix and <span class="arithmatex">\(\Phi\)</span> is the vectorized force constant matrix. Here, <span class="arithmatex">\(N_A\)</span> refers to the number of atoms in the unit cell.</p>
 <h3 id="1-translation-operator">1. Translation Operator</h3>
 <p>The translation operator tensor <code>A</code> is defined as:</p>
 <div class="arithmatex">\[
@@ -1568,7 +1572,7 @@ A^{\alpha\beta\gamma\delta} = - A^{\gamma\delta\alpha\beta}
 <div class="arithmatex">\[
 \left. \begin{matrix} (\alpha \leftrightarrow \beta) \\ (\gamma \leftrightarrow \delta) \end{matrix} \right\} \longrightarrow \underline{\underline{15}}
 \]</div>
-<p>Total constraints without reducution : 81 
+<p>Total constraints without reduction : 81 
 * Due to anti-symmetry property for <span class="arithmatex">\((\alpha, \beta) \leftrightarrow (\gamma, \delta)\)</span>, it reduces to 36 constraints.
 * Due to symmetry property for <span class="arithmatex">\((\alpha \leftrightarrow \beta)\)</span> and <span class="arithmatex">\((\gamma \leftrightarrow \delta)\)</span> further reduces to 15 constants.</p>
 <hr />

@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1626,6 +1626,10 @@ This command produces <code>qpoints.dat</code> and a set of <code>ph.in.X</code>
 use at least <strong>1.5 ×</strong> this value, and verify the quality of the fit afterwards — see
 <a href="#step-6-interpreting-the-diagnostics">Step 6</a> for guidance.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Non-polar materials</p>
+<p>Add the flag --non_polar for non_polar materials.</p>
+</div>
 <p><strong>Flag reference:</strong></p>
 <table>
 <thead>
@@ -1684,7 +1688,7 @@ improvement in phonon deformation potentials and interpolation accuracy.</p>
 <h2 id="step-5-fitting-the-quadrupole-tensors">Step 5: Fitting the Quadrupole Tensors</h2>
 <p>Once all <code>drho.dat.X</code> files have been generated, run the least-squares fit using the <strong>same physics
 flags</strong> as in Step 2:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-f<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>--alat<span class="w"> </span>1B
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python3<span class="w"> </span>multipole.py<span class="w"> </span>-f<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span>--epsil_order<span class="w"> </span><span class="m">4</span><span class="w"> </span>--alat<span class="w"> </span>1B<span class="w"> </span>--nq<span class="w"> </span><span class="m">25</span>
 </code></pre></div></p>
 <p>The script will:</p>
 <ol>
