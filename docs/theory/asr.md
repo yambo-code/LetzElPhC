@@ -10,6 +10,7 @@ Below are Acoustic Sum Rules (ASR) obeyed by the force constant matrix. These ru
 
 ### **Translation Invariance**:
 This condition ensures that a rigid translation of the entire crystal does not change its potential energy.
+
 $$
 \sum_{\mathbf{R}, j} \Phi_{i \alpha j \beta}(\mathbf{R}) = 0,
 $$
@@ -18,6 +19,7 @@ where $i,j$ denote the atomic indices and $\alpha,\beta,\gamma,\delta$ denote th
 
 ### **Rotation Invariance**:
 This condition ensures that a rigid rotation of the entire crystal does not change its potential energy.
+
 $$
 \sum_{\mathbf{R}, j} \left( \Phi_{ i \alpha j \beta} (\mathbf{R}) \tau^{\gamma}_{\mathbf{R} j} - \Phi_{ i \alpha j \gamma} (\mathbf{R}) \tau^{\beta}_{\mathbf{R} j} \right) = 0,
 $$
@@ -27,6 +29,7 @@ where $\boldsymbol{\tau}_{\mathbf{R} j} = \mathbf{R} + \boldsymbol{\tau}_j$ is t
 
 ### **Huang Conditions**:
 Huang conditions are related to the symmetry of the elastic constant tensor and are necessary for the consistency between the microscopic force constants and macroscopic elasticity.
+
 $$
 \sum_{\mathbf{R}, i, j} \Phi_{i \alpha j \beta} (\mathbf{R}) \tau^{\gamma}_{\mathbf{R} i j} \tau^{\delta}_{\mathbf{R} i j} = \sum_{\mathbf{R}, i, j} \Phi_{ i \gamma j \delta} (\mathbf{R}) \tau^{\alpha}_{\mathbf{R} ij} \tau^{\beta}_{\mathbf{R} ij}
 $$

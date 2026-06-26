@@ -10,7 +10,7 @@ fine grid.
 
 Unlike Born effective charges, which are a byproduct of standard phonon calculations, the quadrupole
 tensors require a dedicated extraction procedure. This tutorial covers how to compute them using
-Quantum ESPRESSO (≥ 7.5) and the [`multipole.py`](https://gitlab.com/QEF/q-e/-/blob/develop/test-suite/ph_multipole/multipole.py) script.
+Quantum ESPRESSO (≥ 7.5) and the [`multipole.py`](https://gitlab.com/QEF/q-e/-/blob/develop/test-suite/ph_multipole/multipole.py) script [(Lin *et al*., PRX Energy 2026](https://doi.org/10.1103/hc53-g1p3), [Macheda *et al*., Phys. Rev. B 2024)](https://doi.org/10.1103/PhysRevB.110.094306).
 
 ---
 
