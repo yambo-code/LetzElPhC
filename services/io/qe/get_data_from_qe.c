@@ -52,8 +52,9 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     phonon->nq_iBZ_loc = distribute_to_grps(phonon->nq_iBZ, Comm->nqpools,
                                             Comm->commW_rank / Comm->commQ_size,
                                             &phonon->nq_shift);
+    phonon->nq_iBZ_loc = phonon->NQ_par;
 
-    if (phonon->nq_iBZ_loc < 1)
+    if (phonon->NQ_par < 1)
     {
         error_msg(
             "There are no qpoints in some qpools, Make sure nqpool < # of "

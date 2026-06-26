@@ -14,6 +14,7 @@ These routines contain functions related the pseudo potentials.
 #include "common/constants.h"
 #include "common/dtypes.h"
 #include "common/error.h"
+#include "common/free_dtypes.h"
 #include "elphC.h"
 
 /** Static declarations*/
@@ -280,4 +281,32 @@ static ELPH_float CGCoeff(bool jp1, bool spin_down, int l, int twomj)
             return -sqrt((l + m) / (2.0 * l + 1.0));
         }
     }
+}
+
+void free_Pseudo_type(struct Pseudo* pseudo)
+{
+    if (!pseudo)
+    {
+        return;
+    }
+
+    free_f_Coeff(pseudo);
+    free(pseudo->fCoeff);
+    free_Vloc_table_type(pseudo->vloc_table);
+    free(pseudo->Fsign);
+    free(pseudo->PP_table);
+
+    if (pseudo->loc_pseudo)
+    {
+        for (ND_int itype = 0; itype < pseudo->ntype; ++itype)
+        {
+            free_local_pseudo_type(pseudo->loc_pseudo + itype);
+        }
+    }
+    free(pseudo->loc_pseudo);
+
+    pseudo->loc_pseudo = NULL;
+    pseudo->PP_table = NULL;
+    pseudo->Fsign = NULL;
+    pseudo->fCoeff = NULL;
 }

@@ -18,18 +18,22 @@ This file contains functions which are os dependent.
 #include "io/ezxml/ezxml.h"
 #include "preprocessor.h"
 
-static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,
-                           ND_int buffer_size);
+static ND_int find_nqpools(const char* out_dir, char* buffer_tmp,ND_int buffer_size);
 
-void create_ph_save_dir_pp_qe(const char* inp_file)
+#if defined _Y6_LETZ
+void create_ph_save_dir_pp_qe(const char* inp_file,char* ph_path,char* scf_path )
+#else
+void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path, const char* scf_path )
+#endif
 {
     //  parse the input file
     // open the  qe ph.x input file
 
     char PH_SAVE_DIR_NAME[ELPH_MAX_ENV_SIZE];
 
-    // check if env exits for ph_save
     char* env_var_tmp = getenv("ELPH_PH_SAVE_DIR");
+/*
+    // check if env exits for ph_save
     if (env_var_tmp && strlen(env_var_tmp) > 0)
     {
         if (strlen(env_var_tmp) > (ELPH_MAX_ENV_SIZE - 1))
@@ -46,6 +50,15 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         strlcpy_custom(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
                        ELPH_MAX_ENV_SIZE);
     }
+*/
+
+    strlcpy_custom(PH_SAVE_DIR_NAME, ph_path,ELPH_MAX_ENV_SIZE);
+    strlcat(PH_SAVE_DIR_NAME, "/", ELPH_MAX_ENV_SIZE);
+    strlcat(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT, ELPH_MAX_ENV_SIZE);
+    
+    char ph_workdir_tmp[ELPH_MAX_ENV_SIZE];
+    strlcpy_custom(ph_workdir_tmp, ph_path,ELPH_MAX_ENV_SIZE);
+
     //
     FILE* fp = fopen(inp_file, "r");
     if (fp == NULL)
@@ -85,6 +98,8 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         strcpy(out_dir, "./");
     }
+    strlcat(ph_workdir_tmp,"/",ELPH_MAX_ENV_SIZE);
+    strlcat(ph_workdir_tmp,out_dir,ELPH_MAX_ENV_SIZE);
 
     strcpy(dyn_prefix, "matdyn");
     strcpy(dvscf_prefix, "");
@@ -281,6 +296,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     // from now we use read buffer as file_name_buf
 
     // now create the ph_save directory
+   
     if (ELPH_mkdir(PH_SAVE_DIR_NAME))
     {
         if (errno != EEXIST)
@@ -294,7 +310,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     snprintf(prefix_dir, 100, "%s.save", scf_prefix);
 
     cwk_path_join_multiple(
-        (const char*[]){out_dir, prefix_dir, "data-file-schema.xml", NULL},
+        (const char*[]){scf_path,out_dir, prefix_dir, "data-file-schema.xml", NULL},
         src_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
     cwk_path_join_multiple(
@@ -340,7 +356,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
         char* tmp_str = pseudo_file_xml->txt;
 
         cwk_path_join_multiple(
-            (const char*[]){out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,
+            (const char*[]){scf_path,out_dir, prefix_dir, tmp_str, NULL}, src_file_tmp,
             PH_X_INP_READ_BUF_SIZE);
 
         cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, tmp_str, NULL},
@@ -356,7 +372,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
 
     // 3) copy dyn files
 
-    snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s0", dyn_prefix);
+    snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s/%s0",ph_path,dyn_prefix);
     // first copy the dyn0 file
     cwk_path_join_multiple((const char*[]){PH_SAVE_DIR_NAME, "dyn0", NULL},
                            dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
@@ -396,13 +412,11 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         if (xml_dyn_prefix)
         {
-            snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s%d.xml",
-                     dyn_prefix, idyn + 1);
+            snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s/%s%d.xml",ph_path,dyn_prefix, idyn + 1);
         }
         else
         {
-            snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s%d", dyn_prefix,
-                     idyn + 1);
+            snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s/%s%d", ph_path, dyn_prefix,idyn + 1);
         }
 
         char dyn_tmp_str[32];
@@ -419,8 +433,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     }
 
     // Find the number of qpools used in ph.x calculation
-    ND_int ph_x_qpools =
-        find_nqpools(out_dir, tmp_file_buf, PH_X_INP_READ_BUF_SIZE);
+    ND_int ph_x_qpools = find_nqpools(ph_workdir_tmp, tmp_file_buf, PH_X_INP_READ_BUF_SIZE);
 
     // 3) copy dvscf files
     for (int idyn = 0; idyn < ndyn; ++idyn)
@@ -450,7 +463,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
                          scf_prefix, dvscf_prefix, dvscf_tmp_str);
 
                 cwk_path_join_multiple(
-                    (const char*[]){out_dir, ph0_tmp, dest_file_tmp,
+                    (const char*[]){ph_path,out_dir, ph0_tmp, dest_file_tmp,
                                     tmp_file_buf, NULL},
                     src_file_tmp, PH_X_INP_READ_BUF_SIZE);
             }
@@ -460,7 +473,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
                          scf_prefix, dvscf_prefix, dvscf_tmp_str);
 
                 cwk_path_join_multiple(
-                    (const char*[]){out_dir, ph0_tmp, tmp_file_buf, NULL},
+                    (const char*[]){ph_path,out_dir, ph0_tmp, tmp_file_buf, NULL},
                     src_file_tmp, PH_X_INP_READ_BUF_SIZE);
             }
 
@@ -472,9 +485,9 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
                 (const char*[]){PH_SAVE_DIR_NAME, tmp_file_buf, NULL},
                 dest_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
-            if (0 == copy_files(src_file_tmp, dest_file_tmp))
+            if (0 != copy_files(src_file_tmp, dest_file_tmp))
             {
-                break;
+                printf("Warning : Error copying file %s.\n", src_file_tmp);
             }
         }
     }
@@ -487,14 +500,17 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     {
         char dyn_tmp_str[32];
 
-        snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.phsave",
-                 scf_prefix);
+        snprintf(src_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s/%s/_ph0/%s.phsave",ph_path,out_dir,scf_prefix);
         snprintf(dyn_tmp_str, 32, "patterns.%d.xml", idyn + 1);
+        strlcat(src_file_tmp,"/",PH_X_INP_READ_BUF_SIZE);
+        strlcat(src_file_tmp,dyn_tmp_str,PH_X_INP_READ_BUF_SIZE);
 
+/*
         cwk_path_join_multiple(
             (const char*[]){out_dir, "_ph0", dest_file_tmp, dyn_tmp_str, NULL},
             src_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
+*/
         cwk_path_join_multiple(
             (const char*[]){PH_SAVE_DIR_NAME, dyn_tmp_str, NULL}, dest_file_tmp,
             PH_X_INP_READ_BUF_SIZE);
@@ -509,7 +525,7 @@ void create_ph_save_dir_pp_qe(const char* inp_file)
     snprintf(dest_file_tmp, PH_X_INP_READ_BUF_SIZE, "%s.phsave", scf_prefix);
 
     cwk_path_join_multiple(
-        (const char*[]){out_dir, "_ph0", dest_file_tmp, "tensors.xml", NULL},
+        (const char*[]){ph_path,out_dir, "_ph0", dest_file_tmp, "tensors.xml", NULL},
         src_file_tmp, PH_X_INP_READ_BUF_SIZE);
 
     cwk_path_join_multiple(

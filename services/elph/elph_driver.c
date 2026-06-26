@@ -17,6 +17,7 @@ THe starting point for the entire code
 #include "common/parallel.h"
 #include "common/print_info.h"
 #include "dvloc/dvloc.h"
+#include "dvG_utils.h"
 #include "elph.h"
 #include "elphC.h"
 #include "fft/fft.h"
@@ -24,6 +25,7 @@ THe starting point for the entire code
 #include "io/qe/qe_io.h"
 #include "parser/parser.h"
 #include "symmetries/symmetries.h"
+#include "common/string_func.h"
 
 void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world)
@@ -51,7 +53,7 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                           mpi_comms);
 
     // print logo and stated message
-    print_ELPH_logo(mpi_comms->commW_rank, stdout);
+    print_ELPH_logo(mpi_comms->commW_rank, elph_get_log_file());
     print_info_msg(mpi_comms->commW_rank,
                    "********** Program started **********");
     print_input_info(input_data->save_dir, input_data->ph_save_dir,
@@ -73,10 +75,18 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
     struct WFC* wfcs;
 
     // read the SAVE data and phonon related data.
+    if (dft_code == DFT_CODE_QE)
+    {
+        get_data_from_qe(lattice, phonon, pseudo, input_data->ph_save_dir, NULL,
+                         mpi_comms);
+    }
+    else
+    {
+        error_msg("Only QE supported");
+    }
     read_and_alloc_save_data(input_data->save_dir, mpi_comms,
                              input_data->start_bnd, input_data->end_bnd, &wfcs,
-                             input_data->ph_save_dir, lattice, pseudo, phonon,
-                             dft_code);
+                             input_data->ph_save_dir, lattice, pseudo, phonon);
 
     // print info about lattice and phonons
     print_lattice_info(mpi_comms, lattice);
@@ -303,7 +313,7 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
         compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
                                 eigVec, dVscf, ncid_elph, varid_elph, ncid_dmat,
                                 varid_dmat, kernel->non_loc,
-                                input_data->kminusq, mpi_comms);
+                                input_data->kminusq, mpi_comms, NULL, iqpt_iBZg);
     }
 
     free(eig_Sq);

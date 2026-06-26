@@ -14,7 +14,9 @@ struct elph_usr_input
     int start_bnd;      // starting band
     int end_bnd;        // last band
     char* save_dir;     // save dir
-    char* ph_save_dir;  // ph_save directory
+    char* scf_path;     // SCF run directory
+    char* ph_path;      // ph run directory
+    char* ph_save_dir;  // ph_path/ph_save directory
     char* kernel_str;   // level of screening to include
     bool kminusq;       // true if convention is "yambo" else false
 };

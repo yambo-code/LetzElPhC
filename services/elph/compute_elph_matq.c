@@ -24,7 +24,9 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              const int varid_elph, const int ncid_dmat,
                              const int varid_dmat, const bool non_loc,
                              const bool kminusq,
-                             const struct ELPH_MPI_Comms* Comm)
+                             const struct ELPH_MPI_Comms* Comm,
+                             elph_fill_fn fill_fn,
+                             const ND_int iqpt_iBZ)
 {
     /*
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
@@ -52,6 +54,8 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     ND_int nk_this_pool =
         distribute_to_grps(nk_totalBZ, Comm->nkpools,
                            Comm->commQ_rank / Comm->commK_size, &kshift);
+
+    nk_this_pool=lattice->NK_par;
 
     if (nk_this_pool < 1)
     {
@@ -113,10 +117,10 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     struct progress_bar pbar[1];
     start_progressbar(pbar, Comm->commW_rank, nk_this_pool);
     // compute electron-phonon matrix elements for each kpoint
-    for (ND_int ii = 0; ii < nk_this_pool; ++ii)
+    for (ND_int ii = 0; ii < lattice->NK_par; ++ii)
     {
         /* compute the global k index */
-        ND_int i = kshift + ii;
+        ND_int i = lattice->K_par[ii];
 
         int idx_k = i;
         int idx_kq = KplusQidxs[i];
@@ -146,8 +150,18 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         int nc_err;
         if (Comm->commK_rank == 0)
         {
-            if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp, countp,
-                                      elph_kq_mn)))
+          //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
+            if (fill_fn != NULL)
+            {
+                fill_fn((int)startp[0], (int)startp[1], elph_kq_mn,
+                        (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
+                        (int)lattice->nspin, (int)nbnds,
+                        (int)lattice->start_band,
+                        (int)iqpt_iBZ,
+                        (const void*)(phonon->qpts_BZ + 3 * startp[0]));
+            }
+            else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                           countp, elph_kq_mn)))
             {
                 ERR(nc_err);
             }
@@ -209,8 +223,17 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 startp[0] = qpos_star;
                 startp[1] = idx_Sk;
                 // Write it for Sq and Sk point
-                if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp, countp,
-                                          gSq_buff)))
+                if (fill_fn != NULL)
+                {
+                    fill_fn((int)startp[0], (int)startp[1], gSq_buff,
+                            (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
+                            (int)lattice->nspin, (int)nbnds,
+                            (int)lattice->start_band,
+                            (int)iqpt_iBZ,
+                            (const void*)(phonon->qpts_BZ + 3 * startp[0]));
+                }
+                else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                               countp, gSq_buff)))
                 {
                     ERR(nc_err);
                 }

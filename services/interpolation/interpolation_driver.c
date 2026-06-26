@@ -19,6 +19,7 @@
 #include "common/print_info.h"
 #include "common/progess_bar.h"
 #include "dvloc/dvloc.h"
+#include "nonloc/fcoeff.h"
 #include "elphC.h"
 #include "interpolation.h"
 #include "interpolation_utilities.h"

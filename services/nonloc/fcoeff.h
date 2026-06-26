@@ -3,3 +3,4 @@
 
 void alloc_and_Compute_f_Coeff(struct Lattice* lattice, struct Pseudo* pseudo);
 void free_f_Coeff(struct Pseudo* pseudo);
+void free_Pseudo_type(struct Pseudo* pseudo);

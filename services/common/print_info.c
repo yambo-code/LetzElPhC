@@ -12,18 +12,25 @@
 
 #include "dtypes.h"
 
+static FILE* elph_log_fp = NULL;
+
+void elph_set_log_file(FILE* fp) { elph_log_fp = fp; }
+
+FILE* elph_get_log_file(void) { return elph_log_fp ? elph_log_fp : stdout; }
+
 void print_info_msg(int mpi_rank, const char* fmt, ...)
 {
     if (mpi_rank)
     {
         return;
     }
+    FILE* out = elph_get_log_file();
     va_list args;
     va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
+    vfprintf(out, fmt, args);
     va_end(args);
-    fprintf(stdout, "\n");
-    fflush(stdout);
+    fprintf(out, "\n");
+    fflush(out);
 }
 
 void print_input_info(const char* save_dir, const char* ph_save_dir,

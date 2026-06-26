@@ -17,6 +17,7 @@ void ELPH_cli_parser(int argc, char* argv[], struct calc_details* calc_info)
     calc_info->calc = CALC_ELPH;
     calc_info->code = DFT_CODE_QE;
     strcpy(calc_info->input_file, "");
+    strcpy(calc_info->ph_save_dir, "ph_save");
     /*
      * Here are the options
      * --help (help)

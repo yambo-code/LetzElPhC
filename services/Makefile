@@ -4,12 +4,15 @@ TARGET 		 :=  lelphc
 
 #### make start here
 
-SUBDIR = nonloc io/ezxml parser/inih io \
-		 io/qe common dvloc elph wfc \
-		 symmetries fft common/cwalk \
-		 preprocessor interpolation \
-		 common/ELPH_hash_map phonon \
-		 common/kdtree parser
+# SUBDIR order mirrors the link-tier (T0 base → T5 drivers).
+# For library use, compile/libraries.mk enforces the same tier ordering.
+SUBDIR = common common/cwalk common/ELPH_hash_map common/kdtree \
+         io/ezxml parser/inih \
+         wfc fft phonon parser \
+         dvloc nonloc symmetries preprocessor \
+         io \
+         io/qe \
+         elph interpolation
 
 .SUFFIXES :
 

@@ -22,7 +22,6 @@
 #include "dvloc/dvloc.h"
 #include "elphC.h"
 #include "io.h"
-#include "io/qe/qe_io.h"
 #include "mpi_bcast.h"
 #include "nonloc/fcoeff.h"
 #include "symmetries/symmetries.h"
@@ -49,13 +48,121 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
 
 static inline ND_int get_wf_io_pool(ND_int ik, ND_int q, ND_int r);
 
+/* Read lattice dimensions (nspin, nsym, etc.) from SAVE netCDF files.*/
+void read_lattice_dimensions(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
+                             struct Lattice* lattice, struct Phonon* phonon)
+{
+    int mpi_error;
+    int nsELid, nsWFid, nsLATid, tempid, retval;
+
+    size_t temp_str_len = strlen(SAVEdir) + 100;
+    char* temp_str = malloc(temp_str_len);
+    CHECK_ALLOC(temp_str);
+
+    int nkBZ = 0;
+    if (Comm->commW_rank == 0)
+    {
+        cwk_path_join(SAVEdir, "ndb.KPT_indexes", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &tempid)))
+        {
+            ERR(retval);
+        }
+        int header_id;
+        nc_type compile_prec;
+        if ((retval = nc_inq_varid(tempid, "HEAD_VERSION", &header_id)))
+        {
+            ERR(retval);
+        }
+        if ((retval = nc_inq_vartype(tempid, header_id, &compile_prec)))
+        {
+            ERR(retval);
+        }
+        if (compile_prec != ELPH_NC4_IO_FLOAT)
+        {
+            error_msg("Yambo and LetzElPhC compiled with different precision.");
+        }
+#if defined(YAMBO_LT_5_1)
+        ELPH_float kindx_pars[7];
+        quick_read(tempid, "PARS", kindx_pars);
+        nkBZ = (int)rint(kindx_pars[0]);
+#else
+        int nkBZ_read;
+        quick_read(tempid, "nXkbz", &nkBZ_read);
+        nkBZ = nkBZ_read;
+#endif
+        if ((retval = nc_close(tempid)))
+        {
+            ERR(retval);
+        }
+    }
+    mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
+    lattice->nkpts_BZ = nkBZ;
+
+    ELPH_float dimensions[18];
+    memset(dimensions, 0, sizeof(dimensions));
+    if (Comm->commW_rank == 0)
+    {
+        cwk_path_join(SAVEdir, "ns.electrons", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsELid)))
+        {
+            ERR(retval);
+        }
+        quick_read_float(nsELid, "number_of_bands", dimensions + 5);
+        quick_read_float(nsELid, "number_of_k-points", dimensions + 6);
+        quick_read_float(nsELid, "spinor_components", dimensions + 11);
+        quick_read_float(nsELid, "spin_polarizations", dimensions + 12);
+        if ((retval = nc_close(nsELid)))
+        {
+            ERR(retval);
+        }
+
+        cwk_path_join(SAVEdir, "ns.lattices", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsLATid)))
+        {
+            ERR(retval);
+        }
+        quick_read_float(nsLATid, "Time_reversal", dimensions + 9);
+        quick_read_float(nsLATid, "N_of_symmetries", dimensions + 10);
+        quick_read_float(nsLATid, "N_of_RL_vectors", dimensions + 7);
+        if ((retval = nc_close(nsLATid)))
+        {
+            ERR(retval);
+        }
+
+        cwk_path_join(SAVEdir, "ns.wf", temp_str, temp_str_len);
+        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsWFid)))
+        {
+            ERR(retval);
+        }
+        quick_read_float(nsWFid, "WF_COMPONENTS", dimensions + 8);
+        if ((retval = nc_close(nsWFid)))
+        {
+            ERR(retval);
+        }
+    }
+    mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, Comm->commW);
+    MPI_error_msg(mpi_error);
+
+    lattice->nspinor = rint(dimensions[11]);
+    lattice->nspin = rint(dimensions[12]);
+    lattice->timerev = rint(dimensions[9]);
+    lattice->total_bands = rint(dimensions[5]);
+    lattice->nsym = rint(dimensions[10]);
+    lattice->nkpts_iBZ = rint(dimensions[6]);
+
+    int nibz = lattice->nkpts_iBZ;
+
+    free(temp_str);
+}
+
 /* Function body */
 void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               ND_int start_band, ND_int end_band,
                               struct WFC** wfcs, char* ph_save_dir,
                               struct Lattice* lattice, struct Pseudo* pseudo,
-                              struct Phonon* phonon,
-                              enum ELPH_dft_code dft_code)
+                              struct Phonon* phonon)
 {
     /* This function allocates and reads data from SAVE dir.
     The following data is read : wfcs(in iBZ), lattice and pseudo
@@ -75,18 +182,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
 
     int mpi_error;
 
-    // first get the basic dft/dfpt data from dft code (code specific) before
-    // anything
     char* pp_head = "ns.kb_pp_pwscf";  // Change this accordingly
-    if (dft_code == DFT_CODE_QE)
-    {
-        // char* pp_head = "ns.kb_pp_pwscf";
-        get_data_from_qe(lattice, phonon, pseudo, ph_save_dir, NULL, Comm);
-    }
-    else
-    {
-        error_msg("Only QE supported");
-    }
 
     lattice->nfftz_loc = get_mpi_local_size_idx(
         lattice->fft_dims[2], &(lattice->nfftz_loc_shift), Comm->commK);
@@ -104,19 +200,15 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     char* temp_str = malloc(temp_str_len);
     CHECK_ALLOC(temp_str);
 
-    int nkBZ = 0;  // total kpoints in BZ
-
+    int nkBZ = 0;
     /*****/
     if (Comm->commW_rank == 0)
     {
         cwk_path_join(SAVEdir, "ndb.KPT_indexes", temp_str, temp_str_len);
-
         if ((retval = nc_open(temp_str, NC_NOWRITE, &tempid)))
         {
             ERR(retval);
         }
-        // Before doing anything crazy, check if SAVE and
-        // letzElph are compiled with same precission
         int header_id;
         nc_type compile_prec;
         if ((retval = nc_inq_varid(tempid, "HEAD_VERSION", &header_id)))
@@ -127,29 +219,24 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         {
             ERR(retval);
         }
-
         if (compile_prec != ELPH_NC4_IO_FLOAT)
         {
-            error_msg(
-                "Yambo and LetzElPhC are compiled with different precision.");
+            error_msg("Yambo and LetzElPhC are compiled with different precision.");
         }
-
 #if defined(YAMBO_LT_5_1)
         ELPH_float kindx_pars[7];
         quick_read(tempid, "PARS", kindx_pars);
-        nkBZ = (int)rint(kindx_pars[0]);  // FIX ME !! or kindx_pars[5] ?
+        nkBZ = (int)rint(kindx_pars[0]);
 #else
         int nkBZ_read;
         quick_read(tempid, "nXkbz", &nkBZ_read);
         nkBZ = nkBZ_read;
 #endif
-
         if ((retval = nc_close(tempid)))
         {
             ERR(retval);
         }
     }
-    /* broad cast (int nkBZ) */
     mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW);
     MPI_error_msg(mpi_error);
     /*******/
@@ -159,9 +246,8 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
             "There are no kpoints in some cpus, Make sure nkpool < # of "
             "kpoints in full BZ.");
     }
-    // set nBZ
     lattice->nkpts_BZ = nkBZ;
-    // printf("Debug-%d \n",1);
+
     ELPH_float dimensions[18];
     memset(dimensions, 0, sizeof(dimensions));
     if (Comm->commW_rank == 0)
@@ -192,24 +278,21 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         }
         quick_read_float(nsWFid, "WF_COMPONENTS", dimensions + 8);
     }
-    /* bcast ELPH_float dimensions[18] */
     mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    // over write nspinor. This will allow for do so non-SOC ph calcs with soc
-    // wfcs.
     lattice->nspinor = rint(dimensions[11]);
     lattice->nspin = rint(dimensions[12]);
     lattice->timerev = rint(dimensions[9]);
     lattice->total_bands = rint(dimensions[5]);
     lattice->nsym = rint(dimensions[10]);
     lattice->nkpts_iBZ = rint(dimensions[6]);
-    ;
 
     int nibz = lattice->nkpts_iBZ;
 
     if (start_band < 1 || end_band < 1)
     {
+#if !defined _Y6_LETZ
         if (Comm->commW_rank == 0)
         {
             fprintf(stderr,
@@ -217,12 +300,14 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                     "matrix elements for all bands, "
                     "Bands index belong to [1,nbnds] \n");
         }
+#endif
         start_band = 1;
         end_band = lattice->total_bands;
     }
     if (start_band > lattice->total_bands || end_band > lattice->total_bands ||
         start_band >= end_band)
     {
+#if !defined _Y6_LETZ
         if (Comm->commW_rank == 0)
         {
             fprintf(
@@ -230,6 +315,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                 "Warning : invalid bands used in calculation. computing matrix "
                 "elements for all bands \n");
         }
+#endif
         start_band = 1;
         end_band = lattice->total_bands;
     }
