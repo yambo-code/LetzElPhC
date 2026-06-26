@@ -17,7 +17,7 @@
  *   qpt_BZ_crys    : crystal-coordinate q-point for iq_BZ (ELPH_float[3])
  */
 typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
-                              const void* data,
+                              const void* data, int *KplusQidxs,
                               int nq, int nk, int nmodes, int nspin,
                               int nbnds, int nb_start,
                               int iq_iBZ, const void* qpt_BZ_crys);

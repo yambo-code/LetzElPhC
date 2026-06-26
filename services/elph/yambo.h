@@ -29,5 +29,17 @@ struct Y6_info
     int nmodes;
     int nq_ibz;
     int nq_bz;
+    int nkpts_ibz;
+    int nkpts_bz;
+    int nph_sym;
+    int kminusq;
+    // Pointers to k/q lists (C-side allocated, valid for query lifetime)
+    float* kpt_fullBZ_crys;  // (nkpts_bz, 3) full BZ k-points in crystal coords
+    int* kmap;               // (nkpts_bz, 2) maps full BZ k to iBZ+sym
+    float* qpts_iBZ;         // (nq_ibz, 3) iBZ q-points
+    float* qpts_BZ;          // (nq_bz, 3) full BZ q-points
+    int* qmap;               // (nq_bz, 2) maps full BZ q to iBZ+sym
+    int* nqstar;             // (nq_ibz,) star multiplicity
+    int* kplusq_idxs;        // (nq_ibz, nkpts_bz) k+q indices for each q,k pair
 };
 
