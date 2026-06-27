@@ -21,6 +21,19 @@ typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
                               int iqpt_iBZ, const void* qpt_crys);
 
 /*
+ * Light callback (reduced signature): just indices and data pointer.
+ * Constants (nmodes, nspin, nbnds) known to Fortran side.
+ *   iq_ibz_letz : 0-based iBZ q-point index (LetzElPhC)
+ *   iq_bz_letz  : 0-based BZ q-point index (LetzElPhC)
+ *   ik_ibz_letz : 0-based iBZ k-point index (LetzElPhC)
+ *   ik_bz_letz  : 0-based BZ k-point index (LetzElPhC)
+ *   data        : ELPH_cmplx buffer, C row-major (nmodes, nspin, nbnds, nbnds)
+ */
+typedef void (*elph_fill_fn_light)(int iq_ibz_letz, int iq_bz_letz,
+                                    int ik_ibz_letz, int ik_bz_letz,
+                                    const void* data);
+
+/*
  * Callback for dV_q^nu(G) in reciprocal space, called once per iBZ q-point
  * from commK rank 0.
  *   iq_iBZ   : 0-based global iBZ q-point index
@@ -47,7 +60,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  * Either callback may be NULL to skip that output.
  */
 void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
-                     MPI_Comm comm_world, elph_fill_fn fill_fn,
+                     MPI_Comm comm_world, elph_fill_fn_light fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn);
 
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,

@@ -39,11 +39,11 @@
  * Either callback may be NULL to skip that output.
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution (nqpool/nkpool derived from these).
  */
-void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
+void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
                      struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
-                     elph_fill_fn fill_fn,
+                     elph_fill_fn_light fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
-                     MPI_Comm comm_world)
+                     MPI_Comm comm_world, int bz_mode_code)
 {
     /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
@@ -310,7 +310,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
                                   eigVec, dVscf, 0, 0, ncid_dmat,
                                   varid_dmat, kernel->non_loc,
                                   input_data->kminusq, mpi_comms, fill_fn,
-                                  iqpt_iBZg);
+                                  iqpt_iBZg, bz_mode_code);
         }
     }
 

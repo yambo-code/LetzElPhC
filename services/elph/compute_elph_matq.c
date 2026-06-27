@@ -25,16 +25,22 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              const int varid_dmat, const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm,
-                             elph_fill_fn fill_fn,
-                             const ND_int iqpt_iBZ)
+                             elph_fill_fn_light fill_fn,
+                             const ND_int iqpt_iBZ, int bz_mode_code)
 {
     /*
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
     ((k, nmodes, nspin, nbands, nbands))
+
+    bz_mode_code: 0=QIBZ-KBZ, 1=QBZ-KBZ, 2=QIBZ-KIBZ, 3=QBZ-KIBZ
+    Controls whether LetzElPhC expands q and/or k to full BZ.
     */
     /* distribute k points */
     int mpi_error;
     const ND_int nk_totalBZ = lattice->nkpts_BZ;
+
+    /* Determine if we should compute BZ expansion (modes 1,2,3 need expansion) */
+    int compute_bz_expansion = (bz_mode_code > 0) ? 1 : 0;
 
     const ELPH_float* qpt = phonon->qpts_iBZ + iqpt * 3;
 
@@ -153,12 +159,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
           //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
             if (fill_fn != NULL)
             {
-                fill_fn((int)startp[0], (int)startp[1], elph_kq_mn, KplusQidxs,
-                        (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
-                        (int)lattice->nspin, (int)nbnds,
-                        (int)lattice->start_band,
-                        (int)iqpt_iBZ,
-                        (const void*)(phonon->qpts_BZ + 3 * startp[0]));
+                fill_fn((int)iqpt_iBZ, (int)qpos, (int)ik, (int)i, elph_kq_mn);
             }
             else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
                                            countp, elph_kq_mn)))
@@ -222,8 +223,14 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
 
                 startp[0] = qpos_star;
                 startp[1] = idx_Sk;
-                // Write it for Sq and Sk point
-#ifndef _Y6_LETZ
+                // Write it for Sq and Sk point (BZ expansion)
+#ifdef _Y6_LETZ
+                /* In Y6 mode, only compute BZ expansion if requested by bz_mode_code */
+                if (compute_bz_expansion && fill_fn != NULL)
+                {
+                    fill_fn((int)iqpt_iBZ, (int)qpos_star, (int)ik, (int)idx_Sk, gSq_buff);
+                }
+#else
                 if (fill_fn != NULL)
                 {
                     fill_fn((int)startp[0], (int)startp[1], gSq_buff,
