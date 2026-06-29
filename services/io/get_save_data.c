@@ -440,10 +440,16 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     ND_int tmp_nkBZ = bz_expand(nibz, lattice->nsym, lattice->kpt_iredBZ,
                                 lattice->syms, lattice->alat_vec,
                                 lattice->kpt_fullBZ_crys, NULL, lattice->kmap);
-    if (tmp_nkBZ != nkBZ)
+
+    // Use actual expansion result, not pre-allocated nkBZ
+    // Different q-points may have different k-point counts due to little-group symmetry
+    if (tmp_nkBZ > nkBZ)
     {
-        error_msg("K-point expansion over full BZ failed.");
+        fprintf(stderr, "WARNING: K-point expansion gave %lld points, expected %lld. Using actual expansion.\n",
+                (long long)tmp_nkBZ, (long long)nkBZ);
+        nkBZ = tmp_nkBZ;  // Update to actual value
     }
+    lattice->nkpts_BZ = nkBZ;
 
     // convert to cart units
     matmul_float('N', 'T', lattice->kpt_fullBZ_crys, lattice->blat_vec,

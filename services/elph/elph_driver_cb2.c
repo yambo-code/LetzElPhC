@@ -41,7 +41,7 @@
  */
 void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
                      struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
-                     elph_fill_fn_light fill_fn,
+                     elph_gkkp_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code)
 {
@@ -210,6 +210,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
 
     int ncid_dmat, nc_err;
     int varid_dmat;
+    int ncid_elph = -1, varid_elph = -1;
 
     if (mpi_comms->commK_rank == 0)
     {
@@ -230,6 +231,37 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         {
             ERR(nc_err);
         }
+
+        // Create ndb.elph file for fresh output from current run
+        if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4 | NC_CLOBBER,
+                                    mpi_comms->commR, MPI_INFO_NULL, &ncid_elph)))
+        {
+            fprintf(stderr, "Error creating ndb.elph file.");
+            ERR(nc_err);
+        }
+
+        if ((nc_err = ncsetfill(ncid_elph, NC_NOFILL)))
+        {
+            fprintf(stderr, "Error setting nc_fill to ndb.elph file.");
+            ERR(nc_err);
+        }
+
+        // Define elph_mat variable
+        ND_int nk_chunk_size = NC4_DEFAULT_CHUCK_KB * 1024;
+        nk_chunk_size /= (sizeof(ELPH_cmplx) * nmodes * lattice->nspin *
+                          lattice->nbnds * lattice->nbnds);
+        if (nk_chunk_size == 0) nk_chunk_size = 1;
+        else if (nk_chunk_size > lattice->nkpts_BZ) nk_chunk_size = lattice->nkpts_BZ;
+
+        def_ncVar(ncid_elph, &varid_elph, 7, ELPH_NC4_IO_FLOAT,
+                  (ND_int[]){phonon->nq_BZ, lattice->nkpts_BZ, nmodes,
+                             lattice->nspin, lattice->nbnds, lattice->nbnds, 2},
+                  "elph_mat",
+                  (char*[]){"nq", "nk", "nmodes", "nspin", "initial_band",
+                            "final_band_PH_abs", "re_im"},
+                  (size_t[]){1, nk_chunk_size, nmodes, lattice->nspin,
+                             lattice->nbnds, lattice->nbnds, 2});
+        // def_ncVar handles nc_enddef() internally
     }
 
     print_info_msg(mpi_comms->commW_rank,
@@ -307,7 +339,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         if (calc_GKKP ==1 )
         {
           compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
-                                  eigVec, dVscf, 0, 0, ncid_dmat,
+                                  eigVec, dVscf, ncid_elph, varid_elph, ncid_dmat,
                                   varid_dmat, kernel->non_loc,
                                   input_data->kminusq, mpi_comms, fill_fn,
                                   iqpt_iBZg, bz_mode_code);

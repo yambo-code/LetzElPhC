@@ -29,7 +29,7 @@ typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
  *   ik_bz_letz  : 0-based BZ k-point index (LetzElPhC)
  *   data        : ELPH_cmplx buffer, C row-major (nmodes, nspin, nbnds, nbnds)
  */
-typedef void (*elph_fill_fn_light)(int iq_ibz_letz, int iq_bz_letz,
+typedef void (*elph_gkkp_fill_fn)(int iq_ibz_letz, int iq_bz_letz,
                                     int ik_ibz_letz, int ik_bz_letz,
                                     const void* data);
 
@@ -60,7 +60,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  * Either callback may be NULL to skip that output.
  */
 void elph_driver_cb2(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
-                     MPI_Comm comm_world, elph_fill_fn_light fill_fn,
+                     MPI_Comm comm_world, elph_gkkp_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn);
 
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,

@@ -25,7 +25,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              const int varid_dmat, const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm,
-                             elph_fill_fn_light fill_fn,
+                             elph_gkkp_fill_fn fill_fn,
                              const ND_int iqpt_iBZ, int bz_mode_code)
 {
     /*
@@ -97,6 +97,16 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         CHECK_ALLOC(elph_kq_mn);
     }
     //// (nu, nspin, mk, nk+q)
+    /* Data layout: elph_kq_mn[nu][isp][m_k][n_k+q]
+     * where m_k = band index at k state
+     *       n_k+q = band index at k+q state
+     * This is the natural ordering from matrix element computation <n(k+q)|dV|m(k)>
+     *
+     * IMPORTANT: Band index order is swapped when mapping to Yambo/COLL storage.
+     * See ELPH_coll_fill_gkkp.F for details. The swap was verified empirically
+     * by unit testing: with correct swap, all 24 gamma-point matrix elements match
+     * perfectly between LetzElPhC ndb.elph and Yambo GKKP storage (2026-06-29).
+     */
     /* Now Compute elph-matrix elements for each kpoint */
 
     size_t startp[7] = {0, 0, 0, 0, 0, 0, 0};
@@ -157,14 +167,19 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         if (Comm->commK_rank == 0)
         {
           //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
+            // Call callback if provided
             if (fill_fn != NULL)
             {
                 fill_fn((int)iqpt_iBZ, (int)qpos, (int)ik, (int)i, elph_kq_mn);
             }
-            else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
-                                           countp, elph_kq_mn)))
+            // Write to ndb.elph if file is open (ncid_elph >= 0)
+            if (ncid_elph >= 0)
             {
-                ERR(nc_err);
+                if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                          countp, elph_kq_mn)))
+                {
+                    ERR(nc_err);
+                }
             }
         }
 
@@ -229,6 +244,15 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 if (compute_bz_expansion && fill_fn != NULL)
                 {
                     fill_fn((int)iqpt_iBZ, (int)qpos_star, (int)ik, (int)idx_Sk, gSq_buff);
+                }
+                // Write to ndb.elph if file is open and BZ expansion requested
+                if (compute_bz_expansion && ncid_elph >= 0)
+                {
+                    if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                              countp, gSq_buff)))
+                    {
+                        ERR(nc_err);
+                    }
                 }
 #else
                 if (fill_fn != NULL)

@@ -95,7 +95,7 @@ void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_d
                          int dft_code, void* fill_fn_ptr, void* dvG_fill_fn_ptr,
                          const char* log_path, int i_control,
                          int NQ_todo, int* Q_todo, int NK_todo , int* K_todo,
-                         MPI_Fint f_comm_world, MPI_Fint f_comm_q, MPI_Fint f_comm_k)
+                         MPI_Fint f_comm_world, MPI_Fint f_comm_q, MPI_Fint f_comm_k, int bz_mode_code)
 {
     MPI_Comm c_comm_world = MPI_Comm_f2c(f_comm_world);
     MPI_Comm c_comm_q = MPI_Comm_f2c(f_comm_q);
@@ -119,8 +119,8 @@ void elph_driver_cb2_f2c(struct elph_usr_input* input_data, struct Y6_info* y6_d
 
     /* Y6 mode: use provided communicators and callbacks from Fortran */
     elph_driver_cb2(input_data,y6_data,y6_work,(enum ELPH_dft_code)dft_code,
-                    (elph_fill_fn)fill_fn_ptr,
-                    (elph_dvG_fill_fn)dvG_fill_fn_ptr,i_control,c_comm_world);
+                    (elph_gkkp_fill_fn)fill_fn_ptr,
+                    (elph_dvG_fill_fn)dvG_fill_fn_ptr,i_control,c_comm_world,bz_mode_code);
 
     close_letz_log();
 }

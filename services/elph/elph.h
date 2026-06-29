@@ -26,7 +26,7 @@ typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
  * Light callback (reduced signature): just indices and data pointer.
  * Constants (nmodes, nspin, nbnds) known to Fortran side.
  */
-typedef void (*elph_fill_fn_light)(int iq_ibz_letz, int iq_bz_letz,
+typedef void (*elph_gkkp_fill_fn)(int iq_ibz_letz, int iq_bz_letz,
                                     int ik_ibz_letz, int ik_bz_letz,
                                     const void* data);
 
@@ -58,7 +58,7 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution.
  */
 void elph_driver_cb2(struct elph_usr_input* input_data, struct Y6_info* y6_data, struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
-                     elph_fill_fn_light fill_fn,
+                     elph_gkkp_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code);
 
@@ -70,7 +70,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              const int varid_dmat, const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm,
-                             elph_fill_fn_light fill_fn,
+                             elph_gkkp_fill_fn fill_fn,
                              const ND_int iqpt_iBZ, int bz_mode_code);
 
 void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
