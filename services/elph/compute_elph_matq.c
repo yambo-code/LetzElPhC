@@ -32,7 +32,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
     ((k, nmodes, nspin, nbands, nbands))
 
-    bz_mode_code: 0=QIBZ-KBZ, 1=QBZ-KBZ, 2=QIBZ-KIBZ, 3=QBZ-KIBZ
+    bz_mode_code: 0=IBZ, 1=BZ
     Controls whether LetzElPhC expands q and/or k to full BZ.
     */
     /* distribute k points */
@@ -56,12 +56,14 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         error_msg("Qpoint in iBZ cannot be traced in phonon qmap");
     }
 
+#ifdef _Y6_LETZ
+    ND_int nk_this_pool = lattice->NK_par;
+#else
     ND_int kshift;
     ND_int nk_this_pool =
         distribute_to_grps(nk_totalBZ, Comm->nkpools,
                            Comm->commQ_rank / Comm->commK_size, &kshift);
-
-    nk_this_pool=lattice->NK_par;
+#endif
 
     if (nk_this_pool < 1)
     {
@@ -168,10 +170,12 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         {
           //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
             // Call callback if provided
+#ifdef _Y6_LETZ
             if (fill_fn != NULL)
             {
                 fill_fn((int)iqpt_iBZ, (int)qpos, (int)ik, (int)i, elph_kq_mn);
             }
+#else
             // Write to ndb.elph if file is open (ncid_elph >= 0)
             if (ncid_elph >= 0)
             {
@@ -181,6 +185,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                     ERR(nc_err);
                 }
             }
+#endif
         }
 
         // expand the el-ph matrix elements in full BZ
@@ -199,18 +204,22 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 size_t D_mat_cp[6] = {
                     1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2};
                 // read D_mats //const int ncid_dmat, const int varid_dmat,
+#ifndef _Y6_LETZ
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp,
                                           D_mat_cp, D_mat_l)))
                 {  // k + q
                     ERR(nc_err);
                 }
+#endif
 
                 D_mat_sp[1] = idx_k;
+#ifndef _Y6_LETZ
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp,
                                           D_mat_cp, D_mat_r)))
                 {  // k
                     ERR(nc_err);
                 }
+#endif
 
                 // gSq_buff
                 elph_q_rotate(D_mat_l, elph_kq_mn, D_mat_r, lattice,
@@ -245,6 +254,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 {
                     fill_fn((int)iqpt_iBZ, (int)qpos_star, (int)ik, (int)idx_Sk, gSq_buff);
                 }
+#else
                 // Write to ndb.elph if file is open and BZ expansion requested
                 if (compute_bz_expansion && ncid_elph >= 0)
                 {
@@ -253,21 +263,6 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                     {
                         ERR(nc_err);
                     }
-                }
-#else
-                if (fill_fn != NULL)
-                {
-                    fill_fn((int)startp[0], (int)startp[1], gSq_buff,
-                            (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
-                            (int)lattice->nspin, (int)nbnds,
-                            (int)lattice->start_band,
-                            (int)iqpt_iBZ,
-                            (const void*)(phonon->qpts_BZ + 3 * startp[0]));
-                }
-                else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
-                                               countp, gSq_buff)))
-                {
-                    ERR(nc_err);
                 }
 #endif
             }

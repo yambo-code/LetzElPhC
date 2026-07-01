@@ -40,7 +40,7 @@
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution (nqpool/nkpool derived from these).
  */
 void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
-                     struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
+                     struct Y6_parallel* y6_par, enum ELPH_dft_code dft_code,
                      elph_gkkp_fill_fn fill_fn,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code)
@@ -80,9 +80,9 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     CHECK_ALLOC(lattice);
     init_lattice_type(lattice);
   
-    lattice->NK_par=y6_work->NK;
+    lattice->NK_par=y6_par->NK;
     lattice->K_par = malloc(lattice->NK_par * sizeof(int));
-    memcpy(lattice->K_par, y6_work->K, lattice->NK_par * sizeof(int));
+    memcpy(lattice->K_par, y6_par->K, lattice->NK_par * sizeof(int));
 
     struct Pseudo* pseudo = malloc(sizeof(struct Pseudo));
     CHECK_ALLOC(pseudo);
@@ -92,18 +92,18 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     CHECK_ALLOC(phonon);
     init_phonon_type(phonon);
   
-    phonon->NQ_par=y6_work->NQ;
-    phonon->Q_par = malloc(phonon->NQ_par * sizeof(int));
-    memcpy(phonon->Q_par, y6_work->Q, phonon->NQ_par * sizeof(int));
+    phonon->NQ_par=y6_par->NQ;
+    phonon->Q_par = malloc(phonon->NQ_par* sizeof(int));
+    memcpy(phonon->Q_par, y6_par->Q, phonon->NQ_par * sizeof(int));
 
     /*
     fprintf(stderr,"\n");
-    for (int i = 0; i < y6_work->NK; i++) {
-        fprintf(stderr," ID %i K %i\n ",mpi_comms->commW_rank, y6_work->K[i]);
+    for (int i = 0; i < y6_par->NK; i++) {
+        fprintf(stderr," ID %i K %i\n ",mpi_comms->commW_rank, y6_par->K[i]);
     }
     fprintf(stderr,"\n");
-    for (int i = 0; i < y6_work->NQ; i++) {
-        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_work->Q[i]);
+    for (int i = 0; i < y6_par->NQ; i++) {
+        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_par->Q[i]);
     }
     fprintf(stderr,"\n");
     */
@@ -233,6 +233,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         }
 
         // Create ndb.elph file for fresh output from current run
+#ifndef _Y6_LETZ
         if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4 | NC_CLOBBER,
                                     mpi_comms->commR, MPI_INFO_NULL, &ncid_elph)))
         {
@@ -262,13 +263,14 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
                   (size_t[]){1, nk_chunk_size, nmodes, lattice->nspin,
                              lattice->nbnds, lattice->nbnds, 2});
         // def_ncVar handles nc_enddef() internally
+#endif
     }
 
     print_info_msg(mpi_comms->commW_rank,
                    "=== Computing Electron-phonon matrix elements ===");
     print_info_msg(mpi_comms->commW_rank, "");
 
-    for (ND_int iqpt = 0; iqpt < phonon->NQ_par; ++iqpt)
+    for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
     {
         print_info_msg(mpi_comms->commW_rank, "### q-point : %d/%d",
                        (int)(iqpt + 1), (int)phonon->nq_iBZ_loc);

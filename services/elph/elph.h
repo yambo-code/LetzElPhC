@@ -57,9 +57,8 @@ void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  * Either callback may be NULL to skip that output.
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution.
  */
-void elph_driver_cb2(struct elph_usr_input* input_data, struct Y6_info* y6_data, struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
-                     elph_gkkp_fill_fn fill_fn,
-                     elph_dvG_fill_fn dvG_fill_fn,int i_control,
+void elph_driver_cb2(struct elph_usr_input* input_data, struct Y6_info* y6_data, struct Y6_parallel* y6_par, enum ELPH_dft_code dft_code,
+                     elph_gkkp_fill_fn fill_fn,elph_dvG_fill_fn dvG_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code);
 
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,

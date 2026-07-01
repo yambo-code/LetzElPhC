@@ -4,12 +4,12 @@ This file contains Yambo specific data-structures used in the Code.
 #pragma once
 #include <mpi.h>
 
-struct Y6_parallel_work
+struct Y6_parallel
 {
- int *Q;
  int NQ;
- int *K;
  int NK;
+ int *Q;
+ int *K;
 };
 
 // Pieces of Lattice and Phonon to be passed to Yambo//
