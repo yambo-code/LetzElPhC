@@ -194,7 +194,11 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         // only master node does this
         if (Comm->commK_rank == 0)
         {
-            for (ND_int istar = 1; istar < phonon->nqstar[iqpt]; ++istar)
+            // Skip star rotation entirely when BZ expansion not requested:
+            // everything in this loop (D_mat reads, rotation, Sk search) only
+            // feeds the expansion output.
+            for (ND_int istar = 1;
+                 compute_bz_expansion && istar < phonon->nqstar[iqpt]; ++istar)
             {
                 ND_int qpos_star = qpos + istar;
                 // get the symmetry
@@ -204,22 +208,21 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 size_t D_mat_cp[6] = {
                     1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2};
                 // read D_mats //const int ncid_dmat, const int varid_dmat,
-#ifndef _Y6_LETZ
+                // Needed in all modes: elph_q_rotate below uses D_mat_l/D_mat_r
+                // to rotate g to the star q-points. With these reads skipped the
+                // BZ expansion produces zeros.
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp,
                                           D_mat_cp, D_mat_l)))
                 {  // k + q
                     ERR(nc_err);
                 }
-#endif
 
                 D_mat_sp[1] = idx_k;
-#ifndef _Y6_LETZ
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp,
                                           D_mat_cp, D_mat_r)))
                 {  // k
                     ERR(nc_err);
                 }
-#endif
 
                 // gSq_buff
                 elph_q_rotate(D_mat_l, elph_kq_mn, D_mat_r, lattice,
