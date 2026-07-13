@@ -32,25 +32,6 @@ void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path, const ch
     char PH_SAVE_DIR_NAME[ELPH_MAX_ENV_SIZE];
 
     char* env_var_tmp = getenv("ELPH_PH_SAVE_DIR");
-/*
-    // check if env exits for ph_save
-    if (env_var_tmp && strlen(env_var_tmp) > 0)
-    {
-        if (strlen(env_var_tmp) > (ELPH_MAX_ENV_SIZE - 1))
-        {
-            fprintf(stderr,
-                    "Warning : length of ELPH_PH_SAVE_DIR environment "
-                    "variable must be strictly less than %d\n",
-                    (int)ELPH_MAX_ENV_SIZE);
-        }
-        snprintf(PH_SAVE_DIR_NAME, ELPH_MAX_ENV_SIZE, "%s", env_var_tmp);
-    }
-    else
-    {
-        strlcpy_custom(PH_SAVE_DIR_NAME, PH_SAVE_DIR_NAME_DEFAULT,
-                       ELPH_MAX_ENV_SIZE);
-    }
-*/
 
     strlcpy_custom(PH_SAVE_DIR_NAME, ph_path,ELPH_MAX_ENV_SIZE);
     strlcat(PH_SAVE_DIR_NAME, "/", ELPH_MAX_ENV_SIZE);
@@ -266,15 +247,6 @@ void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path, const ch
                 "fildvscf flag set in ph.x input\n");
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
-
-    // if (strlen(drho_prefix) == 0)
-    // {
-    //     fprintf(stderr,"Error : fildrho is not set in ph.x input. "
-    //     "Change in potential is not stored. "
-    //     "You must rerun the ph.x calculation again with "
-    //     "fildrho flag set in ph.x input\n");
-    //     MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-    // }
 
     char* xml_dyn_prefix = strstr(dyn_prefix, ".xml");
     if (xml_dyn_prefix)
@@ -505,12 +477,6 @@ void create_ph_save_dir_pp_qe(const char* inp_file,const char* ph_path, const ch
         strlcat(src_file_tmp,"/",PH_X_INP_READ_BUF_SIZE);
         strlcat(src_file_tmp,dyn_tmp_str,PH_X_INP_READ_BUF_SIZE);
 
-/*
-        cwk_path_join_multiple(
-            (const char*[]){out_dir, "_ph0", dest_file_tmp, dyn_tmp_str, NULL},
-            src_file_tmp, PH_X_INP_READ_BUF_SIZE);
-
-*/
         cwk_path_join_multiple(
             (const char*[]){PH_SAVE_DIR_NAME, dyn_tmp_str, NULL}, dest_file_tmp,
             PH_X_INP_READ_BUF_SIZE);

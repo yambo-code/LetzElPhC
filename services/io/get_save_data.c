@@ -43,115 +43,6 @@ static void get_wfc_from_save(ND_int spin_stride_len, ND_int ik, ND_int nkiBZ,
 
 static inline ND_int get_wf_io_pool(ND_int ik, ND_int q, ND_int r);
 
-/* Read lattice dimensions (nspin, nsym, etc.) from SAVE netCDF files.*/
-void read_lattice_dimensions(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
-                             struct Lattice* lattice, struct Phonon* phonon)
-{
-    int mpi_error;
-    int nsELid, nsWFid, nsLATid, tempid, retval;
-
-    size_t temp_str_len = strlen(SAVEdir) + 100;
-    char* temp_str = malloc(temp_str_len);
-    CHECK_ALLOC(temp_str);
-
-    int nkBZ = 0;
-    if (Comm->commW_rank == 0)
-    {
-        cwk_path_join(SAVEdir, "ndb.KPT_indexes", temp_str, temp_str_len);
-        if ((retval = nc_open(temp_str, NC_NOWRITE, &tempid)))
-        {
-            ERR(retval);
-        }
-        int header_id;
-        nc_type compile_prec;
-        if ((retval = nc_inq_varid(tempid, "HEAD_VERSION", &header_id)))
-        {
-            ERR(retval);
-        }
-        if ((retval = nc_inq_vartype(tempid, header_id, &compile_prec)))
-        {
-            ERR(retval);
-        }
-        if (compile_prec != ELPH_NC4_IO_FLOAT)
-        {
-            error_msg("Yambo and LetzElPhC compiled with different precision.");
-        }
-#if defined(YAMBO_LT_5_1)
-        ELPH_float kindx_pars[7];
-        quick_read(tempid, "PARS", kindx_pars);
-        nkBZ = (int)rint(kindx_pars[0]);
-#else
-        int nkBZ_read;
-        quick_read(tempid, "nXkbz", &nkBZ_read);
-        nkBZ = nkBZ_read;
-#endif
-        if ((retval = nc_close(tempid)))
-        {
-            ERR(retval);
-        }
-    }
-    mpi_error = MPI_Bcast(&nkBZ, 1, MPI_INT, 0, Comm->commW);
-    MPI_error_msg(mpi_error);
-
-    lattice->nkpts_BZ = nkBZ;
-
-    ELPH_float dimensions[18];
-    memset(dimensions, 0, sizeof(dimensions));
-    if (Comm->commW_rank == 0)
-    {
-        cwk_path_join(SAVEdir, "ns.electrons", temp_str, temp_str_len);
-        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsELid)))
-        {
-            ERR(retval);
-        }
-        quick_read_float(nsELid, "number_of_bands", dimensions + 5);
-        quick_read_float(nsELid, "number_of_k-points", dimensions + 6);
-        quick_read_float(nsELid, "spinor_components", dimensions + 11);
-        quick_read_float(nsELid, "spin_polarizations", dimensions + 12);
-        if ((retval = nc_close(nsELid)))
-        {
-            ERR(retval);
-        }
-
-        cwk_path_join(SAVEdir, "ns.lattices", temp_str, temp_str_len);
-        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsLATid)))
-        {
-            ERR(retval);
-        }
-        quick_read_float(nsLATid, "Time_reversal", dimensions + 9);
-        quick_read_float(nsLATid, "N_of_symmetries", dimensions + 10);
-        quick_read_float(nsLATid, "N_of_RL_vectors", dimensions + 7);
-        if ((retval = nc_close(nsLATid)))
-        {
-            ERR(retval);
-        }
-
-        cwk_path_join(SAVEdir, "ns.wf", temp_str, temp_str_len);
-        if ((retval = nc_open(temp_str, NC_NOWRITE, &nsWFid)))
-        {
-            ERR(retval);
-        }
-        quick_read_float(nsWFid, "WF_COMPONENTS", dimensions + 8);
-        if ((retval = nc_close(nsWFid)))
-        {
-            ERR(retval);
-        }
-    }
-    mpi_error = MPI_Bcast(dimensions, 18, ELPH_MPI_float, 0, Comm->commW);
-    MPI_error_msg(mpi_error);
-
-    lattice->nspinor = rint(dimensions[11]);
-    lattice->nspin = rint(dimensions[12]);
-    lattice->timerev = rint(dimensions[9]);
-    lattice->total_bands = rint(dimensions[5]);
-    lattice->nsym = rint(dimensions[10]);
-    lattice->nkpts_iBZ = rint(dimensions[6]);
-
-    int nibz = lattice->nkpts_iBZ;
-
-    free(temp_str);
-}
-
 /* Function body */
 void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
                               ND_int start_band, ND_int end_band,
@@ -422,11 +313,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
     mpi_error = MPI_Bcast(lattice->alat_vec, 9, ELPH_MPI_float, 0, Comm->commW);
     MPI_error_msg(mpi_error);
 
-    // These are already set in get_data_from_qe.
-    // compute reciprocal vectors and volume
-    // reciprocal_vecs(lattice->alat_vec, lattice->blat_vec);
-    // b[:,i]  are blat. blat comes with 2*pi factor
-    // lattice->volume = fabs(det3x3(lattice->alat_vec));
+    // Reciprocal vectors and volume are already set in get_data_from_qe.
 
     lattice->kpt_fullBZ_crys = calloc(3 * nkBZ, sizeof(ELPH_float));
     CHECK_ALLOC(lattice->kpt_fullBZ_crys);

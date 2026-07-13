@@ -102,7 +102,7 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
     /* Data layout: elph_kq_mn[nu][isp][m_k][n_k+q]
      * where m_k = band index at k state
      *       n_k+q = band index at k+q state
-     * This is the natural ordering from matrix element computation <n(k+q)|dV|m(k)>
+     * This is the natural ordering from matrix element computation <n(k+q)|dV(q)|m(k)>
      *
      * IMPORTANT: Band index order is swapped when mapping to Yambo/COLL storage.
      * See ELPH_coll_fill_gkkp.F for details. The swap was verified empirically

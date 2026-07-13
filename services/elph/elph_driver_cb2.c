@@ -45,7 +45,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
                      elph_dvG_fill_fn dvG_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code)
 {
-    /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
 
     struct kernel_info* kernel = malloc(sizeof(struct kernel_info));
@@ -95,18 +94,6 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     phonon->NQ_par=y6_par->NQ;
     phonon->Q_par = malloc(phonon->NQ_par* sizeof(int));
     memcpy(phonon->Q_par, y6_par->Q, phonon->NQ_par * sizeof(int));
-
-    /*
-    fprintf(stderr,"\n");
-    for (int i = 0; i < y6_par->NK; i++) {
-        fprintf(stderr," ID %i K %i\n ",mpi_comms->commW_rank, y6_par->K[i]);
-    }
-    fprintf(stderr,"\n");
-    for (int i = 0; i < y6_par->NQ; i++) {
-        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_par->Q[i]);
-    }
-    fprintf(stderr,"\n");
-    */
 
     if (dft_code == DFT_CODE_QE)
     {
