@@ -941,7 +941,7 @@ void interpolation_driver(const char* ELPH_input_file,
             if (0 == mpi_comms->commQ_rank)
             {
                 int lpack_info = diagonalize_hermitian(
-                    'V', 'U', lattice->nmodes, lattice->nmodes,
+                    'V', 'L', lattice->nmodes, lattice->nmodes,
                     dyn_interpolated, ph_freq_iq_interp);
                 if (lpack_info)
                 {
