@@ -8,21 +8,6 @@
 #include "yambo.h"
 
 /*
- * Per-(iq_BZ, ik_BZ) fill callback for yambo COLL integration.
- * Called once per BZ (q,k) pair on commK_rank==0 processes.
- *   iq_BZ, ik_BZ  : 0-based BZ indices
- *   data           : ELPH_cmplx buffer, C row-major (nmodes, nspin, nbnds, nbnds)
- *   nq..nb_start   : full-BZ dimensions (constant across calls); nb_start is 1-based
- *   iq_iBZ         : 0-based iBZ q-point index for this iq_BZ star
- *   qpt_BZ_crys    : crystal-coordinate q-point for iq_BZ (ELPH_float[3])
- */
-typedef void (*elph_fill_fn)(int iq_BZ, int ik_BZ,
-                              const void* data, int *KplusQidxs,
-                              int nq, int nk, int nmodes, int nspin,
-                              int nbnds, int nb_start,
-                              int iq_iBZ, const void* qpt_BZ_crys);
-
-/*
  * Light callback (reduced signature): just indices and data pointer.
  * Constants (nmodes, nspin, nbnds) known to Fortran side.
  */
@@ -47,13 +32,10 @@ typedef void (*elph_dvG_fill_fn)(int iq_iBZ,
 void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world);
 
-/* Callback-enabled variant: skips ndb.elph; calls fill_fn per (q,k) instead. */
-void elph_driver_cb(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
-                    MPI_Comm comm_world, elph_fill_fn fill_fn);
-
 /*
- * Extended callback variant: like elph_driver_cb plus calls dvG_fill_fn once per
- * iBZ q-point with the full dV_q^nu(G) potential in reciprocal space.
+ * Callback-enabled variant: skips ndb.elph; calls fill_fn per (q,k) via COLL,
+ * plus dvG_fill_fn once per iBZ q-point with the full dV_q^nu(G) potential in
+ * reciprocal space.
  * Either callback may be NULL to skip that output.
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution.
  */
