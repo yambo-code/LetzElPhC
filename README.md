@@ -1,5 +1,6 @@
 ![screenshot](docs/logo.png)
-[Project Documentation](https://yambo-code.github.io/LetzElPhC/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://yambo-code.github.io/LetzElPhC/)
 
 LetzElPhC abbreviates to _"Lëtzebuerg Electron Phonon Code"_.
 _"Lëtzebuerg"_ is the Luxembourgish name for the Luxembourg Country.
