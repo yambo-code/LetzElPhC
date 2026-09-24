@@ -142,7 +142,18 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     y6_data->qpts_iBZ = phonon->qpts_iBZ;
     y6_data->qpts_BZ = phonon->qpts_BZ;
     y6_data->qmap = phonon->qmap;
-    y6_data->nqstar = (int*)phonon->nqstar;
+    /* RR: phonon->nqstar is ND_int* (long long, 8 bytes) but y6_data->nqstar
+       (matched on the Fortran side by integer(c_int), i.e. 4 bytes) is
+       int*. 
+       Allocate
+       a genuine int32 copy instead of punning the pointer. */
+    int* nqstar_i32 = malloc(phonon->nq_iBZ * sizeof(int));
+    CHECK_ALLOC(nqstar_i32);
+    for (ND_int iq = 0; iq < phonon->nq_iBZ; ++iq)
+    {
+        nqstar_i32[iq] = (int)phonon->nqstar[iq];
+    }
+    y6_data->nqstar = nqstar_i32;
 
     /* Compute k+q indices for each q-point and expose to Yambo */
     int* kplusq_all = malloc(phonon->nq_BZ * lattice->nkpts_BZ * sizeof(int));
