@@ -42,7 +42,8 @@
 void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
                      struct Y6_parallel* y6_par, enum ELPH_dft_code dft_code,
                      elph_gkkp_fill_fn fill_fn,
-                     elph_dvG_fill_fn dvG_fill_fn,int i_control,
+                     elph_dvG_fill_fn dvG_fill_fn,
+                     elph_eigvec_fill_fn eigvec_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code)
 {
     init_ELPH_clocks();
@@ -296,6 +297,16 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         else
         {
             error_msg("Currently only quantum espresso supported");
+        }
+
+        /* Export the eigenvectors for this iBZ q-point (Y6 Debye-Waller needs them
+           to invert the mode-basis contraction). Independent of i_control: it is a
+           pure data export and costs nothing. */
+        if (eigvec_fill_fn != NULL && mpi_comms->commK_rank == 0)
+        {
+            eigvec_fill_fn((int)iqpt_iBZg, (const void*)eigVec,
+                           (int)phonon->nq_iBZ, (int)nmodes,
+                           (int)lattice->natom);
         }
 
         ELPH_cmplx* Vlocr = malloc(sizeof(ELPH_cmplx) * nmodes * nfft_loc);

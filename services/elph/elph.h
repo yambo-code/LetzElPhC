@@ -29,6 +29,21 @@ typedef void (*elph_dvG_fill_fn)(int iq_iBZ,
                                   int nq_iBZ, int nmodes, int nmag,
                                   int nfft_x, int nfft_y, int nfft_z);
 
+/*
+ * Callback for the phonon eigenvectors (displacement patterns
+ * u^nu_{kappa,alpha} = e^nu_{kappa,alpha}/sqrt(M_kappa)), called once per iBZ
+ * q-point from commK rank 0. Y6 needs them to undo the mode-basis contraction
+ * (g_mode = eigVec . g_cart) and
+ * recover the cartesian Debye-Waller gradient.
+ *   iq_iBZ : 0-based global iBZ q-point index
+ *   eigVec : C row-major (nmodes, natom, 3) complex, in LetzElPhC's native
+ *            Rydberg mass-unit convention (docs/inputs_outputs/output_elph.md,
+ *            POLARIZATION_VECTORS) -- converted, if needed, on the Y6 side
+ * Pure data export: nothing in the standalone path depends on it.
+ */
+typedef void (*elph_eigvec_fill_fn)(int iq_iBZ, const void* eigVec,
+                                    int nq_iBZ, int nmodes, int natom);
+
 void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                  MPI_Comm comm_world);
 
@@ -40,7 +55,8 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution.
  */
 void elph_driver_cb2(struct elph_usr_input* input_data, struct Y6_info* y6_data, struct Y6_parallel* y6_par, enum ELPH_dft_code dft_code,
-                     elph_gkkp_fill_fn fill_fn,elph_dvG_fill_fn dvG_fill_fn,int i_control,
+                     elph_gkkp_fill_fn fill_fn,elph_dvG_fill_fn dvG_fill_fn,
+                     elph_eigvec_fill_fn eigvec_fill_fn,int i_control,
                      MPI_Comm comm_world, int bz_mode_code);
 
 void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
