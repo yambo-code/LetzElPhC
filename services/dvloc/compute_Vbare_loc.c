@@ -212,7 +212,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     // create plan for Sk
     wfc_plan(&fft_plan, npwk, lattice->nfftz_loc, nGxySk, gvecSGk,
-             lattice->fft_dims, FFTW_MEASURE, Comm->commK);
+             lattice->fft_dims, ELPH_FFTW_PLAN_FLAGS, Comm->commK);
 
     for (ND_int ipw = 0; ipw < (3 * npwk); ++ipw)
     {
@@ -248,7 +248,7 @@ void elphLocal(const ELPH_float* qpt, struct WFC* wfcs, struct Lattice* lattice,
 
     // create plan for dvSpi
     wfc_plan(&fft_plan, npwkq, lattice->nfftz_loc, nGxySkq, gvecSGkq,
-             lattice->fft_dims, FFTW_MEASURE, Comm->commK);
+             lattice->fft_dims, ELPH_FFTW_PLAN_FLAGS, Comm->commK);
 
     ELPH_cmplx* dVpsiG =
         malloc(sizeof(ELPH_cmplx) * nspin * nbnds * nspinor * npwkq);
