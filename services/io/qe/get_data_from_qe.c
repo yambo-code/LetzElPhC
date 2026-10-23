@@ -49,10 +49,13 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     MPI_error_msg(mpi_error);
 
     // divide the qpoints in iBZ over q pools
+#if ! defined _Y6_LETZ
     phonon->nq_iBZ_loc = distribute_to_grps(phonon->nq_iBZ, Comm->nqpools,
                                             Comm->commW_rank / Comm->commQ_size,
                                             &phonon->nq_shift);
+#else
     phonon->nq_iBZ_loc = phonon->NQ_par;
+#endif
 
     if (phonon->NQ_par < 1)
     {

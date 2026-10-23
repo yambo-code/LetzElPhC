@@ -39,13 +39,13 @@
  * Either callback may be NULL to skip that output.
  * comm_q, comm_k: Y6 PAR communicators for q,k distribution (nqpool/nkpool derived from these).
  */
-void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data, 
-                     struct Y6_parallel_work* y6_work, enum ELPH_dft_code dft_code,
-                     elph_fill_fn fill_fn,
-                     elph_dvG_fill_fn dvG_fill_fn,int i_control,
-                     MPI_Comm comm_world)
+void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
+                     struct Y6_parallel* y6_par, enum ELPH_dft_code dft_code,
+                     elph_gkkp_fill_fn fill_fn,
+                     elph_dvG_fill_fn dvG_fill_fn,
+                     elph_eigvec_fill_fn eigvec_fill_fn,int i_control,
+                     MPI_Comm comm_world, int bz_mode_code)
 {
-    /*struct elph_usr_input* input_data;*/
     init_ELPH_clocks();
 
     struct kernel_info* kernel = malloc(sizeof(struct kernel_info));
@@ -80,9 +80,9 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     CHECK_ALLOC(lattice);
     init_lattice_type(lattice);
   
-    lattice->NK_par=y6_work->NK;
+    lattice->NK_par=y6_par->NK;
     lattice->K_par = malloc(lattice->NK_par * sizeof(int));
-    memcpy(lattice->K_par, y6_work->K, lattice->NK_par * sizeof(int));
+    memcpy(lattice->K_par, y6_par->K, lattice->NK_par * sizeof(int));
 
     struct Pseudo* pseudo = malloc(sizeof(struct Pseudo));
     CHECK_ALLOC(pseudo);
@@ -92,21 +92,9 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     CHECK_ALLOC(phonon);
     init_phonon_type(phonon);
   
-    phonon->NQ_par=y6_work->NQ;
-    phonon->Q_par = malloc(phonon->NQ_par * sizeof(int));
-    memcpy(phonon->Q_par, y6_work->Q, phonon->NQ_par * sizeof(int));
-
-    /*
-    fprintf(stderr,"\n");
-    for (int i = 0; i < y6_work->NK; i++) {
-        fprintf(stderr," ID %i K %i\n ",mpi_comms->commW_rank, y6_work->K[i]);
-    }
-    fprintf(stderr,"\n");
-    for (int i = 0; i < y6_work->NQ; i++) {
-        fprintf(stderr," R %i Q %i\n ",mpi_comms->commW_rank, y6_work->Q[i]);
-    }
-    fprintf(stderr,"\n");
-    */
+    phonon->NQ_par=y6_par->NQ;
+    phonon->Q_par = malloc(phonon->NQ_par* sizeof(int));
+    memcpy(phonon->Q_par, y6_par->Q, phonon->NQ_par * sizeof(int));
 
     if (dft_code == DFT_CODE_QE)
     {
@@ -155,7 +143,18 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
     y6_data->qpts_iBZ = phonon->qpts_iBZ;
     y6_data->qpts_BZ = phonon->qpts_BZ;
     y6_data->qmap = phonon->qmap;
-    y6_data->nqstar = (int*)phonon->nqstar;
+    /* RR: phonon->nqstar is ND_int* (long long, 8 bytes) but y6_data->nqstar
+       (matched on the Fortran side by integer(c_int), i.e. 4 bytes) is
+       int*. 
+       Allocate
+       a genuine int32 copy instead of punning the pointer. */
+    int* nqstar_i32 = malloc(phonon->nq_iBZ * sizeof(int));
+    CHECK_ALLOC(nqstar_i32);
+    for (ND_int iq = 0; iq < phonon->nq_iBZ; ++iq)
+    {
+        nqstar_i32[iq] = (int)phonon->nqstar[iq];
+    }
+    y6_data->nqstar = nqstar_i32;
 
     /* Compute k+q indices for each q-point and expose to Yambo */
     int* kplusq_all = malloc(phonon->nq_BZ * lattice->nkpts_BZ * sizeof(int));
@@ -210,6 +209,7 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
 
     int ncid_dmat, nc_err;
     int varid_dmat;
+    int ncid_elph = -1, varid_elph = -1;
 
     if (mpi_comms->commK_rank == 0)
     {
@@ -230,13 +230,46 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         {
             ERR(nc_err);
         }
+
+        // Create ndb.elph file for fresh output from current run
+#ifndef _Y6_LETZ
+        if ((nc_err = nc_create_par("ndb.elph", NC_NETCDF4 | NC_CLOBBER,
+                                    mpi_comms->commR, MPI_INFO_NULL, &ncid_elph)))
+        {
+            fprintf(stderr, "Error creating ndb.elph file.");
+            ERR(nc_err);
+        }
+
+        if ((nc_err = ncsetfill(ncid_elph, NC_NOFILL)))
+        {
+            fprintf(stderr, "Error setting nc_fill to ndb.elph file.");
+            ERR(nc_err);
+        }
+
+        // Define elph_mat variable
+        ND_int nk_chunk_size = NC4_DEFAULT_CHUCK_KB * 1024;
+        nk_chunk_size /= (sizeof(ELPH_cmplx) * nmodes * lattice->nspin *
+                          lattice->nbnds * lattice->nbnds);
+        if (nk_chunk_size == 0) nk_chunk_size = 1;
+        else if (nk_chunk_size > lattice->nkpts_BZ) nk_chunk_size = lattice->nkpts_BZ;
+
+        def_ncVar(ncid_elph, &varid_elph, 7, ELPH_NC4_IO_FLOAT,
+                  (ND_int[]){phonon->nq_BZ, lattice->nkpts_BZ, nmodes,
+                             lattice->nspin, lattice->nbnds, lattice->nbnds, 2},
+                  "elph_mat",
+                  (char*[]){"nq", "nk", "nmodes", "nspin", "initial_band",
+                            "final_band_PH_abs", "re_im"},
+                  (size_t[]){1, nk_chunk_size, nmodes, lattice->nspin,
+                             lattice->nbnds, lattice->nbnds, 2});
+        // def_ncVar handles nc_enddef() internally
+#endif
     }
 
     print_info_msg(mpi_comms->commW_rank,
                    "=== Computing Electron-phonon matrix elements ===");
     print_info_msg(mpi_comms->commW_rank, "");
 
-    for (ND_int iqpt = 0; iqpt < phonon->NQ_par; ++iqpt)
+    for (ND_int iqpt = 0; iqpt < phonon->nq_iBZ_loc; ++iqpt)
     {
         print_info_msg(mpi_comms->commW_rank, "### q-point : %d/%d",
                        (int)(iqpt + 1), (int)phonon->nq_iBZ_loc);
@@ -264,6 +297,16 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         else
         {
             error_msg("Currently only quantum espresso supported");
+        }
+
+        /* Export the eigenvectors for this iBZ q-point (Y6 Debye-Waller needs them
+           to invert the mode-basis contraction). Independent of i_control: it is a
+           pure data export and costs nothing. */
+        if (eigvec_fill_fn != NULL && mpi_comms->commK_rank == 0)
+        {
+            eigvec_fill_fn((int)iqpt_iBZg, (const void*)eigVec,
+                           (int)phonon->nq_iBZ, (int)nmodes,
+                           (int)lattice->natom);
         }
 
         ELPH_cmplx* Vlocr = malloc(sizeof(ELPH_cmplx) * nmodes * nfft_loc);
@@ -307,10 +350,10 @@ void elph_driver_cb2(struct elph_usr_input* input_data,struct Y6_info* y6_data,
         if (calc_GKKP ==1 )
         {
           compute_and_write_elphq(wfcs, lattice, pseudo, phonon, iqpt_iBZg,
-                                  eigVec, dVscf, 0, 0, ncid_dmat,
+                                  eigVec, dVscf, ncid_elph, varid_elph, ncid_dmat,
                                   varid_dmat, kernel->non_loc,
                                   input_data->kminusq, mpi_comms, fill_fn,
-                                  iqpt_iBZg);
+                                  iqpt_iBZg, bz_mode_code);
         }
     }
 

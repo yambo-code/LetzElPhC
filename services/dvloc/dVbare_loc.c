@@ -220,7 +220,7 @@ void dVlocq(const ELPH_float* qpt, struct Lattice* lattice,
     struct ELPH_fft_plan fft_plan;
 
     wfc_plan(&fft_plan, size_G_vecs, lattice->nfftz_loc, G_vecs_xy, gvecs,
-             lattice->fft_dims, FFTW_MEASURE, commK);
+             lattice->fft_dims, ELPH_FFTW_PLAN_FLAGS, commK);
 
     invfft3D(&fft_plan, nmodes, VlocG, Vlocr, false);
 

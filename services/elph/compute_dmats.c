@@ -94,16 +94,10 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
     struct progress_bar pbar[1];
     start_progressbar(pbar, Comm->commW_rank, ndmats);
 
-    for (ND_int i_par = 0; i_par < lattice->NK_par; ++i_par)
+    for (ND_int idmat = 0; idmat < ndmats; ++idmat)
     {
-
-      ND_int ikBZ=lattice->K_par[i_par];
-
-      for (ND_int isym = 0; isym < nph_sym; ++isym)
-      {
-
-        //ND_int isym = (idmat + dmat_shift) / nk_totalBZ;
-        //ND_int ikBZ = (idmat + dmat_shift) % nk_totalBZ;
+        ND_int isym = (idmat + dmat_shift) / nk_totalBZ;
+        ND_int ikBZ = (idmat + dmat_shift) % nk_totalBZ;
 
         startp[0] = isym;
         startp[1] = ikBZ;
@@ -122,9 +116,8 @@ void compute_and_write_dmats(const char* file_name, const struct WFC* wfcs,
             }
         }
 
-      }
-      // update the progress bar
-      print_progressbar(pbar);
+        // update the progress bar
+        print_progressbar(pbar);
     }
     if (Comm->commK_rank == 0)
     {

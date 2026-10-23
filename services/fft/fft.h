@@ -21,6 +21,16 @@
 // plan for fft
 typedef fftw_fun(plan) fftw_generic_plan;
 
+/* Planner flags used by every wfc_plan() call site.
+ *
+ * Why FFTW_ESTIMATE and not FFTW_MEASURE: FFTW_MEASURE 
+ * can chose different candidates for the FFT plan and it 
+ * could differ between different machines!
+ * There might be floating point differences. This choice is done for 
+ * every k,q pair inside the code accumulating floating point errors.
+ */
+#define ELPH_FFTW_PLAN_FLAGS FFTW_ESTIMATE
+
 /* struct store FFT plans for the forward and back.*/
 struct ELPH_fft_plan
 {

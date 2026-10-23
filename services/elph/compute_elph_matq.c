@@ -25,16 +25,22 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                              const int varid_dmat, const bool non_loc,
                              const bool kminusq,
                              const struct ELPH_MPI_Comms* Comm,
-                             elph_fill_fn fill_fn,
-                             const ND_int iqpt_iBZ)
+                             elph_gkkp_fill_fn fill_fn,
+                             const ND_int iqpt_iBZ, int bz_mode_code)
 {
     /*
     dVscf -> (nmodes,nmag,Nx,Ny,Nz)
     ((k, nmodes, nspin, nbands, nbands))
+
+    bz_mode_code: 0=IBZ, 1=BZ
+    Controls whether LetzElPhC expands q and/or k to full BZ.
     */
     /* distribute k points */
     int mpi_error;
     const ND_int nk_totalBZ = lattice->nkpts_BZ;
+
+    /* Determine if we should compute BZ expansion (modes 1,2,3 need expansion) */
+    int compute_bz_expansion = (bz_mode_code > 0) ? 1 : 0;
 
     const ELPH_float* qpt = phonon->qpts_iBZ + iqpt * 3;
 
@@ -50,12 +56,14 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         error_msg("Qpoint in iBZ cannot be traced in phonon qmap");
     }
 
+#ifdef _Y6_LETZ
+    ND_int nk_this_pool = lattice->NK_par;
+#else
     ND_int kshift;
     ND_int nk_this_pool =
         distribute_to_grps(nk_totalBZ, Comm->nkpools,
                            Comm->commQ_rank / Comm->commK_size, &kshift);
-
-    nk_this_pool=lattice->NK_par;
+#endif
 
     if (nk_this_pool < 1)
     {
@@ -91,6 +99,16 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         CHECK_ALLOC(elph_kq_mn);
     }
     //// (nu, nspin, mk, nk+q)
+    /* Data layout: elph_kq_mn[nu][isp][m_k][n_k+q]
+     * where m_k = band index at k state
+     *       n_k+q = band index at k+q state
+     * This is the natural ordering from matrix element computation <n(k+q)|dV(q)|m(k)>
+     *
+     * IMPORTANT: Band index order is swapped when mapping to Yambo/COLL storage.
+     * See ELPH_coll_fill_gkkp.F for details. The swap was verified empirically
+     * by unit testing: with correct swap, all 24 gamma-point matrix elements match
+     * perfectly between LetzElPhC ndb.elph and Yambo GKKP storage (2026-06-29).
+     */
     /* Now Compute elph-matrix elements for each kpoint */
 
     size_t startp[7] = {0, 0, 0, 0, 0, 0, 0};
@@ -151,20 +169,23 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         if (Comm->commK_rank == 0)
         {
           //fprintf(stderr,"\n CPU %i k %i %i", Comm->commW_rank,i,startp[1]);
+            // Call callback if provided
+#ifdef _Y6_LETZ
             if (fill_fn != NULL)
             {
-                fill_fn((int)startp[0], (int)startp[1], elph_kq_mn, KplusQidxs,
-                        (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
-                        (int)lattice->nspin, (int)nbnds,
-                        (int)lattice->start_band,
-                        (int)iqpt_iBZ,
-                        (const void*)(phonon->qpts_BZ + 3 * startp[0]));
+                fill_fn((int)iqpt_iBZ, (int)qpos, (int)ik, (int)i, elph_kq_mn);
             }
-            else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
-                                           countp, elph_kq_mn)))
+#else
+            // Write to ndb.elph if file is open (ncid_elph >= 0)
+            if (ncid_elph >= 0)
             {
-                ERR(nc_err);
+                if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                          countp, elph_kq_mn)))
+                {
+                    ERR(nc_err);
+                }
             }
+#endif
         }
 
         // expand the el-ph matrix elements in full BZ
@@ -173,7 +194,11 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
         // only master node does this
         if (Comm->commK_rank == 0)
         {
-            for (ND_int istar = 1; istar < phonon->nqstar[iqpt]; ++istar)
+            // Skip star rotation entirely when BZ expansion not requested:
+            // everything in this loop (D_mat reads, rotation, Sk search) only
+            // feeds the expansion output.
+            for (ND_int istar = 1;
+                 compute_bz_expansion && istar < phonon->nqstar[iqpt]; ++istar)
             {
                 ND_int qpos_star = qpos + istar;
                 // get the symmetry
@@ -183,6 +208,9 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
                 size_t D_mat_cp[6] = {
                     1, 1, lattice->nspin, lattice->nbnds, lattice->nbnds, 2};
                 // read D_mats //const int ncid_dmat, const int varid_dmat,
+                // Needed in all modes: elph_q_rotate below uses D_mat_l/D_mat_r
+                // to rotate g to the star q-points. With these reads skipped the
+                // BZ expansion produces zeros.
                 if ((nc_err = nc_get_vara(ncid_dmat, varid_dmat, D_mat_sp,
                                           D_mat_cp, D_mat_l)))
                 {  // k + q
@@ -222,21 +250,22 @@ void compute_and_write_elphq(struct WFC* wfcs, struct Lattice* lattice,
 
                 startp[0] = qpos_star;
                 startp[1] = idx_Sk;
-                // Write it for Sq and Sk point
-#ifndef _Y6_LETZ
-                if (fill_fn != NULL)
+                // Write it for Sq and Sk point (BZ expansion)
+#ifdef _Y6_LETZ
+                /* In Y6 mode, only compute BZ expansion if requested by bz_mode_code */
+                if (compute_bz_expansion && fill_fn != NULL)
                 {
-                    fill_fn((int)startp[0], (int)startp[1], gSq_buff,
-                            (int)phonon->nq_BZ, (int)nk_totalBZ, (int)nmodes,
-                            (int)lattice->nspin, (int)nbnds,
-                            (int)lattice->start_band,
-                            (int)iqpt_iBZ,
-                            (const void*)(phonon->qpts_BZ + 3 * startp[0]));
+                    fill_fn((int)iqpt_iBZ, (int)qpos_star, (int)ik, (int)idx_Sk, gSq_buff);
                 }
-                else if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
-                                               countp, gSq_buff)))
+#else
+                // Write to ndb.elph if file is open and BZ expansion requested
+                if (compute_bz_expansion && ncid_elph >= 0)
                 {
-                    ERR(nc_err);
+                    if ((nc_err = nc_put_vara(ncid_elph, varid_elph, startp,
+                                              countp, gSq_buff)))
+                    {
+                        ERR(nc_err);
+                    }
                 }
 #endif
             }

@@ -6,7 +6,7 @@ include $(YAMBO_ROOT)/config/setup
 CC           := $(cc)
 
 ### add -DCOMPILE_ELPH_DOUBLE to compile in double precision
-CFLAGS       := -O2 -Wall -Wextra
+CFLAGS       := -O2 -Wall -Wextra -D_Y6_LETZ
 LD_FLAGS     :=
 OPENMP_FLAGS :=
 #-DELPH_OMP_PARALLEL_BUILD  ## uncomment for openmp build
