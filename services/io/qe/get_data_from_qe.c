@@ -57,7 +57,7 @@ void get_data_from_qe(struct Lattice* lattice, struct Phonon* phonon,
     phonon->nq_iBZ_loc = phonon->NQ_par;
 #endif
 
-    if (phonon->NQ_par < 1)
+    if (phonon->nq_iBZ_loc < 1)
     {
         error_msg(
             "There are no qpoints in some qpools, Make sure nqpool < # of "
