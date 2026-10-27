@@ -14,3 +14,4 @@ controllers/defaults/DEFAULTS_driver.F
 services/controllers/SERVICES_setup.F
 services/units/UNITS_defaults.F
 tests/
+services/lelphc
