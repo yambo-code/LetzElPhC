@@ -670,12 +670,9 @@ void interpolation_driver(const char* ELPH_input_file,
                           lattice->fft_dims[0], lattice->fft_dims[1],
                           lattice->fft_dims[2], 2};
         //
-        size_t chunksize[6] = {1, 1, lattice->fft_dims[0], lattice->fft_dims[1],
-                               1, 2};
         def_ncVar(ncid_dVbare, &ncvar_dVbare, 6, ELPH_NC4_IO_FLOAT, dims,
                   "dVbare_local",
-                  (char*[]){"nq", "nmodes", "Nx", "Ny", "Nz", "re_im"},
-                  chunksize);
+                  (char*[]){"nq", "nmodes", "Nx", "Ny", "Nz", "re_im"}, NULL);
         // Collective IO
         if ((nc_err =
                  nc_var_par_access(ncid_dVbare, ncvar_dVbare, NC_COLLECTIVE)))
