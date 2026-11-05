@@ -198,7 +198,7 @@ void read_and_alloc_save_data(char* SAVEdir, const struct ELPH_MPI_Comms* Comm,
         end_band = lattice->total_bands;
     }
     if (start_band > lattice->total_bands || end_band > lattice->total_bands ||
-        start_band >= end_band)
+        start_band > end_band)
     {
         if (Comm->commW_rank == 0)
         {
