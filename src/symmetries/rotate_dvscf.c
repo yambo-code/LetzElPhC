@@ -192,8 +192,8 @@ void rotate_dvscf(const ELPH_float* qpt, const ELPH_cmplx* dvscf_in,
                 ELPH_float tmp_diff = tmp_idxs_rot[xi] - rint(tmp_idxs_rot[xi]);
                 // check now if it is an integer.
                 // if (fabs(tmp_diff) > ELPH_EPS)
-                // NM : Need to be very careful with tol 
-                ELPH_float tol_tmp = 1e-3 + 5e-5*fabs(tmp_idxs_rot[xi]); 
+                // NM : Need to be very careful with tol
+                ELPH_float tol_tmp = 1e-3 + 5e-5 * fabs(tmp_idxs_rot[xi]);
                 if (fabs(tmp_diff) > tol_tmp)
                 {
                     if (symm_fft_compat)

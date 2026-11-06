@@ -1,4 +1,4 @@
-CC                  :=  mpiicc
+CC                  := mpiicx # Use mpiicc for older intel version
 CFLAGS              := -O3 
 
 ### if you are using yambo <= 5.1.2, Uncomment the below 

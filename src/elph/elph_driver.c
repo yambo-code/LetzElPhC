@@ -161,29 +161,13 @@ void elph_driver(const char* ELPH_input_file, enum ELPH_dft_code dft_code,
                   (ND_int[]){phonon->nq_BZ, nmodes}, "FREQ",
                   (char*[]){"nq", "nmodes"}, NULL);
 
-        ND_int nk_chunk_size =
-            NC4_DEFAULT_CHUCK_KB * 1024;  // now this is in bytes
-        // scale with complex number size to get the number of elements
-        nk_chunk_size /= (sizeof(ELPH_cmplx) * nmodes * lattice->nspin *
-                          lattice->nbnds * lattice->nbnds);
-        // chuck the varaible elph_mat with atmost default size
-        if (nk_chunk_size == 0)
-        {
-            nk_chunk_size = 1;
-        }
-        else if (nk_chunk_size > lattice->nkpts_BZ)
-        {
-            nk_chunk_size = lattice->nkpts_BZ;
-        }
-
         def_ncVar(ncid_elph, &varid_elph, 7, ELPH_NC4_IO_FLOAT,
                   (ND_int[]){phonon->nq_BZ, lattice->nkpts_BZ, nmodes,
                              lattice->nspin, lattice->nbnds, lattice->nbnds, 2},
                   "elph_mat",
                   (char*[]){"nq", "nk", "nmodes", "nspin", "initial_band",
                             "final_band_PH_abs", "re_im"},
-                  (size_t[]){1, nk_chunk_size, nmodes, lattice->nspin,
-                             lattice->nbnds, lattice->nbnds, 2});
+                  NULL);
     }
 
     ELPH_cmplx* eig_Sq = NULL;
